@@ -57,3 +57,22 @@ export async function bayaranOnlineDibuka(): Promise<boolean> {
   const t = await bacaTetapan();
   return t.bayaran_online === "true";
 }
+
+// ===== Tetapan Mod Paparan TV =====
+export type TetapanPaparan = {
+  iqamah: number;   // minit menunggu iqamah selepas azan
+  saat: number;     // tempoh (saat) setiap scene bertukar
+  azan: boolean;    // auto bunyi azan bila masuk waktu?
+  teks: string;     // teks berjalan tambahan (TV sahaja)
+};
+export async function tetapanPaparan(): Promise<TetapanPaparan> {
+  const t = await bacaTetapan();
+  const iqamah = Number(t.paparan_iqamah);
+  const saat = Number(t.paparan_saat);
+  return {
+    iqamah: isNaN(iqamah) || iqamah <= 0 ? 10 : iqamah,
+    saat: isNaN(saat) || saat < 5 ? 15 : saat,
+    azan: t.paparan_azan !== "false", // lalai: hidup
+    teks: t.paparan_teks ?? "",
+  };
+}

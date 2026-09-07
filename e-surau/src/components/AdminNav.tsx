@@ -17,6 +17,7 @@ const KEWANGAN: Item[] = [
 ];
 const AKTIVITI: Item[] = [
   { href: "/admin/program", label: "Program" },
+  { href: "/admin/paparan", label: "Paparan TV" },
   { href: "/admin/tahlil", label: "Tahlil" },
   { href: "/admin/sewaan", label: "Sewaan" },
   { href: "/admin/aset", label: "Aset" },
@@ -51,6 +52,7 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
     kumpulan = [
       { label: "Aktiviti", items: [
         { href: "/admin/program", label: "Program" },
+        { href: "/admin/paparan", label: "Paparan TV" },
         { href: "/admin/tahlil", label: "Tahlil" },
         { href: "/admin/vendor", label: "Vendor" },
       ] },

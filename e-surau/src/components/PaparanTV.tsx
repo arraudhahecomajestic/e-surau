@@ -43,12 +43,18 @@ export default function PaparanTV({
   programs,
   pengumuman,
   iqamahMinit = 10,
+  tempohSaat = 15,
+  azanAktif = true,
+  teksTambahan = "",
 }: {
   zon: string;
   namaSurau: string;
   programs: Program[];
   pengumuman: Pengumuman[];
   iqamahMinit?: number;
+  tempohSaat?: number;
+  azanAktif?: boolean;
+  teksTambahan?: string;
 }) {
   const [mula, setMula] = useState(false);
   const [now, setNow] = useState<Date>(() => klNow());
@@ -75,8 +81,10 @@ export default function PaparanTV({
   // Teks scroller
   const scrollerText = useMemo(() => {
     const items = pengumuman.map((p) => (p.penting ? "❗ " : "") + p.tajuk + (p.kandungan ? " — " + p.kandungan.replace(/\s+/g, " ").slice(0, 140) : ""));
+    const extra = (teksTambahan || "").trim();
+    if (extra) items.unshift(extra); // teks TV khas muncul dahulu
     return items.length ? items.join("      •      ") : "Selamat datang ke " + namaSurau;
-  }, [pengumuman, namaSurau]);
+  }, [pengumuman, namaSurau, teksTambahan]);
 
   // Scene yang tersedia
   const scenes = useMemo(() => {
@@ -112,12 +120,13 @@ export default function PaparanTV({
   // Rotasi scene (bila mode normal)
   useEffect(() => {
     if (!mula || mode !== "normal") return;
+    const jeda = Math.max(5, tempohSaat) * 1000;
     const t = setInterval(() => {
       setScene((s) => (s + 1) % scenes.length);
       setPosterIdx((p) => (posters.length ? (p + 1) % posters.length : 0));
-    }, 15000);
+    }, jeda);
     return () => clearInterval(t);
-  }, [mula, mode, scenes.length, posters.length]);
+  }, [mula, mode, scenes.length, posters.length, tempohSaat]);
 
   // Waktu semasa & seterusnya
   const jamStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -155,6 +164,7 @@ export default function PaparanTV({
   // ---- Trigger azan bila masuk waktu ----
   useEffect(() => {
     if (!mula || mode !== "normal" || !waktu.length) return;
+    if (!azanAktif) return; // azan dimatikan di tetapan
     if (now.getSeconds() !== 0) return;
     const kunciHari = now.toDateString();
     for (const w of waktu) {
@@ -168,7 +178,7 @@ export default function PaparanTV({
         mainAzan(w.nama === "Subuh");
       }
     }
-  }, [now, mula, mode, waktu, jamStr]);
+  }, [now, mula, mode, waktu, jamStr, azanAktif]);
 
   // Selepas azan tamat → iqamah countdown
   function azanTamat() {

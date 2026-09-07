@@ -1,5 +1,6 @@
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { NAMA_SURAU, ZON_SOLAT } from "@/lib/tetapan";
+import { tetapanPaparan } from "@/lib/tetapanSistem";
 import PaparanTV from "@/components/PaparanTV";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function PaparanPage() {
   let programs: any[] = [];
   let pengumuman: any[] = [];
+  const tp = await tetapanPaparan();
 
   if (adminConfigured) {
     const db = createAdminClient();
@@ -31,7 +33,16 @@ export default async function PaparanPage() {
 
   return (
     <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-900">
-      <PaparanTV zon={ZON_SOLAT} namaSurau={NAMA_SURAU} programs={programs} pengumuman={pengumuman} iqamahMinit={10} />
+      <PaparanTV
+        zon={ZON_SOLAT}
+        namaSurau={NAMA_SURAU}
+        programs={programs}
+        pengumuman={pengumuman}
+        iqamahMinit={tp.iqamah}
+        tempohSaat={tp.saat}
+        azanAktif={tp.azan}
+        teksTambahan={tp.teks}
+      />
     </div>
   );
 }
