@@ -15,6 +15,16 @@ const namaSurau = NAMA_SURAU;
 export const metadata: Metadata = {
   title: `${namaSurau} · Sistem Pengurusan Surau`,
   description: "Pendaftaran ahli kariah, khairat kematian & pengurusan surau.",
+  // Ikon tab browser / homescreen — guna logo surau (bukan template asal).
+  icons: {
+    icon: [
+      { url: "/logo-surau-1.png", type: "image/png" },
+      { url: "/logo-surau-1.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo-surau-1.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/logo-surau-1.png",
+    apple: "/logo-surau-1.png",
+  },
 };
 
 export default async function RootLayout({

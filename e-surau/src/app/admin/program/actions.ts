@@ -207,6 +207,47 @@ export async function padamRsvp(formData: FormData) {
   revalidatePath(`/program/${programId}`);
 }
 
+// ---- Cabutan Bertuah (Lucky Draw) ----
+// Cabut seorang pemenang rawak dari senarai RSVP/check-in program.
+// Elak menang berulang (rsvp_id yang sudah menang dikecualikan).
+export async function cabutPemenang(input: { programId: string; hanyaHadir?: boolean; hadiah?: string }): Promise<{ ok: boolean; msg?: string; pemenang?: { id: string; nama: string; telefon: string | null; hadiah: string | null }; baki?: number }> {
+  const me = await getProfil();
+  if (!isPentadbir(me)) return { ok: false, msg: "Tiada akses." };
+  const programId = input.programId;
+  if (!programId || !(await bolehUrusProgramId(me, programId))) return { ok: false, msg: "Tiada kebenaran untuk program ini." };
+  const db = createAdminClient();
+
+  let q = db.from("rsvp").select("id, nama, telefon, hadir").eq("program_id", programId);
+  if (input.hanyaHadir) q = q.eq("hadir", true);
+  const { data: calonData } = await q;
+  const calon = (calonData as any[]) ?? [];
+
+  const { data: menangData } = await db.from("cabutan_pemenang").select("rsvp_id").eq("program_id", programId);
+  const sudah = new Set(((menangData as any[]) ?? []).map((m) => m.rsvp_id).filter(Boolean));
+  const layak = calon.filter((c) => !sudah.has(c.id));
+  if (layak.length === 0) return { ok: false, msg: input.hanyaHadir ? "Tiada calon layak — belum ada yang check-in / semua sudah menang." : "Tiada calon layak — tiada peserta atau semua sudah menang." };
+
+  const pick = layak[Math.floor(Math.random() * layak.length)];
+  const hadiah = (input.hadiah || "").trim() || null;
+  const { data: ins, error } = await db.from("cabutan_pemenang").insert({
+    program_id: programId, rsvp_id: pick.id, nama: pick.nama, telefon: pick.telefon, hadiah,
+  }).select("id").single();
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath(`/admin/program/${programId}/cabutan`);
+  return { ok: true, pemenang: { id: (ins as any)?.id, nama: pick.nama, telefon: pick.telefon, hadiah }, baki: layak.length - 1 };
+}
+
+export async function padamPemenangCabutan(formData: FormData) {
+  const me = await getProfil();
+  if (!isPentadbir(me)) return;
+  const id = String(formData.get("id") ?? "");
+  const programId = String(formData.get("program_id") ?? "");
+  if (!id || !(await bolehUrusProgramId(me, programId))) return;
+  const db = createAdminClient();
+  await db.from("cabutan_pemenang").delete().eq("id", id);
+  revalidatePath(`/admin/program/${programId}/cabutan`);
+}
+
 // Semak: pengguna ini pencipta program (atau Admin/Master)?
 async function bolehUrusProgramId(p: any, programId: string): Promise<boolean> {
   if (!programId) return false;

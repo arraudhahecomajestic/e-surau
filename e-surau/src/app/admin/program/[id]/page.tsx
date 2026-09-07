@@ -279,6 +279,7 @@ export default async function EditProgramPage({ params }: { params: { id: string
             <span className="rounded-lg bg-teal-100 px-3 py-1 font-semibold text-teal-700">✓ {bilHadirOrang} hadir ({recHadir})</span>
             <EksportPeserta rows={rsvp} jenis="rsvp" namaFail={`rsvp-${(p.tajuk || "program").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`} />
             <Link href={`/admin/program/${p.id}/senarai`} className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">🖨 Cetak Senarai</Link>
+            {boleh && <Link href={`/admin/program/${p.id}/cabutan`} target="_blank" className="rounded-lg bg-amber-400 px-3 py-1 text-xs font-bold text-slate-900 hover:bg-amber-300">🎯 Cabutan Bertuah</Link>}
           </div>
         </div>
         {boleh && (
