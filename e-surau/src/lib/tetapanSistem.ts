@@ -66,6 +66,8 @@ export type TetapanPaparan = {
   teks: string;     // teks berjalan (TV sahaja)
   tema: string;     // tema warna paparan
   poster: string[]; // senarai URL poster (bebas — dimuat naik di panel Paparan)
+  posterIsi: string; // "muat" (nampak penuh) | "penuh" (isi skrin)
+  posterMod: string; // "sambung" (poster sahaja) | "selang" (selang jam)
 };
 export async function tetapanPaparan(): Promise<TetapanPaparan> {
   const t = await bacaTetapan();
@@ -83,5 +85,7 @@ export async function tetapanPaparan(): Promise<TetapanPaparan> {
     teks: t.paparan_teks ?? "",
     tema: t.paparan_tema || "hijau",
     poster,
+    posterIsi: t.paparan_poster_isi === "penuh" ? "penuh" : "muat",
+    posterMod: t.paparan_poster_mod === "selang" ? "selang" : "sambung",
   };
 }

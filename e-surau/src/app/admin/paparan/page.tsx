@@ -83,6 +83,32 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
             Muat naik poster/iklan sendiri untuk TV (PNG/JPG · sehingga 12 keping · gambar besar auto-dikecilkan).
             Poster bertukar automatik berselang dengan jam.
           </p>
+
+          <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            💡 <b>Saiz terbaik: 1920 × 1080 piksel (nisbah 16:9, melintang)</b> — supaya poster isi penuh skrin TV tanpa ruang kosong.
+            Di Canva pilih saiz &quot;1920×1080&quot; atau template &quot;Presentation / TV&quot;.
+          </div>
+
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Aliran poster</span>
+              <select name="paparan_poster_mod" defaultValue={tp.posterMod} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="sambung">Poster sahaja — sambung &amp; rotate (tanpa jam)</option>
+                <option value="selang">Selang-seli dengan jam</option>
+              </select>
+              <span className="mt-1 block text-xs text-slate-400">&quot;Poster sahaja&quot; = poster jalan satu demi satu tak putus. &quot;Selang&quot; = jam muncul antara poster.</span>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Cara papar poster</span>
+              <select name="paparan_poster_isi" defaultValue={tp.posterIsi} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="muat">Muat penuh — nampak seluruh poster</option>
+                <option value="penuh">Isi skrin penuh — edge-to-edge (poster 16:9)</option>
+              </select>
+              <span className="mt-1 block text-xs text-slate-400">&quot;Isi skrin penuh&quot; sesuai poster 16:9. Persegi/portrait → pilih &quot;Muat penuh&quot; supaya tak terpotong.</span>
+            </label>
+          </div>
+
           <PaparanPosterInput awal={tp.poster} />
         </div>
 

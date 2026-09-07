@@ -19,6 +19,8 @@ export default async function PaparanPage({ searchParams }: { searchParams?: { p
         azanAktif={tp.azan}
         teks={tp.teks}
         tema={tp.tema}
+        posterIsi={tp.posterIsi}
+        posterMod={tp.posterMod}
         pratonton={pratonton}
       />
     </div>

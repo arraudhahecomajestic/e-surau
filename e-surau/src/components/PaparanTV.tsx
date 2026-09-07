@@ -45,6 +45,8 @@ export default function PaparanTV({
   azanAktif = true,
   teks = "",
   tema = "hijau",
+  posterIsi = "muat",
+  posterMod = "sambung",
   pratonton = false,
 }: {
   zon: string;
@@ -55,6 +57,8 @@ export default function PaparanTV({
   azanAktif?: boolean;
   teks?: string;
   tema?: string;
+  posterIsi?: string;
+  posterMod?: string; // "sambung" (poster je) | "selang" (selang jam)
   pratonton?: boolean;
 }) {
   const [mula, setMula] = useState(pratonton);
@@ -79,8 +83,15 @@ export default function PaparanTV({
     return t || `Selamat datang ke ${namaSurau}`;
   }, [teks, namaSurau]);
 
-  // Scene tersedia: jam sahaja, atau jam ↔ poster jika ada poster.
-  const scenes = useMemo(() => (posters.length ? ["jam", "poster"] : ["jam"]), [posters.length]);
+  // Scene semasa:
+  //  - tiada poster → jam
+  //  - "sambung" → poster sahaja (rotate satu demi satu, tanpa jam)
+  //  - "selang"  → jam ↔ poster berselang
+  const sceneKini = useMemo(() => {
+    if (!posters.length) return "jam";
+    if (posterMod === "selang") return scene % 2 === 1 ? "poster" : "jam";
+    return "poster";
+  }, [posters.length, posterMod, scene]);
 
   // Jam tick setiap saat
   useEffect(() => {
@@ -107,13 +118,23 @@ export default function PaparanTV({
   // Rotasi scene (bila mode normal)
   useEffect(() => {
     if (!mula || mode !== "normal") return;
+    if (!posters.length) return;
     const jeda = Math.max(5, tempohSaat) * 1000;
     const t = setInterval(() => {
-      setScene((s) => (s + 1) % scenes.length);
-      setPosterIdx((p) => (posters.length ? (p + 1) % posters.length : 0));
+      if (posterMod === "selang") {
+        // jam ↔ poster; tukar poster hanya bila beralih ke scene poster
+        setScene((s) => {
+          const ns = (s + 1) % 2;
+          if (ns === 1) setPosterIdx((p) => (p + 1) % posters.length);
+          return ns;
+        });
+      } else {
+        // sambung: poster demi poster
+        setPosterIdx((p) => (p + 1) % posters.length);
+      }
     }, jeda);
     return () => clearInterval(t);
-  }, [mula, mode, scenes.length, posters.length, tempohSaat]);
+  }, [mula, mode, posters.length, tempohSaat, posterMod]);
 
   const jamStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const saatStr = String(now.getSeconds()).padStart(2, "0");
@@ -213,7 +234,6 @@ export default function PaparanTV({
   const dHari = HARI[now.getDay()];
   const dTarikh = `${dHari}, ${now.getDate()} ${BULAN[now.getMonth()]} ${now.getFullYear()}`;
   const dHijri = hijriText(now);
-  const sceneKini = scenes[scene] ?? "jam";
 
   return (
     <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white`}>
@@ -227,6 +247,14 @@ export default function PaparanTV({
         >
           ⛶ Skrin Penuh
         </button>
+      )}
+
+      {/* Poster ISI SKRIN PENUH — tutup seluruh skrin (atas header & bar) */}
+      {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-contain" />
+        </div>
       )}
 
       {/* Header */}
@@ -279,7 +307,7 @@ export default function PaparanTV({
             </div>
           )}
 
-          {sceneKini === "poster" && posters.length > 0 && (
+          {sceneKini === "poster" && posters.length > 0 && posterIsi !== "penuh" && (
             <div className="flex flex-col items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="max-h-[74vh] w-auto max-w-[94vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
