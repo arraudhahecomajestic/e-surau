@@ -18,6 +18,9 @@ const TEMA_BG: Record<string, string> = {
   sejuk: "from-teal-950 via-cyan-900 to-slate-900",
 };
 
+function isVideoUrl(u: string): boolean {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(u);
+}
 function klNow(): Date {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
 }
@@ -72,6 +75,7 @@ export default function PaparanTV({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const acRef = useRef<any>(null);
   const triggeredRef = useRef<Set<string>>(new Set());
+  const iqamahTamatRef = useRef<number>(0); // ms epoch bila iqamah patut habis (masuk waktu + iqamahMinit)
 
   const bgTema = TEMA_BG[tema] ?? TEMA_BG.hijau;
   const azanBoleh = azanAktif && !pratonton;
@@ -144,6 +148,19 @@ export default function PaparanTV({
     return akan.length ? akan[0] : (waktu.find((w) => AZAN_WAKTU.has(w.nama)) ?? null);
   }, [waktu, nowMin]);
 
+  // Kiraan mengundur ke waktu solat seterusnya (HH:MM:SS)
+  const kiraMasukWaktu = useMemo(() => {
+    if (!waktuSeterusnya) return "";
+    const [h, m] = waktuSeterusnya.masa.split(":").map(Number);
+    const nowS = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    let baki = h * 3600 + m * 60 - nowS;
+    if (baki < 0) baki += 86400; // waktu esok (cth selepas Isyak → Subuh)
+    const jj = Math.floor(baki / 3600);
+    const mm = Math.floor((baki % 3600) / 60);
+    const ss = baki % 60;
+    return `${String(jj).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+  }, [waktuSeterusnya, now]);
+
   // ---- AUDIO ----
   function beep(freq = 880, ms = 250) {
     try {
@@ -181,21 +198,30 @@ export default function PaparanTV({
         if (triggeredRef.current.has(key)) continue;
         triggeredRef.current.add(key);
         setWaktuAzan(w.nama);
-        setMode("azan");
+        // Masuk waktu → TERUS mula countdown iqamah (10 min dari masuk waktu),
+        // azan main serentak. Tak perlu klik manual, tak tersangkut walau tiada mp3.
+        iqamahTamatRef.current = Date.now() + iqamahMinit * 60000;
+        setIqamahBaki(iqamahMinit * 60);
+        setMode("iqamah");
         mainAzan(w.nama === "Subuh");
       }
     }
-  }, [now, mula, mode, waktu, jamStr, azanBoleh]);
+  }, [now, mula, mode, waktu, jamStr, azanBoleh, iqamahMinit]);
 
-  // Selepas azan tamat → iqamah countdown
-  function azanTamat() {
-    setMode("iqamah");
-    setIqamahBaki(iqamahMinit * 60);
-  }
+  // Countdown iqamah — undur ke sasaran (masuk waktu + iqamahMinit) → SOLAT.
   useEffect(() => {
     if (mode !== "iqamah") return;
-    if (iqamahBaki <= 0) { beep(880, 500); setTimeout(() => beep(880, 500), 600); setMode("solat"); setTimeout(() => setMode("normal"), 90000); return; }
-    const t = setTimeout(() => setIqamahBaki((b) => b - 1), 1000);
+    if (iqamahBaki <= 0) {
+      try { audioRef.current?.pause(); } catch { /* */ }
+      beep(880, 500); setTimeout(() => beep(880, 500), 600);
+      setMode("solat"); setTimeout(() => setMode("normal"), 90000);
+      return;
+    }
+    // Segerakkan dengan jam sebenar (elak hanyut jika tab tidur)
+    const t = setTimeout(() => {
+      const baki = Math.max(0, Math.round((iqamahTamatRef.current - Date.now()) / 1000));
+      setIqamahBaki(baki);
+    }, 1000);
     return () => clearTimeout(t);
   }, [mode, iqamahBaki]);
 
@@ -226,7 +252,7 @@ export default function PaparanTV({
           ▶ Sentuh untuk Mula (Skrin Penuh)
         </button>
         <p className="mt-4 max-w-md px-6 text-xs text-white/50">Tekan sekali guna remote/tetikus TV — skrin terus penuh &amp; bunyi azan dibenarkan. Selepas itu berjalan automatik.</p>
-        <audio ref={audioRef} preload="auto" onEnded={azanTamat} />
+        <audio ref={audioRef} preload="auto" />
       </div>
     );
   }
@@ -236,8 +262,8 @@ export default function PaparanTV({
   const dHijri = hijriText(now);
 
   return (
-    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white`}>
-      <audio ref={audioRef} preload="auto" onEnded={azanTamat} />
+    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white ${pratonton ? "" : "cursor-none"}`}>
+      <audio ref={audioRef} preload="auto" />
 
       {!pratonton && (
         <button
@@ -252,32 +278,37 @@ export default function PaparanTV({
       {/* Poster ISI SKRIN PENUH — tutup seluruh skrin (atas header & bar) */}
       {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-contain" />
+          {isVideoUrl(posters[posterIdx % posters.length]) ? (
+            <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="h-full w-full object-contain" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-contain" />
+          )}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-8 pt-5">
+      <div className="flex items-start justify-between px-8 pt-5">
         <div className="text-xl font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
-        <div className="text-right text-sm text-white/70 sm:text-lg">{dTarikh} · {dHijri}</div>
+        <div className="text-right">
+          <div className="text-sm text-white/70 sm:text-lg">{dTarikh} · {dHijri}</div>
+          {waktuSeterusnya && kiraMasukWaktu && (
+            <div className="mt-0.5 text-sm text-amber-200 sm:text-base">
+              ⏱ {waktuSeterusnya.nama} dalam <span className="font-mono font-bold">{kiraMasukWaktu}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ====== AZAN / IQAMAH / SOLAT OVERLAY ====== */}
+      {/* ====== IQAMAH / SOLAT OVERLAY ====== */}
       {mode !== "normal" && (
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          {mode === "azan" && (
-            <>
-              <div className="text-5xl font-extrabold tracking-widest text-amber-300 sm:text-7xl">أذان</div>
-              <div className="mt-4 text-3xl font-bold sm:text-5xl">Waktu {waktuAzan}</div>
-              <div className="mt-2 text-xl text-white/70">Telah masuk waktu solat {waktuAzan}</div>
-              <button onClick={azanTamat} className="mt-8 rounded-lg bg-white/10 px-4 py-2 text-sm text-white/60 hover:bg-white/20">Langkau ke Iqamah →</button>
-            </>
-          )}
           {mode === "iqamah" && (
             <>
-              <div className="text-2xl font-semibold text-amber-300 sm:text-3xl">Menunggu Iqamah — {waktuAzan}</div>
-              <div className="mt-3 font-mono text-7xl font-extrabold sm:text-9xl">{String(Math.floor(iqamahBaki / 60)).padStart(2, "0")}:{String(iqamahBaki % 60).padStart(2, "0")}</div>
+              <div className="text-4xl font-extrabold tracking-widest text-amber-300 sm:text-6xl">أذان</div>
+              <div className="mt-2 text-2xl font-bold sm:text-4xl">Telah masuk waktu {waktuAzan}</div>
+              <div className="mt-6 text-xl font-semibold text-amber-200 sm:text-2xl">Menunggu Iqamah</div>
+              <div className="mt-1 font-mono text-7xl font-extrabold sm:text-9xl">{String(Math.floor(iqamahBaki / 60)).padStart(2, "0")}:{String(iqamahBaki % 60).padStart(2, "0")}</div>
               <div className="mt-4 text-xl text-white/70">Sila bersedia &amp; rapatkan saf</div>
             </>
           )}
@@ -300,8 +331,11 @@ export default function PaparanTV({
                 {jamStr}<span className="text-[8vw] text-amber-300 lg:text-[5vw]">:{saatStr}</span>
               </div>
               {waktuSeterusnya && (
-                <div className="mt-2 text-xl text-amber-200 sm:text-2xl">
-                  Waktu {waktuSeterusnya.nama} pada {waktuSeterusnya.masa}
+                <div className="mt-3">
+                  <div className="text-xl text-white/70 sm:text-2xl">
+                    Menuju waktu <span className="font-semibold text-amber-200">{waktuSeterusnya.nama}</span> · {waktuSeterusnya.masa}
+                  </div>
+                  <div className="mt-1 font-mono text-4xl font-extrabold text-amber-300 sm:text-6xl">{kiraMasukWaktu}</div>
                 </div>
               )}
             </div>
@@ -309,8 +343,12 @@ export default function PaparanTV({
 
           {sceneKini === "poster" && posters.length > 0 && posterIsi !== "penuh" && (
             <div className="flex flex-col items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="max-h-[74vh] w-auto max-w-[94vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
+              {isVideoUrl(posters[posterIdx % posters.length]) ? (
+                <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="max-h-[74vh] w-auto max-w-[94vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="max-h-[74vh] w-auto max-w-[94vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
+              )}
             </div>
           )}
         </div>

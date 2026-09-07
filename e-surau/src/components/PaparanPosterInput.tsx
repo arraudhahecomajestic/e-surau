@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 
 const MAKS = 12;
 
+export function isVideoUrl(u: string): boolean {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(u);
+}
+
 // Auto-kecilkan gambar dalam pelayar sebelum muat naik (poster besar).
 async function mampatImej(f: File): Promise<File> {
   try {
@@ -61,11 +65,13 @@ export default function PaparanPosterInput({ awal }: { awal: string[] }) {
     const baharu: string[] = [];
     let ralatAkhir = "";
     for (const f of fail.slice(0, ruang)) {
-      if (f.size > 25 * 1024 * 1024) { ralatAkhir = `"${f.name}" terlalu besar (>25MB) — dilangkau.`; continue; }
-      const kecil = await mampatImej(f);
-      const r = await muatPoster(kecil);
+      const video = f.type.startsWith("video");
+      const had = video ? 50 : 25; // MB — video tak boleh dimampat pelayar
+      if (f.size > had * 1024 * 1024) { ralatAkhir = `"${f.name}" terlalu besar (>${had}MB) — dilangkau.`; continue; }
+      const sedia = video ? f : await mampatImej(f); // gambar dimampat; video terus
+      const r = await muatPoster(sedia);
       if (r.url) baharu.push(r.url);
-      else ralatAkhir = r.ralat ? `Gagal muat naik: ${r.ralat}` : "Gagal muat naik poster.";
+      else ralatAkhir = r.ralat ? `Gagal muat naik: ${r.ralat}` : "Gagal muat naik.";
     }
     setBusy(false);
     if (baharu.length) { setPoster((p) => [...p, ...baharu].slice(0, MAKS)); setMsg(ralatAkhir || "✓ Poster dimuat naik — tekan “Simpan Tetapan” di bawah untuk kekalkan."); }
@@ -91,9 +97,14 @@ export default function PaparanPosterInput({ awal }: { awal: string[] }) {
         <div className="mb-3 flex flex-wrap gap-3">
           {poster.map((u, i) => (
             <div key={u} className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={u} alt={`Poster ${i + 1}`} className="h-32 w-auto rounded-lg border border-slate-200 object-cover" />
+              {isVideoUrl(u) ? (
+                <video src={u} muted playsInline className="h-32 w-auto rounded-lg border border-slate-200 bg-black object-cover" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={u} alt={`Poster ${i + 1}`} className="h-32 w-auto rounded-lg border border-slate-200 object-cover" />
+              )}
               <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">{i + 1}</span>
+              {isVideoUrl(u) && <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">▶ VIDEO</span>}
               <button type="button" onClick={() => buang(i)} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-sm font-bold text-white shadow" title="Buang poster">×</button>
               <div className="absolute bottom-1 left-1 flex gap-1">
                 {i > 0 && <button type="button" onClick={() => alih(i, -1)} className="rounded bg-white/90 px-1.5 text-xs font-bold text-slate-700 shadow" title="Ke kiri">‹</button>}
@@ -110,8 +121,8 @@ export default function PaparanPosterInput({ awal }: { awal: string[] }) {
 
       {poster.length < MAKS && (
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-surau">
-          <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={pilih} />
-          {busy ? "Memuat naik…" : poster.length ? "+ Tambah poster lagi" : "⬆ Muat naik poster (boleh banyak)"}
+          <input type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" multiple className="hidden" onChange={pilih} />
+          {busy ? "Memuat naik…" : poster.length ? "+ Tambah poster/video lagi" : "⬆ Muat naik poster / video (boleh banyak)"}
         </label>
       )}
       {poster.length >= MAKS && <p className="text-xs text-slate-400">Sudah cukup {MAKS} poster. Buang satu untuk tambah yang lain.</p>}

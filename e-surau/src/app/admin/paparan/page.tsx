@@ -78,15 +78,15 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
       <form action={simpanPaparan} className="space-y-6">
         {/* Poster */}
         <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-1 font-semibold text-slate-900">Poster Paparan</div>
+          <div className="mb-1 font-semibold text-slate-900">Poster &amp; Video Paparan</div>
           <p className="mb-3 text-sm text-slate-500">
-            Muat naik poster/iklan sendiri untuk TV (PNG/JPG · sehingga 12 keping · gambar besar auto-dikecilkan).
-            Poster bertukar automatik berselang dengan jam.
+            Muat naik poster (PNG/JPG) atau video pendek (MP4/WEBM · 1–3 saat sesuai) untuk TV · sehingga 12 keping.
+            Gambar besar auto-dikecilkan; video main sendiri, senyap &amp; berulang sepanjang gilirannya.
           </p>
 
           <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            💡 <b>Saiz terbaik: 1920 × 1080 piksel (nisbah 16:9, melintang)</b> — supaya poster isi penuh skrin TV tanpa ruang kosong.
-            Di Canva pilih saiz &quot;1920×1080&quot; atau template &quot;Presentation / TV&quot;.
+            💡 <b>Saiz terbaik: 1920 × 1080 piksel (nisbah 16:9, melintang)</b> — untuk poster &amp; video — supaya isi penuh skrin TV tanpa ruang kosong.
+            Video: MP4 (H.264) paling selamat, had ~50MB. Video main tanpa bunyi (auto-loop) supaya tak clash dengan azan.
           </div>
 
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
