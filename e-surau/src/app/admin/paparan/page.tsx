@@ -84,6 +84,15 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
             Gambar besar auto-dikecilkan; video main sendiri, senyap &amp; berulang sepanjang gilirannya.
           </p>
 
+          {/* BANNER SAIZ POSTER — menonjol supaya JK tak terlepas */}
+          <div className="mb-3 flex flex-wrap items-center gap-4 rounded-xl border-2 border-surau bg-surau/10 px-5 py-4">
+            <div className="text-4xl">📐</div>
+            <div className="min-w-0">
+              <div className="text-xl font-extrabold text-surau sm:text-2xl">SAIZ POSTER: 1920 × 960 px</div>
+              <div className="text-sm font-medium text-slate-600">Melintang (landscape) · nisbah ~2:1 · untuk mod &quot;Isi skrin penuh&quot; — isi habis skrin TV tanpa potong &amp; tanpa ruang kosong.</div>
+            </div>
+          </div>
+
           <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
             💡 <b>Panduan saiz poster/video (melintang):</b><br />
             • <b>Mod &quot;Isi skrin penuh&quot;</b> — poster isi habis skrin (atas bar waktu). Terbaik guna <b>1920 × 960 px (~2:1)</b> → tiada potong, tiada ruang kosong. Kalau guna 1920 × 1080 biasa, tepi <b>atas &amp; bawah terpotong ~8%</b> — jadi jauhkan tajuk/logo dari pinggir atas/bawah.<br />
