@@ -323,10 +323,6 @@ export default function PaparanTV({
         </button>
       )}
 
-      {/* Nama surau kecil (kiri atas) — hanya bila BUKAN poster isi penuh, supaya poster bersih */}
-      {!(mode === "normal" && sceneKini === "poster" && posterIsi === "penuh") && (
-        <div className="px-6 pt-3 text-lg font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
-      )}
 
       {/* ====== IQAMAH / SOLAT OVERLAY ====== */}
       {mode !== "normal" && (() => {
@@ -388,16 +384,12 @@ export default function PaparanTV({
       {/* ====== NORMAL · POSTER ISI PENUH (isi ruang atas bar, tak bertindih) ====== */}
       {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
         <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
-          {/* Latar kabur — isi ruang kosong bila poster bukan 16:9 (elak jalur hitam) */}
-          {!isVideoUrl(posters[posterIdx % posters.length]) && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img aria-hidden src={posters[posterIdx % posters.length]} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl" />
-          )}
+          {/* object-cover: poster ISI HABIS skrin, tiada ruang kosong tepi (tepi atas/bawah mungkin terpotong sikit) */}
           {isVideoUrl(posters[posterIdx % posters.length]) ? (
-            <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="relative h-full w-full object-contain" />
+            <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="h-full w-full object-cover" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="relative h-full w-full object-contain" />
+            <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-cover" />
           )}
         </div>
       )}
