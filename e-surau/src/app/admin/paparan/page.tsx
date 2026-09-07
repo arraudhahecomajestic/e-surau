@@ -84,9 +84,11 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
             Gambar besar auto-dikecilkan; video main sendiri, senyap &amp; berulang sepanjang gilirannya.
           </p>
 
-          <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            💡 <b>Saiz terbaik: 1920 × 1080 piksel (nisbah 16:9, melintang)</b> — untuk poster &amp; video — supaya isi penuh skrin TV tanpa ruang kosong.
-            Video: MP4 (H.264) paling selamat, had ~50MB. Video main tanpa bunyi (auto-loop) supaya tak clash dengan azan.
+          <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            💡 <b>Panduan saiz poster/video (melintang):</b><br />
+            • <b>Mod &quot;Isi skrin penuh&quot;</b> — poster isi habis skrin (atas bar waktu). Terbaik guna <b>1920 × 960 px (~2:1)</b> → tiada potong, tiada ruang kosong. Kalau guna 1920 × 1080 biasa, tepi <b>atas &amp; bawah terpotong ~8%</b> — jadi jauhkan tajuk/logo dari pinggir atas/bawah.<br />
+            • <b>Mod &quot;Muat penuh&quot;</b> — nampak <b>seluruh</b> poster tanpa potong (ada ruang tepi jika bukan sepadan). Guna 1920 × 1080 pun ok.<br />
+            • <b>Video:</b> MP4 (H.264) paling selamat, had ~50MB, main tanpa bunyi (auto-loop) supaya tak clash dengan azan.
           </div>
 
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
@@ -105,7 +107,7 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
                 <option value="muat">Muat penuh — nampak seluruh poster</option>
                 <option value="penuh">Isi skrin penuh — edge-to-edge (poster 16:9)</option>
               </select>
-              <span className="mt-1 block text-xs text-slate-400">&quot;Isi skrin penuh&quot; sesuai poster 16:9. Persegi/portrait → pilih &quot;Muat penuh&quot; supaya tak terpotong.</span>
+              <span className="mt-1 block text-xs text-slate-400">&quot;Isi skrin penuh&quot; = isi habis (tepi atas/bawah mungkin potong sikit). &quot;Muat penuh&quot; = nampak seluruh poster, ada ruang tepi.</span>
             </label>
           </div>
 
