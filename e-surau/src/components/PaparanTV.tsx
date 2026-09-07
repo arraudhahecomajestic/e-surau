@@ -195,14 +195,37 @@ export default function PaparanTV({
       o.start(); o.stop(ac.currentTime + ms / 1000);
     } catch { /* abai */ }
   }
+  // Satu nada berjadual (untuk susun melodi)
+  function nada(freq: number, mula: number, tempoh: number, vol = 0.4) {
+    try {
+      const ac = acRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+      acRef.current = ac;
+      const o = ac.createOscillator(); const g = ac.createGain();
+      o.type = "sine"; o.frequency.value = freq; o.connect(g); g.connect(ac.destination);
+      const t0 = ac.currentTime + mula;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + tempoh);
+      o.start(t0); o.stop(t0 + tempoh + 0.03);
+    } catch { /* abai */ }
+  }
+  // Isyarat MASUK WAKTU untuk bilal — 3 nada menaik, diulang 3 kali (~4 saat) supaya jelas.
+  function isyaratBilal() {
+    const notes = [659.25, 880, 1174.66]; // E5 · A5 · D6
+    let t = 0;
+    for (let rep = 0; rep < 3; rep++) {
+      notes.forEach((f, i) => nada(f, t + i * 0.28, 0.26, 0.45));
+      t += notes.length * 0.28 + 0.6; // jeda antara ulangan
+    }
+  }
   function mainAzan(subuh: boolean) {
     const a = audioRef.current;
     if (a) {
       a.src = subuh ? "/azan-subuh.mp3" : "/azan.mp3";
       a.currentTime = 0;
-      a.play().catch(() => { beep(700, 600); });
+      a.play().catch(() => { isyaratBilal(); }); // tiada mp3 → isyarat bilal
     } else {
-      beep(700, 600);
+      isyaratBilal();
     }
   }
 
@@ -287,7 +310,7 @@ export default function PaparanTV({
   const jamPapar = `${jam12}:${String(now.getMinutes()).padStart(2, "0")}:${saatStr}`;
 
   return (
-    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white ${pratonton ? "" : "cursor-none"}`}>
+    <div className={`relative flex h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white ${pratonton ? "" : "cursor-none"}`}>
       <audio ref={audioRef} preload="auto" />
 
       {!pratonton && (
@@ -413,7 +436,7 @@ export default function PaparanTV({
 
       {/* ====== JALUR BAWAH: JAM + TARIKH + WAKTU SOLAT (+ Imsak) ====== */}
       {waktu.length > 0 && (
-        <div className="flex items-stretch gap-1 bg-black/55 p-1.5">
+        <div className="flex shrink-0 items-stretch gap-1 bg-black/55 p-1.5">
           {/* Jam besar + tarikh */}
           <div className="flex flex-[2.2] flex-col items-center justify-center rounded-lg bg-amber-400/15 px-2 py-1">
             <div className="font-mono text-2xl font-extrabold leading-none text-amber-200 sm:text-4xl">
@@ -436,7 +459,7 @@ export default function PaparanTV({
       )}
 
       {/* ====== SCROLLER ====== */}
-      <div className="overflow-hidden bg-black/70 py-2">
+      <div className="shrink-0 overflow-hidden bg-black/70 py-2">
         <div className="paparan-marquee whitespace-nowrap text-lg font-semibold text-amber-100 sm:text-2xl">{scrollerText}</div>
       </div>
 
