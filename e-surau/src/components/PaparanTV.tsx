@@ -50,6 +50,7 @@ export default function PaparanTV({
   tema = "hijau",
   posterIsi = "muat",
   posterMod = "sambung",
+  iqamahGaya = "klasik",
   pratonton = false,
 }: {
   zon: string;
@@ -62,6 +63,7 @@ export default function PaparanTV({
   tema?: string;
   posterIsi?: string;
   posterMod?: string; // "sambung" (poster je) | "selang" (selang jam)
+  iqamahGaya?: string; // "klasik" | "besar" | "kaligrafi"
   pratonton?: boolean;
 }) {
   const [mula, setMula] = useState(pratonton);
@@ -287,12 +289,20 @@ export default function PaparanTV({
         </div>
       )}
 
+      {/* Jam semasa (real-time) — PIN atas, sentiasa nampak (atas poster/iqamah/solat).
+          Disembunyikan hanya pada scene jam besar (sudah ada jam sendiri). */}
+      {!(mode === "normal" && sceneKini === "jam") && (
+        <div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full bg-black/45 px-4 py-1 text-center font-mono text-xl font-extrabold text-white backdrop-blur sm:text-3xl">
+          {jamStr}<span className="text-amber-300">:{saatStr}</span>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex items-start justify-between px-8 pt-5">
-        <div className="text-xl font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
-        <div className="text-right">
+      <div className="flex items-start justify-between gap-3 px-8 pt-5">
+        <div className="min-w-0 text-xl font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
+        <div className="min-w-0 text-right">
           <div className="text-sm text-white/70 sm:text-lg">{dTarikh} · {dHijri}</div>
-          {waktuSeterusnya && kiraMasukWaktu && (
+          {waktuSeterusnya && kiraMasukWaktu && mode === "normal" && (
             <div className="mt-0.5 text-sm text-amber-200 sm:text-base">
               ⏱ {waktuSeterusnya.nama} dalam <span className="font-mono font-bold">{kiraMasukWaktu}</span>
             </div>
@@ -301,26 +311,61 @@ export default function PaparanTV({
       </div>
 
       {/* ====== IQAMAH / SOLAT OVERLAY ====== */}
-      {mode !== "normal" && (
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
-          {mode === "iqamah" && (
-            <>
-              <div className="text-4xl font-extrabold tracking-widest text-amber-300 sm:text-6xl">أذان</div>
-              <div className="mt-2 text-2xl font-bold sm:text-4xl">Telah masuk waktu {waktuAzan}</div>
-              <div className="mt-6 text-xl font-semibold text-amber-200 sm:text-2xl">Menunggu Iqamah</div>
-              <div className="mt-1 font-mono text-7xl font-extrabold sm:text-9xl">{String(Math.floor(iqamahBaki / 60)).padStart(2, "0")}:{String(iqamahBaki % 60).padStart(2, "0")}</div>
-              <div className="mt-4 text-xl text-white/70">Sila bersedia &amp; rapatkan saf</div>
-            </>
-          )}
-          {mode === "solat" && (
-            <>
-              <div className="text-5xl font-extrabold tracking-widest text-amber-300 sm:text-7xl">صلاة</div>
-              <div className="mt-4 text-4xl font-bold sm:text-6xl">SOLAT</div>
-              <div className="mt-3 text-2xl text-white/80">Luruskan &amp; Rapatkan Saf</div>
-            </>
-          )}
-        </div>
-      )}
+      {mode !== "normal" && (() => {
+        const jam = String(Math.floor(iqamahBaki / 60)).padStart(2, "0");
+        const saat = String(iqamahBaki % 60).padStart(2, "0");
+        const cd = `${jam}:${saat}`;
+        return (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+            {/* ---- IQAMAH ---- */}
+            {mode === "iqamah" && iqamahGaya === "besar" && (
+              <>
+                <div className="text-2xl font-semibold text-amber-200 sm:text-4xl">Menunggu Iqamah · {waktuAzan}</div>
+                <div className="font-mono text-[26vw] font-extrabold leading-none lg:text-[20vw]">{cd}</div>
+                <div className="text-xl text-white/70 sm:text-3xl">Sila bersedia &amp; rapatkan saf</div>
+              </>
+            )}
+            {mode === "iqamah" && iqamahGaya === "kaligrafi" && (
+              <>
+                <div className="leading-none text-amber-300 text-[16vw] lg:text-[12vw]" style={{ fontFamily: "'Traditional Arabic','Amiri','Scheherazade New',serif" }}>إقامة</div>
+                <div className="mt-2 text-2xl font-semibold text-white/90 sm:text-4xl">Menunggu Iqamah — {waktuAzan}</div>
+                <div className="mt-2 font-mono text-6xl font-extrabold sm:text-8xl">{cd}</div>
+                <div className="mt-3 text-lg text-white/60 sm:text-2xl">Luruskan &amp; rapatkan saf</div>
+              </>
+            )}
+            {mode === "iqamah" && iqamahGaya !== "besar" && iqamahGaya !== "kaligrafi" && (
+              <>
+                <div className="text-4xl font-extrabold tracking-widest text-amber-300 sm:text-6xl">أذان</div>
+                <div className="mt-2 text-2xl font-bold sm:text-4xl">Telah masuk waktu {waktuAzan}</div>
+                <div className="mt-6 text-xl font-semibold text-amber-200 sm:text-2xl">Menunggu Iqamah</div>
+                <div className="mt-1 font-mono text-7xl font-extrabold sm:text-9xl">{cd}</div>
+                <div className="mt-4 text-xl text-white/70">Sila bersedia &amp; rapatkan saf</div>
+              </>
+            )}
+
+            {/* ---- SOLAT ---- */}
+            {mode === "solat" && iqamahGaya === "besar" && (
+              <>
+                <div className="font-extrabold leading-none text-[24vw] lg:text-[18vw]">SOLAT</div>
+                <div className="text-2xl text-amber-200 sm:text-4xl">Luruskan &amp; Rapatkan Saf</div>
+              </>
+            )}
+            {mode === "solat" && iqamahGaya === "kaligrafi" && (
+              <>
+                <div className="leading-none text-amber-300 text-[20vw] lg:text-[15vw]" style={{ fontFamily: "'Traditional Arabic','Amiri','Scheherazade New',serif" }}>صلاة</div>
+                <div className="mt-2 text-3xl font-bold text-white/90 sm:text-5xl">Luruskan &amp; Rapatkan Saf</div>
+              </>
+            )}
+            {mode === "solat" && iqamahGaya !== "besar" && iqamahGaya !== "kaligrafi" && (
+              <>
+                <div className="text-5xl font-extrabold tracking-widest text-amber-300 sm:text-7xl">صلاة</div>
+                <div className="mt-4 text-4xl font-bold sm:text-6xl">SOLAT</div>
+                <div className="mt-3 text-2xl text-white/80">Luruskan &amp; Rapatkan Saf</div>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ====== NORMAL ====== */}
       {mode === "normal" && (
@@ -354,23 +399,25 @@ export default function PaparanTV({
         </div>
       )}
 
-      {/* ====== WAKTU SOLAT BAR ====== */}
+      {/* ====== WAKTU SOLAT BAR ====== (z-20: terapung ATAS poster isi-penuh) */}
       {waktu.length > 0 && (
-        <div className="grid grid-cols-6 gap-1 px-4 pb-1">
-          {waktu.map((w) => {
-            const aktif = waktuSeterusnya?.nama === w.nama;
-            return (
-              <div key={w.nama} className={`rounded-t-lg py-2 text-center ${aktif ? "bg-amber-400 text-slate-900" : "bg-black/30 text-white/80"}`}>
-                <div className="text-xs font-semibold uppercase sm:text-sm">{w.nama}</div>
-                <div className="text-lg font-bold sm:text-2xl">{w.masa}</div>
-              </div>
-            );
-          })}
+        <div className="relative z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pt-8">
+          <div className="grid grid-cols-6 gap-1 pb-1">
+            {waktu.map((w) => {
+              const aktif = waktuSeterusnya?.nama === w.nama;
+              return (
+                <div key={w.nama} className={`rounded-t-lg py-2 text-center backdrop-blur-sm ${aktif ? "bg-amber-400 text-slate-900" : "bg-black/55 text-white/90"}`}>
+                  <div className="text-xs font-semibold uppercase sm:text-sm">{w.nama}</div>
+                  <div className="text-lg font-bold sm:text-2xl">{w.masa}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* ====== SCROLLER ====== */}
-      <div className="overflow-hidden bg-black/50 py-2">
+      {/* ====== SCROLLER ====== (z-20: terapung ATAS poster isi-penuh) */}
+      <div className="relative z-20 overflow-hidden bg-black/70 py-2">
         <div className="paparan-marquee whitespace-nowrap text-lg font-semibold text-amber-100 sm:text-2xl">{scrollerText}</div>
       </div>
 

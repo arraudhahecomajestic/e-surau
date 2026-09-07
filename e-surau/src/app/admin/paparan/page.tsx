@@ -128,6 +128,16 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
             <span className="mt-1 block text-xs text-slate-400">Tukar latar warna skrin. Simpan &amp; muat semula untuk lihat di pratonton atas.</span>
           </label>
 
+          <label className="mb-4 block">
+            <span className="text-sm font-medium text-slate-700">Gaya skrin azan / iqamah / solat</span>
+            <select name="paparan_iqamah_gaya" defaultValue={tp.iqamahGaya} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:max-w-md">
+              <option value="klasik">Klasik — أذان + &quot;Menunggu Iqamah&quot; + countdown</option>
+              <option value="besar">Besar — countdown gergasi memenuhi skrin</option>
+              <option value="kaligrafi">Kaligrafi — khat Arab besar (إقامة / صلاة) + countdown</option>
+            </select>
+            <span className="mt-1 block text-xs text-slate-400">Susun-atur skrin masa masuk waktu. Countdown tetap hidup — cuma rupa berbeza.</span>
+          </label>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Tempoh tukar paparan (saat)</span>
