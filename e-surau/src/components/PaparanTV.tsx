@@ -364,7 +364,7 @@ export default function PaparanTV({
 
       {/* ====== NORMAL · POSTER ISI PENUH (isi ruang atas bar, tak bertindih) ====== */}
       {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-black">
+        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
           {/* Latar kabur — isi ruang kosong bila poster bukan 16:9 (elak jalur hitam) */}
           {!isVideoUrl(posters[posterIdx % posters.length]) && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -419,7 +419,8 @@ export default function PaparanTV({
             <div className="font-mono text-2xl font-extrabold leading-none text-amber-200 sm:text-4xl">
               {jamPapar}<span className="ml-1 text-base sm:text-2xl">{ampm}</span>
             </div>
-            <div className="mt-1 whitespace-nowrap text-[10px] leading-tight text-white/75 sm:text-sm">{dTarikhPendek} · {dHijri}</div>
+            <div className="mt-1 whitespace-nowrap text-[10px] leading-tight text-white/80 sm:text-sm">{dTarikhPendek}</div>
+            <div className="whitespace-nowrap text-[10px] font-semibold leading-tight text-amber-200/90 sm:text-sm">{dHijri}</div>
           </div>
           {/* Waktu solat + Imsak */}
           {barWaktu.map((w) => {
