@@ -64,6 +64,7 @@ export type TetapanPaparan = {
   saat: number;     // tempoh (saat) setiap scene bertukar
   azan: boolean;    // auto bunyi azan bila masuk waktu?
   teks: string;     // teks berjalan tambahan (TV sahaja)
+  tema: string;     // tema warna paparan
 };
 export async function tetapanPaparan(): Promise<TetapanPaparan> {
   const t = await bacaTetapan();
@@ -74,5 +75,6 @@ export async function tetapanPaparan(): Promise<TetapanPaparan> {
     saat: isNaN(saat) || saat < 5 ? 15 : saat,
     azan: t.paparan_azan !== "false", // lalai: hidup
     teks: t.paparan_teks ?? "",
+    tema: t.paparan_tema || "hijau",
   };
 }

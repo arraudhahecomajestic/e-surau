@@ -26,10 +26,15 @@ export async function simpanPaparan(formData: FormData) {
   const azan = formData.get("paparan_azan") === "on" ? "true" : "false";
   const teks = String(formData.get("paparan_teks") ?? "").slice(0, 500);
 
+  const temaBoleh = ["hijau", "gelap", "biru", "ungu", "sejuk"];
+  let tema = String(formData.get("paparan_tema") ?? "hijau");
+  if (!temaBoleh.includes(tema)) tema = "hijau";
+
   await set("paparan_iqamah", String(iqamah));
   await set("paparan_saat", String(saat));
   await set("paparan_azan", azan);
   await set("paparan_teks", teks);
+  await set("paparan_tema", tema);
 
   revalidatePath("/admin/paparan");
   revalidatePath("/paparan");

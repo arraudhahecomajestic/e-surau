@@ -5,10 +5,11 @@ import PaparanTV from "@/components/PaparanTV";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaparanPage() {
+export default async function PaparanPage({ searchParams }: { searchParams?: { pratonton?: string } }) {
   let programs: any[] = [];
   let pengumuman: any[] = [];
   const tp = await tetapanPaparan();
+  const pratonton = searchParams?.pratonton === "1";
 
   if (adminConfigured) {
     const db = createAdminClient();
@@ -42,6 +43,8 @@ export default async function PaparanPage() {
         tempohSaat={tp.saat}
         azanAktif={tp.azan}
         teksTambahan={tp.teks}
+        tema={tp.tema}
+        pratonton={pratonton}
       />
     </div>
   );

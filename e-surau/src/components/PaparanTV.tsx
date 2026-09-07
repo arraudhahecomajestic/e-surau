@@ -15,6 +15,15 @@ const HARI = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
 const BULAN = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
 const AZAN_WAKTU = new Set(["Subuh", "Zohor", "Asar", "Maghrib", "Isyak"]); // Syuruk tiada azan
 
+// Tema warna paparan (literal penuh supaya Tailwind JIT ambil semasa build)
+const TEMA_BG: Record<string, string> = {
+  hijau: "from-emerald-950 via-emerald-900 to-slate-900",
+  gelap: "from-slate-950 via-slate-900 to-black",
+  biru: "from-blue-950 via-blue-900 to-slate-900",
+  ungu: "from-indigo-950 via-purple-900 to-slate-900",
+  sejuk: "from-teal-950 via-cyan-900 to-slate-900",
+};
+
 function klNow(): Date {
   // Tukar ke "waktu Malaysia" sebagai objek Date tempatan (untuk paparan).
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
@@ -46,6 +55,8 @@ export default function PaparanTV({
   tempohSaat = 15,
   azanAktif = true,
   teksTambahan = "",
+  tema = "hijau",
+  pratonton = false,
 }: {
   zon: string;
   namaSurau: string;
@@ -55,8 +66,12 @@ export default function PaparanTV({
   tempohSaat?: number;
   azanAktif?: boolean;
   teksTambahan?: string;
+  tema?: string;
+  pratonton?: boolean;
 }) {
-  const [mula, setMula] = useState(false);
+  const [mula, setMula] = useState(pratonton); // pratonton: terus jalan tanpa sentuh
+  const bgTema = TEMA_BG[tema] ?? TEMA_BG.hijau;
+  const azanBoleh = azanAktif && !pratonton; // jangan bunyi azan masa pratonton
   const [now, setNow] = useState<Date>(() => klNow());
   const [waktu, setWaktu] = useState<Waktu[]>([]);
   const [scene, setScene] = useState(0);
@@ -164,7 +179,7 @@ export default function PaparanTV({
   // ---- Trigger azan bila masuk waktu ----
   useEffect(() => {
     if (!mula || mode !== "normal" || !waktu.length) return;
-    if (!azanAktif) return; // azan dimatikan di tetapan
+    if (!azanBoleh) return; // azan dimatikan di tetapan / mod pratonton
     if (now.getSeconds() !== 0) return;
     const kunciHari = now.toDateString();
     for (const w of waktu) {
@@ -178,7 +193,7 @@ export default function PaparanTV({
         mainAzan(w.nama === "Subuh");
       }
     }
-  }, [now, mula, mode, waktu, jamStr, azanAktif]);
+  }, [now, mula, mode, waktu, jamStr, azanBoleh]);
 
   // Selepas azan tamat → iqamah countdown
   function azanTamat() {
@@ -192,23 +207,33 @@ export default function PaparanTV({
     return () => clearTimeout(t);
   }, [mode, iqamahBaki]);
 
-  // ====== SKRIN MULA (unlock audio) ======
+  // Minta skrin penuh (guna butang — sesuai untuk remote TV, tak perlu F11)
+  function mintaFullscreen() {
+    try {
+      const el: any = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (req && !document.fullscreenElement) req.call(el);
+    } catch { /* abai */ }
+  }
+
+  // ====== SKRIN MULA (unlock audio + skrin penuh) ======
   if (!mula) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-emerald-900 to-slate-900 text-center text-white">
+      <div className={`flex min-h-screen flex-col items-center justify-center bg-gradient-to-b ${bgTema} text-center text-white`}>
         <div className="text-2xl font-bold text-amber-300">{namaSurau}</div>
         <div className="mt-2 text-sm text-white/60">Mod Paparan TV</div>
         <button
           onClick={() => {
             try { const ac = new (window.AudioContext || (window as any).webkitAudioContext)(); acRef.current = ac; ac.resume?.(); } catch { /* */ }
             if (audioRef.current) { audioRef.current.play().then(() => audioRef.current?.pause()).catch(() => {}); }
+            mintaFullscreen(); // terus skrin penuh — sentuhan ini gestur pengguna
             setMula(true);
           }}
           className="mt-8 rounded-2xl bg-amber-400 px-10 py-5 text-xl font-extrabold text-slate-900 shadow-lg hover:bg-amber-300"
         >
-          ▶ Sentuh untuk Mula Paparan
+          ▶ Sentuh untuk Mula (Skrin Penuh)
         </button>
-        <p className="mt-4 max-w-md px-6 text-xs text-white/50">Sentuh sekali untuk benarkan bunyi azan. Selepas itu skrin berjalan automatik. Tekan F11 untuk skrin penuh.</p>
+        <p className="mt-4 max-w-md px-6 text-xs text-white/50">Tekan sekali guna remote/tetikus TV — skrin terus penuh &amp; bunyi azan dibenarkan. Selepas itu berjalan automatik.</p>
         <audio ref={audioRef} preload="auto" onEnded={azanTamat} />
       </div>
     );
@@ -220,8 +245,19 @@ export default function PaparanTV({
   const sceneKini = scenes[scene] ?? "jam";
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900 to-slate-900 text-white">
+    <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white`}>
       <audio ref={audioRef} preload="auto" onEnded={azanTamat} />
+
+      {/* Butang skrin penuh (sudut) — tak muncul masa pratonton */}
+      {!pratonton && (
+        <button
+          onClick={mintaFullscreen}
+          title="Skrin penuh"
+          className="absolute right-3 top-3 z-20 rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white/50 hover:bg-white/20 hover:text-white"
+        >
+          ⛶ Skrin Penuh
+        </button>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between px-8 pt-5">

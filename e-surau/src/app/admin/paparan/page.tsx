@@ -65,7 +65,7 @@ export default async function AdminPaparanPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="font-semibold text-slate-900">Buka Skrin Paparan</div>
-            <div className="text-sm text-slate-500">Buka di TV / mini-PC, tekan &quot;Sentuh untuk Mula&quot;, kemudian F11 untuk skrin penuh.</div>
+            <div className="text-sm text-slate-500">Buka di TV / mini-PC, tekan &quot;Sentuh untuk Mula&quot; — skrin terus penuh sendiri (tak perlu F11).</div>
           </div>
           <a
             href="/paparan"
@@ -81,9 +81,38 @@ export default async function AdminPaparanPage() {
         </div>
       </div>
 
+      {/* Live preview */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-1 flex items-center justify-between">
+          <div className="font-semibold text-slate-900">Pratonton Langsung</div>
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">● Live</span>
+        </div>
+        <p className="mb-3 text-sm text-slate-500">Beginilah rupa skrin di TV. Ia berjalan sebenar (jam, waktu solat, program bertukar). Azan disenyapkan dalam pratonton.</p>
+        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-inner">
+          <div className="aspect-video w-full">
+            {/* eslint-disable-next-line jsx-a11y/iframe-has-title */}
+            <iframe src="/paparan?pratonton=1" title="Pratonton Paparan TV" className="h-full w-full border-0" />
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-slate-400">Tukar tetapan di bawah &amp; simpan, kemudian muat semula halaman ini untuk lihat kesan.</p>
+      </div>
+
       {/* Tetapan */}
       <form action={simpanPaparan} className="rounded-xl border border-slate-200 bg-white p-5">
         <div className="mb-4 font-semibold text-slate-900">Tetapan Paparan</div>
+
+        <label className="mb-4 block">
+          <span className="text-sm font-medium text-slate-700">Tema warna skrin</span>
+          <select name="paparan_tema" defaultValue={tp.tema} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:max-w-xs">
+            <option value="hijau">Hijau Surau (lalai)</option>
+            <option value="gelap">Gelap / Hitam</option>
+            <option value="biru">Biru Malam</option>
+            <option value="ungu">Ungu Senja</option>
+            <option value="sejuk">Teal Sejuk</option>
+          </select>
+          <span className="mt-1 block text-xs text-slate-400">Tukar latar warna skrin. Simpan &amp; muat semula untuk lihat di pratonton atas.</span>
+        </label>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Tempoh tukar paparan (saat)</span>
