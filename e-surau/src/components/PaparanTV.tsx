@@ -6,8 +6,15 @@ type Waktu = { nama: string; masa: string }; // masa "HH:MM"
 
 const HIJRI_BULAN = ["Muharram", "Safar", "Rabiulawal", "Rabiulakhir", "Jamadilawal", "Jamadilakhir", "Rejab", "Syaaban", "Ramadan", "Syawal", "Zulkaedah", "Zulhijjah"];
 const HARI = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-const BULAN = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+const BULAN_PENDEK = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogos", "Sep", "Okt", "Nov", "Dis"];
 const AZAN_WAKTU = new Set(["Subuh", "Zohor", "Asar", "Maghrib", "Isyak"]); // Syuruk tiada azan
+
+// Tukar "HH:MM" (24j) → 12 jam tanpa AM/PM (cth "13:14" → "1:14")
+function to12(masa: string): string {
+  const [h, m] = masa.split(":").map(Number);
+  const hh = h % 12 === 0 ? 12 : h % 12;
+  return `${hh}:${String(m).padStart(2, "0")}`;
+}
 
 // Tema warna paparan (literal penuh supaya Tailwind JIT ambil semasa build)
 const TEMA_BG: Record<string, string> = {
@@ -150,6 +157,18 @@ export default function PaparanTV({
     return akan.length ? akan[0] : (waktu.find((w) => AZAN_WAKTU.has(w.nama)) ?? null);
   }, [waktu, nowMin]);
 
+  // Senarai untuk jalur bawah: tambah Imsak (Subuh − 10 min) di hadapan.
+  const barWaktu = useMemo(() => {
+    const list: { nama: string; masa: string; imsak?: boolean }[] = [];
+    const subuh = waktu.find((w) => w.nama === "Subuh");
+    if (subuh) {
+      const im = ((minitDari(subuh.masa) - 10) % 1440 + 1440) % 1440;
+      list.push({ nama: "Imsak", masa: `${String(Math.floor(im / 60)).padStart(2, "0")}:${String(im % 60).padStart(2, "0")}`, imsak: true });
+    }
+    for (const w of waktu) list.push({ nama: w.nama, masa: w.masa });
+    return list;
+  }, [waktu]);
+
   // Kiraan mengundur ke waktu solat seterusnya (HH:MM:SS)
   const kiraMasukWaktu = useMemo(() => {
     if (!waktuSeterusnya) return "";
@@ -260,8 +279,12 @@ export default function PaparanTV({
   }
 
   const dHari = HARI[now.getDay()];
-  const dTarikh = `${dHari}, ${now.getDate()} ${BULAN[now.getMonth()]} ${now.getFullYear()}`;
+  const dTarikhPendek = `${dHari}, ${now.getDate()} ${BULAN_PENDEK[now.getMonth()]} ${now.getFullYear()}`;
   const dHijri = hijriText(now);
+  // Jam 12 jam + AM/PM (untuk jalur bawah)
+  const jam12 = now.getHours() % 12 === 0 ? 12 : now.getHours() % 12;
+  const ampm = now.getHours() >= 12 ? "PM" : "AM";
+  const jamPapar = `${jam12}:${String(now.getMinutes()).padStart(2, "0")}:${saatStr}`;
 
   return (
     <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white ${pratonton ? "" : "cursor-none"}`}>
@@ -277,38 +300,10 @@ export default function PaparanTV({
         </button>
       )}
 
-      {/* Poster ISI SKRIN PENUH — tutup seluruh skrin (atas header & bar) */}
-      {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
-          {isVideoUrl(posters[posterIdx % posters.length]) ? (
-            <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="h-full w-full object-contain" />
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-contain" />
-          )}
-        </div>
+      {/* Nama surau kecil (kiri atas) — hanya bila BUKAN poster isi penuh, supaya poster bersih */}
+      {!(mode === "normal" && sceneKini === "poster" && posterIsi === "penuh") && (
+        <div className="px-6 pt-3 text-lg font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
       )}
-
-      {/* Jam semasa (real-time) — PIN atas, sentiasa nampak (atas poster/iqamah/solat).
-          Disembunyikan hanya pada scene jam besar (sudah ada jam sendiri). */}
-      {!(mode === "normal" && sceneKini === "jam") && (
-        <div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full bg-black/45 px-4 py-1 text-center font-mono text-xl font-extrabold text-white backdrop-blur sm:text-3xl">
-          {jamStr}<span className="text-amber-300">:{saatStr}</span>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 px-8 pt-5">
-        <div className="min-w-0 text-xl font-bold text-amber-300 sm:text-2xl">{namaSurau}</div>
-        <div className="min-w-0 text-right">
-          <div className="text-sm text-white/70 sm:text-lg">{dTarikh} · {dHijri}</div>
-          {waktuSeterusnya && kiraMasukWaktu && mode === "normal" && (
-            <div className="mt-0.5 text-sm text-amber-200 sm:text-base">
-              ⏱ {waktuSeterusnya.nama} dalam <span className="font-mono font-bold">{kiraMasukWaktu}</span>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ====== IQAMAH / SOLAT OVERLAY ====== */}
       {mode !== "normal" && (() => {
@@ -367,18 +362,30 @@ export default function PaparanTV({
         );
       })()}
 
+      {/* ====== NORMAL · POSTER ISI PENUH (isi ruang atas bar, tak bertindih) ====== */}
+      {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
+        <div className="flex flex-1 items-center justify-center overflow-hidden bg-black">
+          {isVideoUrl(posters[posterIdx % posters.length]) ? (
+            <video key={posters[posterIdx % posters.length]} src={posters[posterIdx % posters.length]} autoPlay muted loop playsInline className="h-full w-full object-contain" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="h-full w-full object-contain" />
+          )}
+        </div>
+      )}
+
       {/* ====== NORMAL ====== */}
-      {mode === "normal" && (
+      {mode === "normal" && !(sceneKini === "poster" && posterIsi === "penuh") && (
         <div className="flex flex-1 flex-col justify-center px-8">
           {sceneKini === "jam" && (
             <div className="text-center">
-              <div className="font-mono text-[26vw] font-extrabold leading-none tracking-tight sm:text-[20vw] lg:text-[16vw]">
-                {jamStr}<span className="text-[8vw] text-amber-300 lg:text-[5vw]">:{saatStr}</span>
+              <div className="font-mono text-[22vw] font-extrabold leading-none tracking-tight sm:text-[18vw] lg:text-[15vw]">
+                {jam12}:{String(now.getMinutes()).padStart(2, "0")}<span className="text-[7vw] text-amber-300 lg:text-[4.5vw]">:{saatStr} {ampm}</span>
               </div>
               {waktuSeterusnya && (
                 <div className="mt-3">
                   <div className="text-xl text-white/70 sm:text-2xl">
-                    Menuju waktu <span className="font-semibold text-amber-200">{waktuSeterusnya.nama}</span> · {waktuSeterusnya.masa}
+                    Menuju waktu <span className="font-semibold text-amber-200">{waktuSeterusnya.nama}</span> · {to12(waktuSeterusnya.masa)}
                   </div>
                   <div className="mt-1 font-mono text-4xl font-extrabold text-amber-300 sm:text-6xl">{kiraMasukWaktu}</div>
                 </div>
@@ -399,25 +406,31 @@ export default function PaparanTV({
         </div>
       )}
 
-      {/* ====== WAKTU SOLAT BAR ====== (z-20: terapung ATAS poster isi-penuh) */}
+      {/* ====== JALUR BAWAH: JAM + TARIKH + WAKTU SOLAT (+ Imsak) ====== */}
       {waktu.length > 0 && (
-        <div className="relative z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pt-8">
-          <div className="grid grid-cols-6 gap-1 pb-1">
-            {waktu.map((w) => {
-              const aktif = waktuSeterusnya?.nama === w.nama;
-              return (
-                <div key={w.nama} className={`rounded-t-lg py-2 text-center backdrop-blur-sm ${aktif ? "bg-amber-400 text-slate-900" : "bg-black/55 text-white/90"}`}>
-                  <div className="text-xs font-semibold uppercase sm:text-sm">{w.nama}</div>
-                  <div className="text-lg font-bold sm:text-2xl">{w.masa}</div>
-                </div>
-              );
-            })}
+        <div className="flex items-stretch gap-1 bg-black/55 p-1.5">
+          {/* Jam besar + tarikh */}
+          <div className="flex flex-[2.2] flex-col items-center justify-center rounded-lg bg-amber-400/15 px-2 py-1">
+            <div className="font-mono text-2xl font-extrabold leading-none text-amber-200 sm:text-4xl">
+              {jamPapar}<span className="ml-1 text-base sm:text-2xl">{ampm}</span>
+            </div>
+            <div className="mt-1 whitespace-nowrap text-[10px] leading-tight text-white/75 sm:text-sm">{dTarikhPendek} · {dHijri}</div>
           </div>
+          {/* Waktu solat + Imsak */}
+          {barWaktu.map((w) => {
+            const aktif = !w.imsak && waktuSeterusnya?.nama === w.nama;
+            return (
+              <div key={w.nama} className={`flex flex-1 flex-col items-center justify-center rounded-lg px-1 py-1 ${aktif ? "bg-amber-400 text-slate-900" : "bg-white/10 text-white/90"}`}>
+                <div className={`text-[10px] font-bold uppercase leading-none sm:text-sm ${aktif ? "text-amber-900" : "text-white/70"}`}>{w.nama}</div>
+                <div className="mt-0.5 text-lg font-extrabold leading-none sm:text-2xl">{to12(w.masa)}</div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ====== SCROLLER ====== (z-20: terapung ATAS poster isi-penuh) */}
-      <div className="relative z-20 overflow-hidden bg-black/70 py-2">
+      {/* ====== SCROLLER ====== */}
+      <div className="overflow-hidden bg-black/70 py-2">
         <div className="paparan-marquee whitespace-nowrap text-lg font-semibold text-amber-100 sm:text-2xl">{scrollerText}</div>
       </div>
 
