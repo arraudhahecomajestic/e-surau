@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { getProfil, isPentadbir } from "@/lib/sesi";
 
@@ -46,4 +47,5 @@ export async function simpanPaparan(formData: FormData) {
 
   revalidatePath("/admin/paparan");
   revalidatePath("/paparan");
+  redirect("/admin/paparan?ok=1"); // beri maklum balas jelas + muat semula pratonton
 }

@@ -4,11 +4,12 @@ import { getProfil, isPentadbir } from "@/lib/sesi";
 import { adminConfigured } from "@/lib/supabaseAdmin";
 import { tetapanPaparan } from "@/lib/tetapanSistem";
 import PaparanPosterInput from "@/components/PaparanPosterInput";
+import ButangSimpanPaparan from "@/components/ButangSimpanPaparan";
 import { simpanPaparan } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPaparanPage() {
+export default async function AdminPaparanPage({ searchParams }: { searchParams?: { ok?: string } }) {
   if (!adminConfigured)
     return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
 
@@ -17,10 +18,17 @@ export default async function AdminPaparanPage() {
   if (!isPentadbir(profil)) return <TiadaAkses />;
 
   const tp = await tetapanPaparan();
+  const tersimpan = searchParams?.ok === "1";
 
   return (
     <div className="space-y-6">
       <AdminNav aktif="/admin/paparan" nama={profil.nama ?? profil.emel ?? undefined} peranan={profil.peranan} master={profil.master} />
+
+      {tersimpan && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+          ✓ Tetapan &amp; poster telah disimpan. Pratonton di bawah dah dikemas kini.
+        </div>
+      )}
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Paparan TV (Mod Skrin Surau)</h1>
@@ -137,9 +145,7 @@ export default async function AdminPaparanPage() {
         </div>
 
         <div>
-          <button type="submit" className="rounded-lg bg-surau px-6 py-2.5 text-sm font-bold text-white hover:bg-surau-dark">
-            Simpan Tetapan &amp; Poster
-          </button>
+          <ButangSimpanPaparan />
         </div>
       </form>
     </div>
