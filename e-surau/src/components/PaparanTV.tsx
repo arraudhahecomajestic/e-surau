@@ -3,12 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Waktu = { nama: string; masa: string }; // masa "HH:MM"
-type Program = {
-  id: string; tajuk: string; tarikh: string; masa: string | null;
-  lokasi: string | null; kategori: string | null;
-  poster_urls: string[] | null; poster_url: string | null;
-};
-type Pengumuman = { tajuk: string; kandungan: string; penting: boolean };
 
 const HIJRI_BULAN = ["Muharram", "Safar", "Rabiulawal", "Rabiulakhir", "Jamadilawal", "Jamadilakhir", "Rejab", "Syaaban", "Ramadan", "Syawal", "Zulkaedah", "Zulhijjah"];
 const HARI = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
@@ -25,11 +19,7 @@ const TEMA_BG: Record<string, string> = {
 };
 
 function klNow(): Date {
-  // Tukar ke "waktu Malaysia" sebagai objek Date tempatan (untuk paparan).
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
-}
-function hhmm(d: Date) {
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 function minitDari(masa: string) {
   const [h, m] = masa.split(":").map(Number);
@@ -49,29 +39,25 @@ function hijriText(d: Date): string {
 export default function PaparanTV({
   zon,
   namaSurau,
-  programs,
-  pengumuman,
+  posterUrls = [],
   iqamahMinit = 10,
   tempohSaat = 15,
   azanAktif = true,
-  teksTambahan = "",
+  teks = "",
   tema = "hijau",
   pratonton = false,
 }: {
   zon: string;
   namaSurau: string;
-  programs: Program[];
-  pengumuman: Pengumuman[];
+  posterUrls?: string[];
   iqamahMinit?: number;
   tempohSaat?: number;
   azanAktif?: boolean;
-  teksTambahan?: string;
+  teks?: string;
   tema?: string;
   pratonton?: boolean;
 }) {
-  const [mula, setMula] = useState(pratonton); // pratonton: terus jalan tanpa sentuh
-  const bgTema = TEMA_BG[tema] ?? TEMA_BG.hijau;
-  const azanBoleh = azanAktif && !pratonton; // jangan bunyi azan masa pratonton
+  const [mula, setMula] = useState(pratonton);
   const [now, setNow] = useState<Date>(() => klNow());
   const [waktu, setWaktu] = useState<Waktu[]>([]);
   const [scene, setScene] = useState(0);
@@ -83,32 +69,18 @@ export default function PaparanTV({
   const acRef = useRef<any>(null);
   const triggeredRef = useRef<Set<string>>(new Set());
 
-  // Senarai poster (dari semua program)
-  const posters = useMemo(() => {
-    const out: { url: string; tajuk: string }[] = [];
-    for (const p of programs) {
-      const list = p.poster_urls?.length ? p.poster_urls : (p.poster_url ? [p.poster_url] : []);
-      for (const u of list) out.push({ url: u, tajuk: p.tajuk });
-    }
-    return out;
-  }, [programs]);
+  const bgTema = TEMA_BG[tema] ?? TEMA_BG.hijau;
+  const azanBoleh = azanAktif && !pratonton;
+  const posters = useMemo(() => (posterUrls || []).filter(Boolean), [posterUrls]);
 
-  // Teks scroller
+  // Teks berjalan — hanya teks yang ditaip di panel Paparan (bebas).
   const scrollerText = useMemo(() => {
-    const items = pengumuman.map((p) => (p.penting ? "❗ " : "") + p.tajuk + (p.kandungan ? " — " + p.kandungan.replace(/\s+/g, " ").slice(0, 140) : ""));
-    const extra = (teksTambahan || "").trim();
-    if (extra) items.unshift(extra); // teks TV khas muncul dahulu
-    return items.length ? items.join("      •      ") : "Selamat datang ke " + namaSurau;
-  }, [pengumuman, namaSurau, teksTambahan]);
+    const t = (teks || "").trim();
+    return t || `Selamat datang ke ${namaSurau}`;
+  }, [teks, namaSurau]);
 
-  // Scene yang tersedia
-  const scenes = useMemo(() => {
-    const s: string[] = ["jam"];
-    if (programs.length) { s.push("kuliah"); s.push("jam"); }
-    if (posters.length) s.push("poster");
-    if (programs.length) { s.push("jam"); s.push("countdown"); }
-    return s;
-  }, [programs.length, posters.length]);
+  // Scene tersedia: jam sahaja, atau jam ↔ poster jika ada poster.
+  const scenes = useMemo(() => (posters.length ? ["jam", "poster"] : ["jam"]), [posters.length]);
 
   // Jam tick setiap saat
   useEffect(() => {
@@ -143,7 +115,6 @@ export default function PaparanTV({
     return () => clearInterval(t);
   }, [mula, mode, scenes.length, posters.length, tempohSaat]);
 
-  // Waktu semasa & seterusnya
   const jamStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const saatStr = String(now.getSeconds()).padStart(2, "0");
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -170,7 +141,7 @@ export default function PaparanTV({
     if (a) {
       a.src = subuh ? "/azan-subuh.mp3" : "/azan.mp3";
       a.currentTime = 0;
-      a.play().catch(() => { beep(700, 600); }); // fallback beep jika fail tiada/blok
+      a.play().catch(() => { beep(700, 600); });
     } else {
       beep(700, 600);
     }
@@ -179,7 +150,7 @@ export default function PaparanTV({
   // ---- Trigger azan bila masuk waktu ----
   useEffect(() => {
     if (!mula || mode !== "normal" || !waktu.length) return;
-    if (!azanBoleh) return; // azan dimatikan di tetapan / mod pratonton
+    if (!azanBoleh) return;
     if (now.getSeconds() !== 0) return;
     const kunciHari = now.toDateString();
     for (const w of waktu) {
@@ -207,7 +178,7 @@ export default function PaparanTV({
     return () => clearTimeout(t);
   }, [mode, iqamahBaki]);
 
-  // Minta skrin penuh (guna butang — sesuai untuk remote TV, tak perlu F11)
+  // Minta skrin penuh (butang — sesuai remote TV, tak perlu F11)
   function mintaFullscreen() {
     try {
       const el: any = document.documentElement;
@@ -226,7 +197,7 @@ export default function PaparanTV({
           onClick={() => {
             try { const ac = new (window.AudioContext || (window as any).webkitAudioContext)(); acRef.current = ac; ac.resume?.(); } catch { /* */ }
             if (audioRef.current) { audioRef.current.play().then(() => audioRef.current?.pause()).catch(() => {}); }
-            mintaFullscreen(); // terus skrin penuh — sentuhan ini gestur pengguna
+            mintaFullscreen();
             setMula(true);
           }}
           className="mt-8 rounded-2xl bg-amber-400 px-10 py-5 text-xl font-extrabold text-slate-900 shadow-lg hover:bg-amber-300"
@@ -248,7 +219,6 @@ export default function PaparanTV({
     <div className={`relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white`}>
       <audio ref={audioRef} preload="auto" onEnded={azanTamat} />
 
-      {/* Butang skrin penuh (sudut) — tak muncul masa pratonton */}
       {!pratonton && (
         <button
           onClick={mintaFullscreen}
@@ -280,7 +250,7 @@ export default function PaparanTV({
             <>
               <div className="text-2xl font-semibold text-amber-300 sm:text-3xl">Menunggu Iqamah — {waktuAzan}</div>
               <div className="mt-3 font-mono text-7xl font-extrabold sm:text-9xl">{String(Math.floor(iqamahBaki / 60)).padStart(2, "0")}:{String(iqamahBaki % 60).padStart(2, "0")}</div>
-              <div className="mt-4 text-xl text-white/70">Sila bersedia & rapatkan saf</div>
+              <div className="mt-4 text-xl text-white/70">Sila bersedia &amp; rapatkan saf</div>
             </>
           )}
           {mode === "solat" && (
@@ -309,49 +279,12 @@ export default function PaparanTV({
             </div>
           )}
 
-          {sceneKini === "kuliah" && (
-            <div>
-              <div className="mb-4 text-center text-2xl font-bold text-amber-300 sm:text-4xl">Kuliah &amp; Program Akan Datang</div>
-              <div className="mx-auto max-w-4xl space-y-3">
-                {programs.slice(0, 5).map((p) => {
-                  const d = new Date(p.tarikh + "T00:00:00");
-                  const lbl = `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]}`;
-                  return (
-                    <div key={p.id} className="flex items-center justify-between gap-4 rounded-xl bg-white/10 px-5 py-3">
-                      <div>
-                        <div className="text-xl font-bold sm:text-3xl">{p.tajuk}</div>
-                        <div className="text-sm text-white/70 sm:text-lg">{lbl}{p.masa ? ` · ${p.masa}` : ""}{p.lokasi ? ` · ${p.lokasi}` : ""}</div>
-                      </div>
-                      {p.kategori && <span className="whitespace-nowrap rounded-full bg-amber-400/20 px-3 py-1 text-sm font-semibold text-amber-200">{p.kategori}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {sceneKini === "poster" && posters.length > 0 && (
             <div className="flex flex-col items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={posters[posterIdx % posters.length].url} alt={posters[posterIdx % posters.length].tajuk} className="max-h-[72vh] w-auto max-w-[92vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
+              <img src={posters[posterIdx % posters.length]} alt={`Poster ${posterIdx + 1}`} className="max-h-[74vh] w-auto max-w-[94vw] rounded-2xl border border-white/10 object-contain shadow-2xl" />
             </div>
           )}
-
-          {sceneKini === "countdown" && programs.length > 0 && (() => {
-            const p = programs[0];
-            const d = new Date(p.tarikh + "T00:00:00");
-            const hariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const beza = Math.round((d.getTime() - hariIni.getTime()) / 86400000);
-            return (
-              <div className="text-center">
-                <div className="text-2xl font-semibold text-amber-300 sm:text-3xl">Menghitung Hari</div>
-                <div className="mt-2 text-3xl font-bold sm:text-5xl">{p.tajuk}</div>
-                <div className="mt-6 text-[18vw] font-extrabold leading-none text-amber-300 lg:text-[12vw]">{beza <= 0 ? "HARI INI" : beza}</div>
-                {beza > 0 && <div className="text-2xl text-white/80 sm:text-3xl">hari lagi</div>}
-                <div className="mt-4 text-lg text-white/60">{HARI[d.getDay()]}, {d.getDate()} {BULAN[d.getMonth()]} {d.getFullYear()}{p.masa ? ` · ${p.masa}` : ""}</div>
-              </div>
-            );
-          })()}
         </div>
       )}
 

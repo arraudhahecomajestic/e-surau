@@ -63,18 +63,25 @@ export type TetapanPaparan = {
   iqamah: number;   // minit menunggu iqamah selepas azan
   saat: number;     // tempoh (saat) setiap scene bertukar
   azan: boolean;    // auto bunyi azan bila masuk waktu?
-  teks: string;     // teks berjalan tambahan (TV sahaja)
+  teks: string;     // teks berjalan (TV sahaja)
   tema: string;     // tema warna paparan
+  poster: string[]; // senarai URL poster (bebas — dimuat naik di panel Paparan)
 };
 export async function tetapanPaparan(): Promise<TetapanPaparan> {
   const t = await bacaTetapan();
   const iqamah = Number(t.paparan_iqamah);
   const saat = Number(t.paparan_saat);
+  let poster: string[] = [];
+  try {
+    const arr = JSON.parse(t.paparan_poster || "[]");
+    if (Array.isArray(arr)) poster = arr.filter((x) => typeof x === "string");
+  } catch { /* abai */ }
   return {
     iqamah: isNaN(iqamah) || iqamah <= 0 ? 10 : iqamah,
     saat: isNaN(saat) || saat < 5 ? 15 : saat,
     azan: t.paparan_azan !== "false", // lalai: hidup
     teks: t.paparan_teks ?? "",
     tema: t.paparan_tema || "hijau",
+    poster,
   };
 }
