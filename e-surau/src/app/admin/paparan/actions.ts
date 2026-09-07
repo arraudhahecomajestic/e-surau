@@ -37,6 +37,8 @@ export async function simpanPaparan(formData: FormData) {
   let iqamahGaya = String(formData.get("paparan_iqamah_gaya") ?? "klasik");
   if (!gayaBoleh.includes(iqamahGaya)) iqamahGaya = "klasik";
 
+  const iqamahBg = String(formData.get("paparan_iqamah_bg") ?? "").slice(0, 500);
+
   // Senarai poster (JSON array URL) — bebas dari modul Program
   let posterJson = "[]";
   try {
@@ -53,6 +55,7 @@ export async function simpanPaparan(formData: FormData) {
   await set("paparan_poster_isi", posterIsi);
   await set("paparan_poster_mod", posterMod);
   await set("paparan_iqamah_gaya", iqamahGaya);
+  await set("paparan_iqamah_bg", iqamahBg);
 
   revalidatePath("/admin/paparan");
   revalidatePath("/paparan");

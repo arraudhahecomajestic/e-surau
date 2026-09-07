@@ -69,6 +69,7 @@ export type TetapanPaparan = {
   posterIsi: string; // "muat" (nampak penuh) | "penuh" (isi skrin)
   posterMod: string; // "sambung" (poster sahaja) | "selang" (selang jam)
   iqamahGaya: string; // gaya skrin iqamah/solat: "klasik" | "besar" | "kaligrafi"
+  iqamahBg: string;  // URL latar gambar skrin azan/iqamah/solat (pilihan)
 };
 export async function tetapanPaparan(): Promise<TetapanPaparan> {
   const t = await bacaTetapan();
@@ -89,5 +90,6 @@ export async function tetapanPaparan(): Promise<TetapanPaparan> {
     posterIsi: t.paparan_poster_isi === "penuh" ? "penuh" : "muat",
     posterMod: t.paparan_poster_mod === "selang" ? "selang" : "sambung",
     iqamahGaya: ["klasik", "besar", "kaligrafi"].includes(t.paparan_iqamah_gaya) ? t.paparan_iqamah_gaya : "klasik",
+    iqamahBg: t.paparan_iqamah_bg || "",
   };
 }

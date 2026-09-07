@@ -58,7 +58,9 @@ export default function PaparanTV({
   posterIsi = "muat",
   posterMod = "sambung",
   iqamahGaya = "klasik",
+  iqamahBg = "",
   pratonton = false,
+  pratontonFasa = "",
 }: {
   zon: string;
   namaSurau: string;
@@ -71,7 +73,9 @@ export default function PaparanTV({
   posterIsi?: string;
   posterMod?: string; // "sambung" (poster je) | "selang" (selang jam)
   iqamahGaya?: string; // "klasik" | "besar" | "kaligrafi"
+  iqamahBg?: string;   // latar gambar skrin azan/iqamah/solat
   pratonton?: boolean;
+  pratontonFasa?: string; // paksa babak dalam pratonton: "iqamah" | "solat"
 }) {
   const [mula, setMula] = useState(pratonton);
   const [now, setNow] = useState<Date>(() => klNow());
@@ -309,6 +313,11 @@ export default function PaparanTV({
   const ampm = now.getHours() >= 12 ? "PM" : "AM";
   const jamPapar = `${jam12}:${String(now.getMinutes()).padStart(2, "0")}:${saatStr}`;
 
+  // Pratonton: paksa babak iqamah/solat untuk lihat design (countdown sampel).
+  const paksaFasa = pratonton && (pratontonFasa === "iqamah" || pratontonFasa === "solat");
+  const modePapar = paksaFasa ? (pratontonFasa as "iqamah" | "solat") : mode;
+  const iqBaki = paksaFasa ? iqamahMinit * 60 : iqamahBaki;
+
   return (
     <div className={`relative flex h-screen flex-col overflow-hidden bg-gradient-to-b ${bgTema} text-white ${pratonton ? "" : "cursor-none"}`}>
       <audio ref={audioRef} preload="auto" />
@@ -325,12 +334,21 @@ export default function PaparanTV({
 
 
       {/* ====== IQAMAH / SOLAT OVERLAY ====== */}
-      {mode !== "normal" && (() => {
-        const jam = String(Math.floor(iqamahBaki / 60)).padStart(2, "0");
-        const saat = String(iqamahBaki % 60).padStart(2, "0");
+      {modePapar !== "normal" && (() => {
+        const jam = String(Math.floor(iqBaki / 60)).padStart(2, "0");
+        const saat = String(iqBaki % 60).padStart(2, "0");
         const cd = `${jam}:${saat}`;
+        const mode = modePapar; // guna babak paparan (termasuk pratonton)
         return (
-          <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <div className="relative flex flex-1 flex-col items-center justify-center px-6 text-center">
+            {/* Latar gambar pilihan + lapisan gelap untuk kebolehbacaan */}
+            {iqamahBg && (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img aria-hidden src={iqamahBg} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+                <div aria-hidden className="absolute inset-0 -z-10 bg-black/55" />
+              </>
+            )}
             {/* ---- IQAMAH ---- */}
             {mode === "iqamah" && iqamahGaya === "besar" && (
               <>
@@ -382,7 +400,7 @@ export default function PaparanTV({
       })()}
 
       {/* ====== NORMAL · POSTER ISI PENUH (isi ruang atas bar, tak bertindih) ====== */}
-      {mode === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
+      {modePapar === "normal" && sceneKini === "poster" && posters.length > 0 && posterIsi === "penuh" && (
         <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
           {/* object-cover: poster ISI HABIS skrin, tiada ruang kosong tepi (tepi atas/bawah mungkin terpotong sikit) */}
           {isVideoUrl(posters[posterIdx % posters.length]) ? (
@@ -395,7 +413,7 @@ export default function PaparanTV({
       )}
 
       {/* ====== NORMAL ====== */}
-      {mode === "normal" && !(sceneKini === "poster" && posterIsi === "penuh") && (
+      {modePapar === "normal" && !(sceneKini === "poster" && posterIsi === "penuh") && (
         <div className="flex flex-1 flex-col justify-center px-8">
           {sceneKini === "jam" && (
             <div className="text-center">

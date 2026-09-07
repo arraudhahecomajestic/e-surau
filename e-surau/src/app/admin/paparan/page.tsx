@@ -4,6 +4,8 @@ import { getProfil, isPentadbir } from "@/lib/sesi";
 import { adminConfigured } from "@/lib/supabaseAdmin";
 import { tetapanPaparan } from "@/lib/tetapanSistem";
 import PaparanPosterInput from "@/components/PaparanPosterInput";
+import PaparanBgInput from "@/components/PaparanBgInput";
+import PratontonLive from "@/components/PratontonLive";
 import ButangSimpanPaparan from "@/components/ButangSimpanPaparan";
 import { simpanPaparan } from "./actions";
 
@@ -65,17 +67,11 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
           <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">● Live</span>
         </div>
         <p className="mb-3 text-sm text-slate-500">Beginilah rupa skrin di TV. Ia berjalan sebenar (jam, waktu solat, poster bertukar). Azan disenyapkan dalam pratonton.</p>
-        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-inner">
-          <div className="aspect-video w-full">
-            {/* eslint-disable-next-line jsx-a11y/iframe-has-title */}
-            <iframe src="/paparan?pratonton=1" title="Pratonton Paparan TV" className="h-full w-full border-0" />
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-slate-400">Selepas simpan tetapan di bawah, muat semula halaman ini untuk lihat kesan.</p>
+        <PratontonLive formId="borang-paparan" />
       </div>
 
       {/* Borang: poster + tetapan (satu Simpan) */}
-      <form action={simpanPaparan} className="space-y-6">
+      <form id="borang-paparan" action={simpanPaparan} className="space-y-6">
         {/* Poster */}
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="mb-1 font-semibold text-slate-900">Poster &amp; Video Paparan</div>
@@ -136,7 +132,7 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
               <option value="ungu">Ungu Senja</option>
               <option value="sejuk">Teal Sejuk</option>
             </select>
-            <span className="mt-1 block text-xs text-slate-400">Tukar latar warna skrin. Simpan &amp; muat semula untuk lihat di pratonton atas.</span>
+            <span className="mt-1 block text-xs text-slate-400">Tukar latar warna skrin. Pratonton di atas berubah serta-merta.</span>
           </label>
 
           <label className="mb-4 block">
@@ -146,8 +142,14 @@ export default async function AdminPaparanPage({ searchParams }: { searchParams?
               <option value="besar">Besar — countdown gergasi memenuhi skrin</option>
               <option value="kaligrafi">Kaligrafi — khat Arab besar (إقامة / صلاة) + countdown</option>
             </select>
-            <span className="mt-1 block text-xs text-slate-400">Susun-atur skrin masa masuk waktu. Countdown tetap hidup — cuma rupa berbeza.</span>
+            <span className="mt-1 block text-xs text-slate-400">Susun-atur skrin masa masuk waktu. Countdown tetap hidup — cuma rupa berbeza. Guna butang &quot;Azan / Iqamah&quot; di pratonton atas untuk lihat.</span>
           </label>
+
+          <div className="mb-4">
+            <span className="text-sm font-medium text-slate-700">Latar gambar skrin azan / iqamah / solat (pilihan)</span>
+            <div className="mt-1"><PaparanBgInput awal={tp.iqamahBg} /></div>
+            <span className="mt-1 block text-xs text-slate-400">Gambar latar untuk skrin masuk waktu — countdown &amp; tulisan kekal di atasnya. Kosong = guna tema warna. Saiz cadangan 1920×1080.</span>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
