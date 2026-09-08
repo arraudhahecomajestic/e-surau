@@ -113,19 +113,30 @@ export async function padamJk(id: string): Promise<{ ok: boolean }> {
 }
 
 // ---- Laporan Biro ----
-export async function tambahBiro(agmId: string, nama: string, ketua: string): Promise<{ ok: boolean; msg?: string }> {
+export async function tambahBiro(agmId: string, nama: string, ketua: string, setiausaha = "", ahli = ""): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !nama.trim()) return { ok: false, msg: "Nama biro diperlukan." };
   const db = createAdminClient();
-  await db.from("agm_biro").insert({ agm_id: agmId, nama: nama.trim().slice(0, 160), ketua: ketua.trim().slice(0, 160) || null });
+  await db.from("agm_biro").insert({
+    agm_id: agmId,
+    nama: nama.trim().slice(0, 160),
+    ketua: ketua.trim().slice(0, 160) || null,
+    setiausaha: setiausaha.trim().slice(0, 160) || null,
+    ahli: ahli.trim().slice(0, 4000) || null,
+  });
   revalidatePath("/admin/agm/jk");
   return { ok: true };
 }
 
-export async function kemasBiro(id: string, ketua: string, laporan: string): Promise<{ ok: boolean }> {
+export async function kemasBiro(id: string, ketua: string, laporan: string, setiausaha = "", ahli = ""): Promise<{ ok: boolean }> {
   if (!(await boleh())) return { ok: false };
   const db = createAdminClient();
-  await db.from("agm_biro").update({ ketua: ketua.trim().slice(0, 160) || null, laporan: laporan.slice(0, 8000) || null }).eq("id", id);
+  await db.from("agm_biro").update({
+    ketua: ketua.trim().slice(0, 160) || null,
+    setiausaha: setiausaha.trim().slice(0, 160) || null,
+    ahli: ahli.slice(0, 4000) || null,
+    laporan: laporan.slice(0, 8000) || null,
+  }).eq("id", id);
   revalidatePath("/admin/agm/jk");
   return { ok: true };
 }

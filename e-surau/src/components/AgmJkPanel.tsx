@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { tambahJk, padamJk, tambahBiro, kemasBiro, padamBiro } from "@/app/admin/agm/actions";
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
-type Biro = { id: string; nama: string; ketua: string | null; laporan: string | null };
+type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null };
 
 const KUMP: { kod: string; label: string }[] = [
   { kod: "penaung", label: "Penaung & Penasihat" },
@@ -86,21 +86,24 @@ function LaporanBiro({ agmId, biro }: { agmId: string; biro: Biro[] }) {
   const router = useRouter();
   const [nama, setNama] = useState("");
   const [ketua, setKetua] = useState("");
+  const [setiausaha, setSetiausaha] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function tambah() {
     if (!nama.trim()) return;
-    setBusy(true); await tambahBiro(agmId, nama, ketua); setBusy(false); setNama(""); setKetua(""); router.refresh();
+    setBusy(true); await tambahBiro(agmId, nama, ketua, setiausaha, ""); setBusy(false);
+    setNama(""); setKetua(""); setSetiausaha(""); router.refresh();
   }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-3 font-semibold text-slate-900">Laporan Biro-Biro</h2>
+      <h2 className="mb-3 font-semibold text-slate-900">Biro-Biro &amp; Laporan</h2>
 
-      <div className="mb-4 flex flex-wrap gap-2 rounded-lg bg-slate-50 p-3">
-        <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama biro (cth: Biro Dakwah)" className="min-w-[160px] flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-        <input value={ketua} onChange={(e) => setKetua(e.target.value)} placeholder="Ketua biro (pilihan)" className="min-w-[160px] flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-        <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">+ Tambah Biro</button>
+      <div className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
+        <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama biro (cth: Biro Dakwah)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm sm:col-span-2" />
+        <input value={ketua} onChange={(e) => setKetua(e.target.value)} placeholder="Ketua biro (pilihan)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+        <input value={setiausaha} onChange={(e) => setSetiausaha(e.target.value)} placeholder="Setiausaha biro (pilihan)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+        <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">+ Tambah Biro</button></div>
       </div>
 
       {biro.length === 0 ? <p className="text-sm text-slate-400">Belum ada biro.</p> : (
@@ -112,12 +115,16 @@ function LaporanBiro({ agmId, biro }: { agmId: string; biro: Biro[] }) {
 
 function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
   const [ketua, setKetua] = useState(b.ketua ?? "");
+  const [setiausaha, setSetiausaha] = useState(b.setiausaha ?? "");
+  const [ahli, setAhli] = useState(b.ahli ?? "");
   const [laporan, setLaporan] = useState(b.laporan ?? "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
-  async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan); setBusy(false); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
+  async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan, setiausaha, ahli); setBusy(false); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
   async function padam() { if (!window.confirm("Padam biro ini & laporannya?")) return; setBusy(true); await padamBiro(b.id); setBusy(false); onDone(); }
+
+  const bilAhli = ahli.split("\n").map((x) => x.trim()).filter(Boolean).length;
 
   return (
     <div className="rounded-lg border border-slate-200 p-3">
@@ -125,12 +132,18 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
         <div className="font-semibold text-slate-900">{b.nama}</div>
         <button onClick={padam} className="text-xs text-red-500 hover:underline">padam biro</button>
       </div>
-      <label className="mb-2 block"><span className="text-xs font-medium text-slate-600">Ketua biro</span>
-        <input value={ketua} onChange={(e) => setKetua(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-      <label className="block"><span className="text-xs font-medium text-slate-600">Laporan biro</span>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="block"><span className="text-xs font-medium text-slate-600">Ketua biro</span>
+          <input value={ketua} onChange={(e) => setKetua(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
+        <label className="block"><span className="text-xs font-medium text-slate-600">Setiausaha biro</span>
+          <input value={setiausaha} onChange={(e) => setSetiausaha(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
+      </div>
+      <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Ahli-ahli <span className="text-slate-400">(satu nama setiap baris — {bilAhli} ahli)</span></span>
+        <textarea value={ahli} onChange={(e) => setAhli(e.target.value)} rows={4} placeholder={"cth:\nTimbalan Pengerusi\nImam 1\nBilal 1"} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm leading-relaxed" /></label>
+      <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Laporan biro (pilihan)</span>
         <textarea value={laporan} onChange={(e) => setLaporan(e.target.value)} rows={4} placeholder="Ringkasan aktiviti & pencapaian biro sepanjang tahun…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
       <div className="mt-2 flex items-center gap-3">
-        <button disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">Simpan Laporan</button>
+        <button disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">Simpan Biro</button>
         {msg && <span className="text-xs font-semibold text-emerald-600">{msg}</span>}
       </div>
     </div>
