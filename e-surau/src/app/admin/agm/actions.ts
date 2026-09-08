@@ -26,7 +26,14 @@ export async function simpanAgm(formData: FormData): Promise<{ ok: boolean; msg?
     atur_cara: String(formData.get("atur_cara") ?? "").slice(0, 4000) || null,
     status: ["akan_datang", "sedang", "selesai"].includes(String(formData.get("status"))) ? String(formData.get("status")) : "akan_datang",
   };
-  const { error } = id ? await db.from("agm").update(rec).eq("id", id) : await db.from("agm").insert(rec);
+  let error;
+  if (id) {
+    ({ error } = await db.from("agm").update(rec).eq("id", id));
+  } else {
+    // Jana kod unik untuk QR check-in (rekod baru sahaja)
+    const rawKod = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}${Math.random()}`).replace(/[^a-z0-9]/gi, "").slice(0, 10);
+    ({ error } = await db.from("agm").insert({ ...rec, kod: rawKod }));
+  }
   if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
   revalidatePath("/admin/agm");
   return { ok: true };

@@ -19,6 +19,7 @@ export default function CheckinAgm({ kod, tajuk, tahun }: { kod: string; tajuk: 
     setBusy(false);
     if (r.status === "perlu_nama") { setPerluNama(true); setRalat(""); return; }
     if (r.status === "ralat") { setRalat(r.msg ?? "Ralat. Cuba lagi."); return; }
+    if (r.status === "tutup") { setRalat("Pendaftaran kehadiran telah ditutup. Sila hubungi petugas."); return; }
     setHasil(r);
   }
 
