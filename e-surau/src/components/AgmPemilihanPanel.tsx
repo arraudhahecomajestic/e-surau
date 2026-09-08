@@ -102,6 +102,8 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
 function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; jawatan: Jawatan; calon: Calon[]; undian?: Undian; ahli: AhliRingkas[] }) {
   const router = useRouter();
   const sah = calon.filter((c) => c.status === "sah" || c.status === "menang_tanpa_bertanding");
+  const pemenangNama = calon.find((c) => c.menang)?.nama ?? null;
+  const [buka, setBuka] = useState(!pemenangNama); // auto-tutup jika dah ada pemenang
 
   // borang tambah calon — nama dari database ahli kariah
   const [cCalon, setCCalon] = useState<PilihanAhli>(KOSONG);
@@ -145,11 +147,20 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-bold text-surau">{jawatan.nama}</h3>
-        <span className="text-xs text-slate-400">{KAT[jawatan.kategori] ?? jawatan.kategori} · dipilih {jawatan.bil_dipilih}</span>
-      </div>
+      <button onClick={() => setBuka((v) => !v)} className="flex w-full items-center justify-between gap-2 text-left">
+        <span className="flex flex-wrap items-baseline gap-2">
+          <span className="font-bold text-surau">{jawatan.nama}</span>
+          {!buka && pemenangNama && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">✓ {pemenangNama}</span>}
+          {!buka && !pemenangNama && calon.length > 0 && <span className="text-xs text-slate-400">{calon.length} calon</span>}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="text-xs text-slate-400">{KAT[jawatan.kategori] ?? jawatan.kategori} · dipilih {jawatan.bil_dipilih}</span>
+          <span className={`text-[10px] text-slate-400 transition-transform ${buka ? "rotate-180" : ""}`}>▼</span>
+        </span>
+      </button>
 
+      {!buka ? null : (
+      <div className="mt-3">
       {/* Senarai calon */}
       {calon.length === 0 ? <p className="mb-3 text-sm text-slate-400">Belum ada calon.</p> : (
         <ul className="mb-3 space-y-2">
@@ -215,6 +226,8 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
           </div>
           <p className="mt-2 text-[11px] text-slate-400">Masukkan bilangan tangan diangkat bagi setiap calon. “Tentukan Pemenang” pilih ikut undi tertinggi. Jika bilangan calon ≤ jumlah dipilih, dikira menang tanpa bertanding. Jika seri di kedudukan potong, sistem minta undi ulang.</p>
         </div>
+      )}
+      </div>
       )}
     </section>
   );
