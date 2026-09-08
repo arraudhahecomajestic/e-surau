@@ -44,12 +44,19 @@ export async function tandaHadir(agmId: string, ahliId: string | null, nama: str
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !nama.trim()) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
-  // Elak duplikasi utk ahli berdaftar
+  // Elak duplikasi utk ahli berdaftar + ambil no. IC untuk padanan silang dgn QR
+  let noKpAhli: string | null = null;
   if (ahliId) {
     const { data: ada } = await db.from("agm_hadir").select("id").eq("agm_id", agmId).eq("ahli_id", ahliId).maybeSingle();
     if (ada?.id) return { ok: true }; // sudah didaftar
+    const { data: a } = await db.from("ahli_kariah").select("no_kp").eq("id", ahliId).maybeSingle();
+    noKpAhli = ((a?.no_kp as string | null) ?? "").replace(/\D/g, "") || null;
+    if (noKpAhli) {
+      const { data: adaKp } = await db.from("agm_hadir").select("id").eq("agm_id", agmId).eq("no_kp", noKpAhli).maybeSingle();
+      if (adaKp?.id) return { ok: true }; // sudah check-in sendiri guna QR
+    }
   }
-  const { error } = await db.from("agm_hadir").insert({ agm_id: agmId, ahli_id: ahliId, nama: nama.trim(), no_ahli: noAhli || null });
+  const { error } = await db.from("agm_hadir").insert({ agm_id: agmId, ahli_id: ahliId, nama: nama.trim(), no_ahli: noAhli || null, no_kp: noKpAhli, kaedah: "sistem" });
   if (error) return { ok: false, msg: `Gagal daftar: ${error.message}` };
   revalidatePath("/admin/agm");
   return { ok: true };

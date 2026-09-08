@@ -129,6 +129,8 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
   async function sahkan(id: string) { setBusy(true); await sahkanHadir(id); setBusy(false); router.refresh(); }
 
   const bilSemak = hadir.filter((h) => h.perlu_semak).length;
+  const bilAhli = hadir.filter((h) => h.ahli_id).length;
+  const bilLuar = hadir.filter((h) => !h.ahli_id && !h.perlu_semak).length;
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -190,7 +192,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
 
       {/* Senarai hadir */}
       <div className="mt-4">
-        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length})</div>
+        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length}) <span className="font-normal text-slate-400">· ahli berdaftar {bilAhli} · 2025 {bilSemak} · luar {bilLuar}</span></div>
         {hadir.length === 0 ? <p className="text-sm text-slate-400">Belum ada yang didaftar.</p> : (
           <ol className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
             {hadir.map((h, i) => (

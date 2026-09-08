@@ -19,18 +19,15 @@ export default async function AgmPemilihanPage() {
   let jawatan: any[] = [];
   let calon: any[] = [];
   let ahli: any[] = [];
-  const undianByJawatan: Record<string, any> = {};
   if (agm?.id) {
-    const [{ data: j }, { data: c }, { data: u }, { data: a }] = await Promise.all([
+    const [{ data: j }, { data: c }, { data: a }] = await Promise.all([
       db.from("agm_jawatan").select("*").eq("agm_id", agm.id).order("susunan", { ascending: true }),
       db.from("agm_calon").select("id, jawatan_id, nama, no_ahli, no_kp, telefon, pencadang_nama, penyokong_nama, status, jumlah_undi, menang").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
-      db.from("agm_undian").select("jawatan_id, undi_dikeluarkan, undi_dikembalikan, undi_rosak, undi_sah").eq("agm_id", agm.id).eq("pusingan", 1),
       db.from("ahli_kariah").select("id, no_ahli, nama, no_kp, telefon").eq("status", "lulus").order("nama", { ascending: true }).limit(5000),
     ]);
     jawatan = (j as any[]) ?? [];
     calon = (c as any[]) ?? [];
     ahli = ((a as any[]) ?? []).map((x) => ({ id: x.id, no_ahli: x.no_ahli, nama: x.nama, no_kp: x.no_kp, telefon: x.telefon }));
-    for (const row of ((u as any[]) ?? [])) undianByJawatan[row.jawatan_id] = row;
   }
 
   return (
@@ -51,7 +48,7 @@ export default async function AgmPemilihanPage() {
           Belum ada jawatan. Sila jalankan <b>agm_pemilihan_fasa73.sql</b> di Supabase (ia menyemai senarai jawatan), kemudian muat semula halaman ini.
         </div>
       ) : (
-        <AgmPemilihanPanel agmId={agm.id} jawatan={jawatan} calon={calon} undianByJawatan={undianByJawatan} ahli={ahli} />
+        <AgmPemilihanPanel agmId={agm.id} jawatan={jawatan} calon={calon} ahli={ahli} />
       )}
     </div>
   );

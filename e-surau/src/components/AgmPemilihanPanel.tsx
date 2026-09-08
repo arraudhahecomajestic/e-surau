@@ -10,7 +10,6 @@ import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/compon
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
 type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
-type Undian = { undi_dikeluarkan: number; undi_dikembalikan: number; undi_rosak: number; undi_sah: number };
 
 const KAT: Record<string, string> = { induk: "Induk", biro: "Biro", ajk: "AJK", audit: "Juruaudit" };
 
@@ -28,12 +27,12 @@ function StatusBadge({ s }: { s: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[s] ?? "bg-slate-100 text-slate-500"}`}>{label[s] ?? s}</span>;
 }
 
-export default function AgmPemilihanPanel({ agmId, jawatan, calon, undianByJawatan, ahli }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; undianByJawatan: Record<string, Undian>; ahli: AhliRingkas[] }) {
+export default function AgmPemilihanPanel({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; ahli: AhliRingkas[] }) {
   return (
     <div className="space-y-6">
       <UrusJawatan agmId={agmId} jawatan={jawatan} />
       {jawatan.map((j) => (
-        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} undian={undianByJawatan[j.id]} ahli={ahli} />
+        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} ahli={ahli} />
       ))}
     </div>
   );
@@ -99,7 +98,7 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
 }
 
 /* ---- Satu jawatan: calon + kiraan undi ---- */
-function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; jawatan: Jawatan; calon: Calon[]; undian?: Undian; ahli: AhliRingkas[] }) {
+function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: Jawatan; calon: Calon[]; ahli: AhliRingkas[] }) {
   const router = useRouter();
   const sah = calon.filter((c) => c.status === "sah" || c.status === "menang_tanpa_bertanding");
   const pemenangNama = calon.find((c) => c.menang)?.nama ?? null;
