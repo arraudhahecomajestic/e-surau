@@ -218,6 +218,124 @@ export async function simpanTeks(agmId: string, kunci: string, nilai: string): P
   return { ok: true };
 }
 
+// ---- Pemilihan AJK (Fasa 73: jawatan, pencalonan, undian) ----
+const P = "/admin/agm/pemilihan";
+
+// Jawatan
+export async function tambahJawatan(agmId: string, kod: string, nama: string, kategori: string, bilDipilih: number): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!agmId || !kod.trim() || !nama.trim()) return { ok: false, msg: "Kod & nama jawatan diperlukan." };
+  const db = createAdminClient();
+  const kat = ["induk", "biro", "ajk", "audit"].includes(kategori) ? kategori : "induk";
+  const { error } = await db.from("agm_jawatan").insert({
+    agm_id: agmId, kod: kod.trim().toUpperCase().replace(/\s+/g, "_").slice(0, 60),
+    nama: nama.trim().slice(0, 160), kategori: kat, bil_dipilih: Math.max(1, Math.round(bilDipilih || 1)),
+    susunan: 200,
+  });
+  if (error) return { ok: false, msg: /duplicate|unique/i.test(error.message) ? "Kod jawatan sudah wujud." : error.message };
+  revalidatePath(P);
+  return { ok: true };
+}
+
+export async function kemasJawatanBil(id: string, bilDipilih: number): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_jawatan").update({ bil_dipilih: Math.max(1, Math.round(bilDipilih || 1)) }).eq("id", id);
+  revalidatePath(P);
+  return { ok: true };
+}
+
+export async function padamJawatan(id: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_jawatan").delete().eq("id", id);
+  revalidatePath(P);
+  return { ok: true };
+}
+
+// Pencalonan
+export async function tambahCalon(agmId: string, jawatanId: string, nama: string, noAhli: string, pencadang: string, penyokong: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!agmId || !jawatanId || !nama.trim()) return { ok: false, msg: "Jawatan & nama calon diperlukan." };
+  if (!pencadang.trim() || !penyokong.trim()) return { ok: false, msg: "Pencadang & penyokong diperlukan." };
+  const db = createAdminClient();
+  const { error } = await db.from("agm_calon").insert({
+    agm_id: agmId, jawatan_id: jawatanId,
+    nama: nama.trim().slice(0, 160), no_ahli: noAhli.trim().slice(0, 40) || null,
+    pencadang_nama: pencadang.trim().slice(0, 160),
+    penyokong_nama: penyokong.trim().slice(0, 160),
+    status: "menunggu",
+  });
+  if (error) return { ok: false, msg: `Gagal tambah calon: ${error.message}` };
+  revalidatePath(P);
+  return { ok: true };
+}
+
+export async function semakCalon(id: string, status: string, sebabTolak: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!["menunggu", "sah", "tolak", "tarik_diri"].includes(status)) return { ok: false, msg: "Status tidak sah." };
+  const db = createAdminClient();
+  const { error } = await db.from("agm_calon").update({
+    status,
+    sebab_tolak: status === "tolak" ? (sebabTolak.slice(0, 500) || null) : null,
+    disemak_pada: new Date().toISOString(),
+  }).eq("id", id);
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath(P);
+  return { ok: true };
+}
+
+export async function padamCalon(id: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_calon").delete().eq("id", id);
+  revalidatePath(P);
+  return { ok: true };
+}
+
+// Kiraan undi (rekonsiliasi kertas) — simpan pusingan + undi calon, salin ke rekod calon
+export async function simpanKiraan(
+  agmId: string, jawatanId: string,
+  dikeluarkan: number, dikembalikan: number, rosak: number,
+  undiCalon: { calonId: string; undi: number }[],
+): Promise<{ ok: boolean; msg?: string; beza?: number }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  const db = createAdminClient();
+  const { data: und, error: e1 } = await db.from("agm_undian").upsert({
+    agm_id: agmId, jawatan_id: jawatanId, pusingan: 1,
+    undi_dikeluarkan: Math.max(0, Math.round(dikeluarkan || 0)),
+    undi_dikembalikan: Math.max(0, Math.round(dikembalikan || 0)),
+    undi_rosak: Math.max(0, Math.round(rosak || 0)),
+    kaedah: "kertas", status: "dikira",
+  }, { onConflict: "jawatan_id,pusingan" }).select("id, undi_sah").maybeSingle();
+  if (e1 || !und) return { ok: false, msg: e1?.message ?? "Gagal simpan undian." };
+
+  for (const u of undiCalon) {
+    const { error: e2 } = await db.from("agm_undian_calon").upsert(
+      { undian_id: (und as any).id, calon_id: u.calonId, jumlah_undi: Math.max(0, Math.round(u.undi || 0)) },
+      { onConflict: "undian_id,calon_id" },
+    );
+    if (e2) return { ok: false, msg: e2.message };
+  }
+
+  await db.rpc("agm_salin_undi", { p_undian_id: (und as any).id });
+
+  const jumlahCalon = undiCalon.reduce((s, u) => s + Math.max(0, Math.round(u.undi || 0)), 0);
+  const beza = ((und as any).undi_sah ?? 0) - jumlahCalon;
+  revalidatePath(P);
+  return { ok: true, beza };
+}
+
+// Tentukan pemenang jawatan (guna fungsi SQL — kira menang tanpa bertanding & seri)
+export async function tentukanPemenang(jawatanId: string): Promise<{ ok: boolean; msg?: string; keputusan?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("agm_tentukan_pemenang", { p_jawatan_id: jawatanId });
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath(P);
+  return { ok: true, keputusan: String(data ?? "") };
+}
+
 // ---- AI: Bantu tulis / perkemas teks laporan ----
 const PANDUAN_BAHAGIAN: Record<string, { tajuk: string; panduan: string }> = {
   kata_aluan_pengerusi: {

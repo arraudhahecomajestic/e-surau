@@ -48,6 +48,7 @@ export default async function AdminAgmPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <a href="/admin/agm/jk" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Senarai JK &amp; Biro</a>
+          <a href="/admin/agm/pemilihan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Pemilihan AJK</a>
           <a href="/admin/agm/laporan-teks" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Naratif Laporan (AI)</a>
           <a href="/admin/agm/laporan" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">Laporan Tahunan (Angka Auto)</a>
         </div>
