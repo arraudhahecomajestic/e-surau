@@ -253,20 +253,29 @@ export async function padamJawatan(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-// Pencalonan
-export async function tambahCalon(agmId: string, jawatanId: string, nama: string, noAhli: string, pencadang: string, penyokong: string): Promise<{ ok: boolean; msg?: string }> {
+// Pencalonan — nama datang dari database ahli kariah (search & pilih)
+type PilihAhli = { nama: string; ahliId: string | null; noAhli: string | null; telefon?: string | null; fasa?: string | null };
+export async function tambahCalon(agmId: string, jawatanId: string, calon: PilihAhli, pencadang: PilihAhli, penyokong: PilihAhli): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
-  if (!agmId || !jawatanId || !nama.trim()) return { ok: false, msg: "Jawatan & nama calon diperlukan." };
-  if (!pencadang.trim() || !penyokong.trim()) return { ok: false, msg: "Pencadang & penyokong diperlukan." };
+  if (!agmId || !jawatanId || !calon?.nama?.trim()) return { ok: false, msg: "Jawatan & nama calon diperlukan." };
+  if (!pencadang?.nama?.trim() || !penyokong?.nama?.trim()) return { ok: false, msg: "Pencadang & penyokong diperlukan." };
   const db = createAdminClient();
   const { error } = await db.from("agm_calon").insert({
     agm_id: agmId, jawatan_id: jawatanId,
-    nama: nama.trim().slice(0, 160), no_ahli: noAhli.trim().slice(0, 40) || null,
-    pencadang_nama: pencadang.trim().slice(0, 160),
-    penyokong_nama: penyokong.trim().slice(0, 160),
+    nama: calon.nama.trim().slice(0, 160),
+    ahli_id: calon.ahliId || null,
+    no_ahli: (calon.noAhli ?? "").slice(0, 40) || null,
+    telefon: (calon.telefon ?? "").slice(0, 40) || null,
+    fasa: (calon.fasa ?? "").slice(0, 60) || null,
+    pencadang_nama: pencadang.nama.trim().slice(0, 160),
+    pencadang_ahli_id: pencadang.ahliId || null,
+    pencadang_no_ahli: (pencadang.noAhli ?? "").slice(0, 40) || null,
+    penyokong_nama: penyokong.nama.trim().slice(0, 160),
+    penyokong_ahli_id: penyokong.ahliId || null,
+    penyokong_no_ahli: (penyokong.noAhli ?? "").slice(0, 40) || null,
     status: "menunggu",
   });
-  if (error) return { ok: false, msg: `Gagal tambah calon: ${error.message}` };
+  if (error) return { ok: false, msg: /uq_agm_calon_ahli_jawatan|duplicate/i.test(error.message) ? "Ahli ini sudah dicalonkan untuk jawatan ini." : `Gagal tambah calon: ${error.message}` };
   revalidatePath(P);
   return { ok: true };
 }

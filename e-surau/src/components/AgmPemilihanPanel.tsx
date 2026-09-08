@@ -6,6 +6,7 @@ import {
   tambahCalon, semakCalon, padamCalon, simpanKiraan, tentukanPemenang,
   tambahJawatan, kemasJawatanBil, padamJawatan,
 } from "@/app/admin/agm/actions";
+import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
 type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
@@ -27,12 +28,12 @@ function StatusBadge({ s }: { s: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[s] ?? "bg-slate-100 text-slate-500"}`}>{label[s] ?? s}</span>;
 }
 
-export default function AgmPemilihanPanel({ agmId, jawatan, calon, undianByJawatan }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; undianByJawatan: Record<string, Undian> }) {
+export default function AgmPemilihanPanel({ agmId, jawatan, calon, undianByJawatan, ahli }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; undianByJawatan: Record<string, Undian>; ahli: AhliRingkas[] }) {
   return (
     <div className="space-y-6">
       <UrusJawatan agmId={agmId} jawatan={jawatan} />
       {jawatan.map((j) => (
-        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} undian={undianByJawatan[j.id]} />
+        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} undian={undianByJawatan[j.id]} ahli={ahli} />
       ))}
     </div>
   );
@@ -98,15 +99,14 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
 }
 
 /* ---- Satu jawatan: calon + kiraan undi ---- */
-function JawatanBlok({ agmId, jawatan, calon, undian }: { agmId: string; jawatan: Jawatan; calon: Calon[]; undian?: Undian }) {
+function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; jawatan: Jawatan; calon: Calon[]; undian?: Undian; ahli: AhliRingkas[] }) {
   const router = useRouter();
   const sah = calon.filter((c) => c.status === "sah" || c.status === "menang_tanpa_bertanding");
 
-  // borang tambah calon
-  const [nama, setNama] = useState("");
-  const [noAhli, setNoAhli] = useState("");
-  const [pencadang, setPencadang] = useState("");
-  const [penyokong, setPenyokong] = useState("");
+  // borang tambah calon — nama dari database ahli kariah
+  const [cCalon, setCCalon] = useState<PilihanAhli>(KOSONG);
+  const [cPencadang, setCPencadang] = useState<PilihanAhli>(KOSONG);
+  const [cPenyokong, setCPenyokong] = useState<PilihanAhli>(KOSONG);
   const [busy, setBusy] = useState(false);
   const [ralat, setRalat] = useState("");
 
@@ -119,10 +119,10 @@ function JawatanBlok({ agmId, jawatan, calon, undian }: { agmId: string; jawatan
   const [keputusan, setKeputusan] = useState("");
 
   async function tambah() {
-    if (!nama.trim() || !pencadang.trim() || !penyokong.trim()) { setRalat("Nama, pencadang & penyokong wajib."); return; }
+    if (!cCalon.nama.trim() || !cPencadang.nama.trim() || !cPenyokong.nama.trim()) { setRalat("Calon, pencadang & penyokong wajib."); return; }
     setBusy(true); setRalat("");
-    const r = await tambahCalon(agmId, jawatan.id, nama, noAhli, pencadang, penyokong); setBusy(false);
-    if (r?.ok) { setNama(""); setNoAhli(""); setPencadang(""); setPenyokong(""); router.refresh(); } else setRalat(r?.msg ?? "Gagal.");
+    const r = await tambahCalon(agmId, jawatan.id, cCalon, cPencadang, cPenyokong); setBusy(false);
+    if (r?.ok) { setCCalon(KOSONG); setCPencadang(KOSONG); setCPenyokong(KOSONG); router.refresh(); } else setRalat(r?.msg ?? "Gagal.");
   }
   async function semak(id: string, status: string) {
     let sebab = "";
@@ -183,19 +183,19 @@ function JawatanBlok({ agmId, jawatan, calon, undian }: { agmId: string; jawatan
         </ul>
       )}
 
-      {/* Tambah calon */}
+      {/* Tambah calon — cari nama dari database ahli kariah */}
       <details className="mb-3 rounded-lg bg-slate-50 p-3">
         <summary className="cursor-pointer text-sm font-semibold text-slate-700">+ Tambah calon</summary>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama calon" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-          <input value={noAhli} onChange={(e) => setNoAhli(e.target.value)} placeholder="No. ahli (pilihan)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-          <input value={pencadang} onChange={(e) => setPencadang(e.target.value)} placeholder="Pencadang" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-          <input value={penyokong} onChange={(e) => setPenyokong(e.target.value)} placeholder="Penyokong" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-          <div className="flex items-center gap-3 sm:col-span-2">
-            <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-1.5 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah</button>
-            {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
-          </div>
+        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+          <AhliPicker label="Calon" ahli={ahli} nilai={cCalon} onChange={setCCalon} placeholder="Cari nama calon…" />
+          <AhliPicker label="Pencadang" ahli={ahli} nilai={cPencadang} onChange={setCPencadang} placeholder="Cari nama pencadang…" />
+          <AhliPicker label="Penyokong" ahli={ahli} nilai={cPenyokong} onChange={setCPenyokong} placeholder="Cari nama penyokong…" />
         </div>
+        <div className="mt-3 flex items-center gap-3">
+          <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-1.5 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah Calon</button>
+          {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
+        </div>
+        <p className="mt-1 text-[11px] text-slate-400">Taip nama, pilih dari senarai ahli berdaftar. Tanda ✓ bermakna terpaut ke rekod ahli.</p>
       </details>
 
       {/* Kiraan undi */}
