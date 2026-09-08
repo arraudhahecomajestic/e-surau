@@ -3,6 +3,7 @@ import { getProfil, isPentadbir } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { NAMA_SURAU } from "@/lib/tetapan";
+import { bukuDefaults } from "@/lib/bukuTeks";
 import ButangCetak from "@/components/ButangCetak";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +19,8 @@ const KAWASAN: Record<string, string> = {
   mellowood: "Mellowood", merrydale: "Merrydale", cheerywood: "Cheerywood",
   karisma: "Apartment Karisma", harmoni: "Apartment Harmoni", simfoni: "Apartment Simfoni", lain: "Lain-lain",
 };
-const KUMP_JK = [
-  { kod: "penaung", label: "Penaung & Penasihat" }, { kod: "induk", label: "Jawatankuasa Induk" },
-  { kod: "ketua_biro", label: "Ketua Biro" }, { kod: "ajk_biasa", label: "Ahli Jawatankuasa Biasa" },
-  { kod: "juruaudit", label: "Juruaudit Dalaman" }, { kod: "staf", label: "Petugas & Staf Surau" },
-];
+// Turutan senarai JK (satu senarai, tiada tajuk kategori): induk → imam/bilal/siak → ajk → JK kira-kira
+const JK_ORDER: Record<string, number> = { induk: 0, staf: 1, ajk_biasa: 2, juruaudit: 3, ketua_biro: 4, penaung: 5 };
 
 // Pemetaan kategori sistem -> baris tetap Buku Laporan (padanan kata kunci)
 const SUMBER = [
@@ -62,7 +60,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const thnL = thn - 1;                                         // tahun perbandingan
   const dMula = `${thnL}-01-01`, dTamat = `${thn}-12-31`;
 
-  const [teksRes, jkRes, biroRes, usulRes, ahliRes, tggRes, kutRes, belRes, khaRes, progRes] = await Promise.all([
+  const [teksRes, jkRes, biroRes, usulRes, ahliRes, tggRes, kutRes, belRes, khaRes, progRes, kewRes] = await Promise.all([
     db.from("agm_laporan_teks").select("kunci, nilai").eq("agm_id", agm.id),
     db.from("agm_jk").select("kumpulan, jawatan, nama, susunan").eq("agm_id", agm.id).order("kumpulan").order("susunan"),
     db.from("agm_biro").select("nama, ketua, setiausaha, ahli, laporan, susunan").eq("agm_id", agm.id).order("susunan"),
@@ -73,6 +71,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
     db.from("perbelanjaan").select("jumlah, tarikh, dari_khairat, kategori:kategori_belanja(nama)").eq("status", "dibayar").gte("tarikh", dMula).lte("tarikh", dTamat).limit(40000),
     db.from("keahlian_khairat").select("status").limit(20000),
     db.from("program").select("tarikh, dibuang_pada").is("dibuang_pada", null).gte("tarikh", `${thn}-01-01`).lte("tarikh", dTamat).limit(5000),
+    db.from("agm_kewangan").select("bahagian, label, n1, n2, n3, n4, susunan").eq("agm_id", agm.id).order("susunan"),
   ]);
 
   const teks: Record<string, string> = {}; for (const r of ((teksRes.data as any[]) ?? [])) teks[r.kunci] = r.nilai ?? "";
@@ -80,6 +79,10 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const ahli = (ahliRes.data as any[]) ?? [], kutipan = (kutRes.data as any[]) ?? [], belanja = (belRes.data as any[]) ?? [];
   const khairat = (khaRes.data as any[]) ?? [], program = (progRes.data as any[]) ?? [];
   const bilTanggungan = (tggRes as any)?.count ?? null;
+  const kew = (kewRes.data as any[]) ?? [];
+  const kewOf = (b: string) => kew.filter((r) => r.bahagian === b);
+  const kewAda = (b: string) => kewOf(b).length > 0;
+  const kewJum = (b: string, f: "n1" | "n2") => kewOf(b).reduce((s, r) => s + n(r[f]), 0);
 
   // Keahlian
   const lulus = ahli.filter((a) => a.status === "lulus");
@@ -87,6 +90,8 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const menunggu = ahli.filter((a) => a.status === "menunggu").length;
   const baru = ahli.filter((a) => String(a.tarikh_daftar ?? "").slice(0, 4) === String(thn)).length;
   const ikutFasa = Object.keys(KAWASAN).map((kod) => ({ label: KAWASAN[kod], bil: lulus.filter((a) => (a.kawasan ?? "lain") === kod).length })).filter((x) => x.bil > 0);
+  const jkSorted = [...jk].sort((a, b) => (JK_ORDER[a.kumpulan] ?? 9) - (JK_ORDER[b.kumpulan] ?? 9) || (n(a.susunan) - n(b.susunan)));
+  const biroNama = biro.map((b) => b.nama);
   const khairatAktif = khairat.filter((k) => k.status === "aktif").length;
   const khairatTunggak = khairat.filter((k) => k.status === "tertunggak").length;
 
@@ -120,18 +125,25 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   // Tabung (terimaan/bayaran ikut tahun)
   const masukKhairat = (t: number) => kut(t).filter((k) => k.kategori?.jenis_khairat).reduce((s, k) => s + n(k.jumlah), 0);
   const keluarKhairat = (t: number) => bel(t).filter((b) => b.dari_khairat).reduce((s, b) => s + n(b.jumlah), 0);
+  // Baris paparan 8.1 — guna angka CSV Bendahari jika ada, jika tidak angka auto
+  const pendRows = kewAda("pendapatan") ? kewOf("pendapatan").map((r) => ({ label: r.label, a: n(r.n1), b: n(r.n2) })) : masuk25.map((s, i) => ({ label: s.label, a: s.jum, b: masuk24[i].jum }));
+  const belRows = kewAda("perbelanjaan") ? kewOf("perbelanjaan").map((r) => ({ label: r.label, a: n(r.n1), b: n(r.n2) })) : keluar25.map((s, i) => ({ label: s.label, a: s.jum, b: keluar24[i].jum }));
+  const pendTot = kewAda("pendapatan") ? { a: kewJum("pendapatan", "n1"), b: kewJum("pendapatan", "n2") } : { a: tMasuk25, b: tMasuk24 };
+  const belTot = kewAda("perbelanjaan") ? { a: kewJum("perbelanjaan", "n1"), b: kewJum("perbelanjaan", "n2") } : { a: tKeluar25, b: tKeluar24 };
+  const kewSumber = kewAda("pendapatan") || kewAda("perbelanjaan") ? "dimuat naik Bendahari" : "dijana automatik";
 
   // ---- komponen ----
   const H1 = ({ no, t }: { no: number | string; t: string }) => (<div className="mb-4 mt-2 border-b-2 border-surau pb-1"><div className="text-xs font-semibold uppercase tracking-widest text-surau/70">{typeof no === "number" ? `Bahagian ${no}` : no}</div><h2 className="text-xl font-extrabold text-slate-900">{t}</h2></div>);
   const H2 = ({ t }: { t: string }) => <h3 className="mt-4 mb-1.5 font-bold text-slate-800">{t}</h3>;
-  const Teks = ({ k, fallback }: { k: string; fallback?: string }) => teks[k]?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{teks[k]}</div> : <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-500">{fallback ?? ""}{!fallback && <span className="print-hide">(Belum diisi — isi di Naratif Laporan)</span>}</div>;
+  const DEF = bukuDefaults({ tahunAgm, thn, tarikh: agm.tarikh, masa: agm.masa, tempat: agm.tempat, kuorum: agm.kuorum });
+  // Papar teks tersimpan; jika kosong guna teks lalai (sama seperti pra-isi editor "Isi Buku Laporan")
+  const TeksD = ({ k }: { k: string }) => <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{teks[k]?.trim() || DEF[k] || ""}</div>;
   const Sec = ({ children, pecah = true }: { children: React.ReactNode; pecah?: boolean }) => <section className={`mb-8 ${pecah ? "break-before-page" : ""}`}>{children}</section>;
 
   const cellR = "border border-slate-200 px-2 py-1 text-right font-mono";
   const cellL = "border border-slate-200 px-2 py-1";
   const Th = ({ children }: { children: React.ReactNode }) => <th className="border border-slate-300 bg-slate-50 px-2 py-1 text-left text-xs font-bold uppercase text-slate-600">{children}</th>;
 
-  const namaBiroDoc = ["Biro Pendidikan & Dakwah", "Biro Pembangunan & Penyelenggaraan", "Biro Kebajikan & Khairat Kematian", "Biro Muslimat", "Biro Belia & Remaja", "Biro Media, Teknologi & Penajaan"];
 
   return (
     <div className="mx-auto max-w-3xl text-slate-800">
@@ -166,73 +178,37 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
       {/* B1 KATA ALUAN */}
       <Sec><H1 no={1} t="Kata-Kata Aluan Pengerusi" />
-        <Teks k="kata_aluan_pengerusi" fallback={`Assalamualaikum warahmatullahi wabarakatuh.\n\nAlhamdulillah, bersyukur ke hadrat Allah SWT kerana dengan limpah kurnia-Nya kita dapat bertemu dalam Mesyuarat Agung Tahunan Surau Ar Raudhah bagi tahun ${tahunAgm}.\n\n(Sila jana teks penuh di Naratif Laporan — butang Bantu tulis AI.)`} />
+        <TeksD k="kata_aluan_pengerusi" />
       </Sec>
 
       {/* B2 ATUR CARA */}
       <Sec><H1 no={2} t={`Atur Cara Mesyuarat Agung Tahun ${tahunAgm}`} />
-        {teks.atur_cara?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.atur_cara}</div> : <>
-        <table className="mb-3 w-full border-collapse text-sm"><tbody>
-          <tr><td className={cellL + " font-semibold"}>Tarikh</td><td className={cellL}>{agm.tarikh ?? BLANK}</td></tr>
-          <tr><td className={cellL + " font-semibold"}>Masa</td><td className={cellL}>{agm.masa ?? "Selepas solat Maghrib berjemaah"}</td></tr>
-          <tr><td className={cellL + " font-semibold"}>Tempat</td><td className={cellL}>{agm.tempat ?? BLANK}</td></tr>
-        </tbody></table>
-        <table className="w-full border-collapse text-sm"><thead><tr><Th>Masa</Th><Th>Perkara</Th><Th>Tanggungjawab</Th></tr></thead><tbody>
-          {[["7.00 mlm","Ketibaan & pendaftaran kehadiran (kaunter dibuka)","AJK Pendaftaran"],["7.20 mlm","Solat Maghrib berjemaah","Imam"],["7.45 mlm","Jamuan","AJK Jamuan"],["8.25 mlm","Solat Isyak berjemaah","Imam"],["8.45 mlm","Bacaan Al-Fatihah & Doa Pembuka","Imam"],["8.50 mlm","Kata-kata aluan & perutusan Pengerusi","Pengerusi"],["9.00 mlm","Mesyuarat Agung bermula (rujuk Agenda, Bahagian 3)","Pengerusi"],["9.45 mlm","Sesi soal jawab & pembentangan usul","Pengerusi"],["10.10 mlm","Perletakan jawatan & pembubaran JK","Pengerusi"],["10.15 mlm","Pemilihan AJK penggal baharu","Pengerusi Sementara"],["10.45 mlm","Pengumuman keputusan & ucapan Pengerusi baharu","Pengendali Pemilihan"],["11.00 mlm","Hal-hal lain & ucapan penangguhan","Pengerusi"],["11.10 mlm","Tasbih Kaffarah, Al-Asr & Doa Penutup","Imam"],["11.15 mlm","Bersurai","—"]].map((r,i)=>(<tr key={i}><td className={cellL+" whitespace-nowrap text-slate-500"}>{r[0]}</td><td className={cellL}>{r[1]}</td><td className={cellL+" text-slate-500"}>{r[2]}</td></tr>))}
-        </tbody></table>
-        <p className="mt-2 text-[11px] text-slate-400">Waktu adalah anggaran; sahkan waktu Maghrib/Isyak zon SGR01 pada {agm.tarikh ?? tahunAgm}. Atur cara tertakluk pindaan Pengerusi.</p>
-        </>}
+        <TeksD k="atur_cara" />
       </Sec>
 
       {/* B3 AGENDA */}
       <Sec><H1 no={3} t={`Agenda Mesyuarat Agung Tahun ${tahunAgm}`} />
-        {teks.agenda?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.agenda}</div> : <>
-        <table className="w-full border-collapse text-sm"><tbody>
-          {[["1.0","Ucapan Pengerusi dan Perutusan Tahunan"],["2.0","Pengesahan Minit Mesyuarat Agung Tahunan yang lalu"],["3.0","Perkara Berbangkit daripada Minit yang lalu"],["4.0",`Pembentangan Laporan Setiausaha bagi tahun ${tahunAgm}`],["5.0","Pembentangan Laporan Biro-Biro"],["","5.1 – 5.6  "+namaBiroDoc.join(" · ")],["6.0",`Pembentangan Penyata Kewangan berakhir 31 Disember ${thn}`],["7.0","Pembentangan Laporan Juruaudit Dalaman"],["8.0","Sesi Soal Jawab dan Perbahasan"],["9.0","Pembentangan Usul dan Cadangan"],["10.0","Perletakan Jawatan & Pembubaran Jawatankuasa"],["11.0","Pemilihan Ahli Jawatankuasa Penggal Baharu"],["12.0","Hal-Hal Lain"],["13.0","Penangguhan Mesyuarat"]].map((r,i)=>(<tr key={i} className="border-b border-slate-100"><td className={"w-12 px-2 py-1 font-bold text-surau"+(r[0]?"":" text-transparent")}>{r[0]||"·"}</td><td className={"px-2 py-1 "+(r[0]?"":"text-slate-500")}>{r[1]}</td></tr>))}
-        </tbody></table>
-        </>}
+        <TeksD k="agenda" />
       </Sec>
 
       {/* B4 SENARAI JK */}
       <Sec><H1 no={4} t="Senarai Nama Jawatankuasa Surau Ar Raudhah" />
-        {jk.length === 0 ? <p className="text-sm text-slate-400 print-hide">(Belum ada — isi di Senarai JK &amp; Biro)</p> : (
-          <div className="space-y-4">{KUMP_JK.filter((k) => jk.some((j) => j.kumpulan === k.kod)).map((k) => (
-            <div key={k.kod} className="break-inside-avoid"><div className="mb-1 text-xs font-bold uppercase tracking-wide text-surau">{k.label}</div>
-              <table className="w-full border-collapse text-sm"><tbody>{jk.filter((j) => j.kumpulan === k.kod).map((j, i) => (<tr key={i} className="border-b border-slate-100"><td className="w-8 py-1 text-slate-400">{i + 1}.</td><td className="py-1 font-medium text-slate-700">{j.jawatan}</td><td className="py-1 text-slate-800">{j.nama}</td></tr>))}</tbody></table>
-            </div>))}</div>)}
+        {jkSorted.length === 0 ? <p className="text-sm text-slate-400 print-hide">(Belum ada — isi di Senarai JK &amp; Biro)</p> : (
+          <table className="w-full border-collapse text-sm"><tbody>
+            {jkSorted.map((j, i) => (<tr key={i} className="border-b border-slate-100"><td className="w-8 py-1 text-slate-400">{i + 1}.</td><td className="w-1/2 py-1 font-medium text-slate-700">{j.jawatan}</td><td className="py-1 text-slate-800">{j.nama}</td></tr>))}
+          </tbody></table>)}
         <p className="mt-3 text-xs text-slate-400">Rekod kehadiran mesyuarat jawatankuasa: {BLANK} (isi manual).</p>
       </Sec>
 
       {/* B5 SURAT NOTIS */}
       <Sec><H1 no={5} t={`Surat Notis Mesyuarat Agung Tahun ${tahunAgm}`} />
-        {teks.surat_notis?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.surat_notis}</div> : <>
-        <table className="mb-3 w-full border-collapse text-sm"><tbody>
-          <tr><td className={cellL + " w-32 font-semibold"}>Rujukan Kami</td><td className={cellL}>SAR/SU/MAT/{tahunAgm}/01</td></tr>
-          <tr><td className={cellL + " font-semibold"}>Tarikh</td><td className={cellL}>{BLANK}</td></tr>
-          <tr><td className={cellL + " font-semibold"}>Kepada</td><td className={cellL}>Semua Ahli Kariah Berdaftar, Surau Ar Raudhah</td></tr>
-          <tr><td className={cellL + " font-semibold"}>Salinan</td><td className={cellL}>Nazir Surau · Semua AJK · Pejabat Agama Islam Daerah Hulu Langat</td></tr>
-        </tbody></table>
-        <p className="text-sm">Assalamualaikum warahmatullahi wabarakatuh.</p>
-        <p className="mt-2 font-bold uppercase text-slate-900">Notis Mesyuarat Agung Tahunan Surau Ar Raudhah Tahun {tahunAgm}</p>
-        <p className="mt-2 text-sm">Adalah dimaklumkan bahawa Mesyuarat Agung Tahunan akan diadakan pada <b>{agm.tarikh ?? BLANK}</b>{agm.masa ? `, ${agm.masa}` : ""}, bertempat di <b>{agm.tempat ?? BLANK}</b>.</p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
-          <li>Mesyuarat membentangkan Laporan Setiausaha, Laporan Biro-Biro, Penyata Kewangan berakhir 31 Disember {thn} berserta Laporan Juruaudit Dalaman, serta usul untuk kelulusan ahli.</li>
-          <li>Mesyuarat ini juga mesyuarat pemilihan AJK bagi penggal baharu — semua jawatan dikosongkan &amp; dipertandingkan semula.</li>
-          <li>Hanya ahli berstatus <b>LULUS &amp; AKTIF</b> dalam e-Surau pada atau sebelum {BLANK} layak mengundi &amp; dicalonkan. Satu ahli satu undi; tiada proksi.</li>
-          <li>Ahli belum berdaftar boleh daftar di arraudhahecomajestic.com atau kaunter sebelum mesyuarat.</li>
-          <li>Borang pencalonan hendaklah dikemukakan kepada Setiausaha selewatnya {BLANK}. Pencalonan dari lantai hanya bagi jawatan tiada calon.</li>
-          <li>Usul bertulis hendaklah dikemukakan selewatnya {BLANK}.</li>
-          <li>Kuorum: minimum <b>{agm.kuorum || BLANK}</b> orang ahli layak mengundi. Jika tidak dicapai dalam 30 minit, mesyuarat ditangguh.</li>
-        </ol>
-        <p className="mt-3 text-sm">Sekian, terima kasih. <i>"Berkhidmat untuk Agama, Kariah dan Negara"</i>. Wassalam.</p>
-        <div className="mt-6 text-sm text-slate-600">Saya yang menjalankan amanah,<br /><br />.................................................<br /><b>SYAHMI SELIMAN</b><br />Setiausaha, Surau Ar Raudhah, Eco Majestic</div>
-        </>}
+        <TeksD k="surat_notis" />
       </Sec>
 
       {/* B6 LAPORAN SETIAUSAHA */}
       <Sec><H1 no={6} t="Laporan Setiausaha" />
         <H2 t="6.1 Pendahuluan" />
-        <Teks k="laporan_setiausaha" fallback="(Sila jana Laporan Setiausaha di Naratif Laporan — pentadbiran, mesyuarat, aktiviti, pencapaian & cabaran.)" />
+        <TeksD k="laporan_setiausaha" />
 
         <H2 t="6.2 Pentadbiran & Mesyuarat" />
         <table className="w-full border-collapse text-sm"><tbody>
@@ -259,19 +235,13 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         </tbody></table>
 
         <H2 t="6.5 Sistem e-Surau" />
-        {teks.modul_esurau?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.modul_esurau}</div> : (
-        <table className="w-full border-collapse text-sm"><thead><tr><Th>Modul</Th><Th>Fungsi</Th></tr></thead><tbody>
-          {[["Keahlian Kariah","Pendaftaran dalam talian, semakan No. KP automatik, muat naik dokumen, tandatangan elektronik, portal ahli"],["Khairat Kematian","Pendaftaran skim, logik kelayakan tanggungan, tuntutan & pampasan"],["Kewangan Surau","Kutipan & perbelanjaan mengikut tabung, penyata, kawalan terbit oleh Bendahari"],["Ibadah & Program","Yassin & Tahlil, senarai program & RSVP"],["Sewaan Fasiliti","Tempahan dua peringkat, pengiraan kos, bayaran dalam talian"],["Portal Staf","Punch-in kehadiran, checklist tugas, pelaporan kerosakan"],["Sistem Gaji","Pengiraan gaji dari kehadiran & slip gaji"],["AGM & Pemilihan","QR daftar hadir, pencalonan, undian, buku laporan"],["Penajaan","Logo penaja & direktori Rakan Surau"],["Pembayaran Digital","Integrasi CHIP — FPX, kad & e-dompet"]].map((r,i)=>(<tr key={i}><td className={cellL+" w-40 font-semibold text-slate-700"}>{r[0]}</td><td className={cellL+" text-slate-600"}>{r[1]}</td></tr>))}
-        </tbody></table>)}
+        <TeksD k="modul_esurau" />
 
         <H2 t="6.7 Cabaran" />
-        {teks.su_cabaran?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.su_cabaran}</div> : (
-        <table className="w-full border-collapse text-sm"><thead><tr><Th>Cabaran</Th><Th>Kesan & Tindakan</Th></tr></thead><tbody>
-          {[["Pendapatan bermusim, perbelanjaan tetap","Kutipan tinggi pada Ramadan; utiliti & emolumen berlaku setiap bulan. Tindakan: kukuhkan infaq langganan, sewaan & Rakan Surau."],["Kos program naik bila surau kawal mutu","Tindakan: kutipan penajaan, yuran vendor & booth secara berdisiplin."],[`Tunggakan yuran khairat`,`${khairatTunggak} ahli tertunggak. Tindakan: peringatan automatik & kempen kutipan berjadual.`],["Kebergantungan kepada individu","Tindakan: struktur biro diperkemas & tugasan didokumen dalam sistem."]].map((r,i)=>(<tr key={i}><td className={cellL+" w-1/3 font-semibold text-slate-700"}>{r[0]}</td><td className={cellL+" text-slate-600"}>{r[1]}</td></tr>))}
-        </tbody></table>)}
+        <TeksD k="su_cabaran" />
 
         <H2 t="6.8 Penutup & Penghargaan" />
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{teks.su_penghargaan?.trim() || "Setiausaha merakamkan setinggi penghargaan kepada Nazir Surau, Pengerusi, seluruh AJK & ketua biro, imam & bilal, staf surau, para penaja & Rakan Surau, serta seluruh ahli kariah Eco Majestic. Segala kekurangan dipohon kemaafan."}</p>
+        <TeksD k="su_penghargaan" />
         <div className="mt-4 text-sm text-slate-600">.................................................<br /><b>SYAHMI SELIMAN</b> · Setiausaha</div>
       </Sec>
 
@@ -289,75 +259,60 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
       {/* B8 KEWANGAN */}
       <Sec><H1 no={8} t={`Laporan Penyata Kewangan Berakhir 31 Disember ${thn}`} />
-        <H2 t="8.1 Penyata Pendapatan & Perbelanjaan (dijana automatik)" />
+        <H2 t={`8.1 Penyata Pendapatan & Perbelanjaan (${kewSumber})`} />
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Pendapatan</Th><Th>{thn} (RM)</Th><Th>{thnL} (RM)</Th></tr></thead><tbody>
-          {masuk25.map((s, i) => <tr key={s.label}><td className={cellL}>{s.label}</td><td className={cellR}>{s.jum ? rm(s.jum) : "—"}</td><td className={cellR}>{masuk24[i].jum ? rm(masuk24[i].jum) : "—"}</td></tr>)}
-          <tr className="font-bold"><td className={cellL}>JUMLAH PENDAPATAN</td><td className={cellR}>{rm(tMasuk25)}</td><td className={cellR}>{rm(tMasuk24)}</td></tr>
+          {pendRows.map((s, i) => <tr key={i}><td className={cellL}>{s.label}</td><td className={cellR}>{s.a ? rm(s.a) : "—"}</td><td className={cellR}>{s.b ? rm(s.b) : "—"}</td></tr>)}
+          <tr className="font-bold"><td className={cellL}>JUMLAH PENDAPATAN</td><td className={cellR}>{rm(pendTot.a)}</td><td className={cellR}>{rm(pendTot.b)}</td></tr>
         </tbody></table>
         <table className="mt-3 w-full border-collapse text-sm"><thead><tr><Th>Perbelanjaan</Th><Th>{thn} (RM)</Th><Th>{thnL} (RM)</Th></tr></thead><tbody>
-          {keluar25.map((s, i) => <tr key={s.label}><td className={cellL}>{s.label}</td><td className={cellR}>{s.jum ? rm(s.jum) : "—"}</td><td className={cellR}>{keluar24[i].jum ? rm(keluar24[i].jum) : "—"}</td></tr>)}
-          <tr className="font-bold"><td className={cellL}>JUMLAH PERBELANJAAN</td><td className={cellR}>{rm(tKeluar25)}</td><td className={cellR}>{rm(tKeluar24)}</td></tr>
-          <tr className="font-bold"><td className={cellL}>LEBIHAN / (KURANGAN)</td><td className={cellR}>{rm(tMasuk25 - tKeluar25)}</td><td className={cellR}>{rm(tMasuk24 - tKeluar24)}</td></tr>
+          {belRows.map((s, i) => <tr key={i}><td className={cellL}>{s.label}</td><td className={cellR}>{s.a ? rm(s.a) : "—"}</td><td className={cellR}>{s.b ? rm(s.b) : "—"}</td></tr>)}
+          <tr className="font-bold"><td className={cellL}>JUMLAH PERBELANJAAN</td><td className={cellR}>{rm(belTot.a)}</td><td className={cellR}>{rm(belTot.b)}</td></tr>
+          <tr className="font-bold"><td className={cellL}>LEBIHAN / (KURANGAN)</td><td className={cellR}>{rm(pendTot.a - belTot.a)}</td><td className={cellR}>{rm(pendTot.b - belTot.b)}</td></tr>
         </tbody></table>
-        <p className="mt-1 text-[11px] text-slate-400">Angka dipetakan automatik dari kategori sistem (padanan kata kunci). Sila semak &amp; laras dengan Bendahari sebelum muktamad.</p>
-        {teks.ulasan_kewangan?.trim() && <div className="mt-3"><div className="mb-1 text-xs font-bold uppercase text-slate-500">Ulasan Bendahari</div><div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.ulasan_kewangan}</div></div>}
+        <p className="mt-1 text-[11px] text-slate-400">{kewSumber === "dimuat naik Bendahari" ? "Angka dimuat naik oleh Bendahari (CSV)." : "Angka dipetakan automatik dari kategori sistem — Bendahari boleh muat naik CSV di halaman Angka Kewangan untuk angka rasmi."}</p>
+        <div className="mt-3"><div className="mb-1 text-xs font-bold uppercase text-slate-500">Ulasan Bendahari</div><TeksD k="ulasan_kewangan" /></div>
 
-        <H2 t="8.2 Penyata Kedudukan Kewangan (perlu isi Bendahari)" />
-        <table className="w-full border-collapse text-sm"><tbody>
-          {["Wang tunai di tangan","Wang di bank — akaun am","Wang di bank — akaun khairat","Simpanan tetap","Yuran belum diterima","Aset tetap (nilai buku)","JUMLAH ASET"].map((k)=>(<tr key={k}><td className={cellL+(k.startsWith("JUMLAH")?" font-bold":"")}>{k}</td><td className={cellR}>{BLANK}</td></tr>))}
-        </tbody></table>
+        <H2 t="8.2 Penyata Kedudukan Kewangan" />
+        {kewAda("aset") || kewAda("liabiliti") ? (
+          <table className="w-full border-collapse text-sm"><thead><tr><Th>Perkara</Th><Th>{thn} (RM)</Th><Th>{thnL} (RM)</Th></tr></thead><tbody>
+            {kewOf("aset").map((r, i) => <tr key={"a" + i}><td className={cellL}>{r.label}</td><td className={cellR}>{rm(n(r.n1))}</td><td className={cellR}>{rm(n(r.n2))}</td></tr>)}
+            <tr className="font-bold"><td className={cellL}>JUMLAH ASET</td><td className={cellR}>{rm(kewJum("aset", "n1"))}</td><td className={cellR}>{rm(kewJum("aset", "n2"))}</td></tr>
+            {kewOf("liabiliti").map((r, i) => <tr key={"l" + i}><td className={cellL}>{r.label}</td><td className={cellR}>{rm(n(r.n1))}</td><td className={cellR}>{rm(n(r.n2))}</td></tr>)}
+            <tr className="font-bold"><td className={cellL}>JUMLAH LIABILITI</td><td className={cellR}>{rm(kewJum("liabiliti", "n1"))}</td><td className={cellR}>{rm(kewJum("liabiliti", "n2"))}</td></tr>
+            <tr className="font-bold"><td className={cellL}>ASET BERSIH</td><td className={cellR}>{rm(kewJum("aset", "n1") - kewJum("liabiliti", "n1"))}</td><td className={cellR}>{rm(kewJum("aset", "n2") - kewJum("liabiliti", "n2"))}</td></tr>
+          </tbody></table>
+        ) : (
+          <table className="w-full border-collapse text-sm"><tbody>
+            {["Wang tunai di tangan","Wang di bank — akaun am","Wang di bank — akaun khairat","Simpanan tetap","Yuran belum diterima","Aset tetap (nilai buku)","JUMLAH ASET"].map((k)=>(<tr key={k}><td className={cellL+(k.startsWith("JUMLAH")?" font-bold":"")}>{k}</td><td className={cellR}>{BLANK}</td></tr>))}
+          </tbody></table>)}
 
-        <H2 t="8.3 Kedudukan Tabung (terimaan/bayaran dijana automatik)" />
-        <table className="w-full border-collapse text-sm"><thead><tr><Th>Tabung</Th><Th>Baki 1 Jan</Th><Th>Terimaan {thn}</Th><Th>Bayaran {thn}</Th><Th>Baki 31 Dis</Th></tr></thead><tbody>
-          <tr><td className={cellL}>Tabung Am</td><td className={cellR}>{BLANK}</td><td className={cellR}>{rm(tMasuk25 - masukKhairat(thn))}</td><td className={cellR}>{rm(tKeluar25 - keluarKhairat(thn))}</td><td className={cellR}>{BLANK}</td></tr>
-          <tr><td className={cellL}>Tabung Khairat</td><td className={cellR}>{BLANK}</td><td className={cellR}>{rm(masukKhairat(thn))}</td><td className={cellR}>{rm(keluarKhairat(thn))}</td><td className={cellR}>{BLANK}</td></tr>
-        </tbody></table>
-        <p className="mt-1 text-[11px] text-slate-400">Baki pembukaan (1 Jan) perlu diisi Bendahari; baki penutup dikira selepas itu.</p>
+        <H2 t="8.3 Kedudukan Tabung" />
+        {kewAda("tabung") ? (
+          <table className="w-full border-collapse text-sm"><thead><tr><Th>Tabung</Th><Th>Baki 1 Jan</Th><Th>Terimaan</Th><Th>Bayaran</Th><Th>Baki 31 Dis</Th></tr></thead><tbody>
+            {kewOf("tabung").map((r, i) => <tr key={i}><td className={cellL}>{r.label}</td><td className={cellR}>{rm(n(r.n1))}</td><td className={cellR}>{rm(n(r.n2))}</td><td className={cellR}>{rm(n(r.n3))}</td><td className={cellR}>{rm(n(r.n4))}</td></tr>)}
+          </tbody></table>
+        ) : (
+          <table className="w-full border-collapse text-sm"><thead><tr><Th>Tabung</Th><Th>Baki 1 Jan</Th><Th>Terimaan {thn}</Th><Th>Bayaran {thn}</Th><Th>Baki 31 Dis</Th></tr></thead><tbody>
+            <tr><td className={cellL}>Tabung Am</td><td className={cellR}>{BLANK}</td><td className={cellR}>{rm(tMasuk25 - masukKhairat(thn))}</td><td className={cellR}>{rm(tKeluar25 - keluarKhairat(thn))}</td><td className={cellR}>{BLANK}</td></tr>
+            <tr><td className={cellL}>Tabung Khairat</td><td className={cellR}>{BLANK}</td><td className={cellR}>{rm(masukKhairat(thn))}</td><td className={cellR}>{rm(keluarKhairat(thn))}</td><td className={cellR}>{BLANK}</td></tr>
+          </tbody></table>)}
 
         <H2 t="8.4 Nota kepada Penyata Kewangan" />
-        {teks.nota_kewangan?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.nota_kewangan}</div> : (
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
-            <li>Asas perakaunan: penyata disediakan atas asas tunai — pendapatan diiktiraf apabila diterima, perbelanjaan apabila dibayar.</li>
-            <li>Tabung Khairat: yuran khairat &amp; pampasan diasingkan daripada Tabung Am.</li>
-            <li>Aset tetap, sumbangan barangan &amp; perkara luar biasa: {BLANK}.</li>
-          </ol>)}
+        <TeksD k="nota_kewangan" />
 
         <H2 t="8.5 Perakuan Bendahari" />
-        {teks.perakuan_bendahari?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.perakuan_bendahari}</div>
-          : <p className="text-sm">Saya, {BLANK}, Bendahari Surau Ar Raudhah, mengesahkan penyata kewangan bagi tahun berakhir 31 Disember {thn} adalah benar &amp; lengkap pada pengetahuan saya.</p>}
+        <TeksD k="perakuan_bendahari" />
         <div className="mt-4 text-sm text-slate-500">................................................. · Tarikh: {BLANK}</div>
 
         <H2 t="8.6 Laporan Juruaudit Dalaman" />
-        {teks.laporan_juruaudit?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.laporan_juruaudit}</div> : (
-        <table className="w-full border-collapse text-sm"><tbody>
-          <tr><td className={cellL+" w-40 font-semibold"}>Skop semakan</td><td className={cellL}>Buku tunai · Resit · Baucar · Penyata bank · Rekod e-Surau</td></tr>
-          <tr><td className={cellL+" font-semibold"}>Tarikh audit</td><td className={cellL}>{BLANK}</td></tr>
-          <tr><td className={cellL+" font-semibold"}>Penemuan</td><td className={cellL}>{BLANK}</td></tr>
-          <tr><td className={cellL+" font-semibold"}>Pengesahan</td><td className={cellL}>Pada pendapat kami, penyata kewangan {BLANK} menggambarkan kedudukan kewangan surau pada 31 Disember {thn}.</td></tr>
-        </tbody></table>)}
+        <TeksD k="laporan_juruaudit" />
         <div className="mt-4 flex gap-8 text-sm text-slate-500"><div>.....................<br />Juruaudit 1</div><div>.....................<br />Juruaudit 2</div></div>
       </Sec>
 
       {/* B9 USUL */}
       <Sec><H1 no={9} t="Pembentangan Usul / Cadangan" />
         <p className="mb-3 text-sm text-slate-600">Setiap usul memerlukan pencadang &amp; penyokong daripada ahli kariah yang layak mengundi.</p>
-        {teks.usul_standard?.trim() ? <div className="mb-3 whitespace-pre-wrap text-sm leading-relaxed">{teks.usul_standard}</div> : [
-          "Bahawa Mesyuarat mengesahkan minit Mesyuarat Agung Tahunan yang lalu sebagai rekod yang benar.",
-          "Bahawa Mesyuarat menerima Laporan Setiausaha sebagaimana Bahagian 6.",
-          "Bahawa Mesyuarat menerima Laporan Biro-Biro sebagaimana Bahagian 7.",
-          `Bahawa Mesyuarat menerima & mengesahkan Penyata Kewangan berakhir 31 Disember ${thn} berserta Laporan Juruaudit.`,
-          "Bahawa Mesyuarat meluluskan cadangan belanjawan tahun hadapan berserta siling peruntukan biro.",
-          "Bahawa Mesyuarat meluluskan had kuasa perbelanjaan Jawatankuasa.",
-          "Bahawa Mesyuarat mengesahkan Dasar Kerjasama Pihak Luar & Penajaan sebagai dasar tetap surau.",
-          "Bahawa Mesyuarat menetapkan kadar yuran & pampasan Skim Khairat Kematian.",
-          "Bahawa Mesyuarat melantik dua juruaudit dalaman bagi tahun hadapan (bukan AJK, bukan penandatangan akaun).",
-        ].map((t, i) => (
-          <div key={i} className="mb-2 break-inside-avoid rounded-lg border border-slate-200 p-3 text-sm">
-            <div className="font-semibold text-slate-900">Usul {i + 1}</div>
-            <div className="mt-0.5 text-slate-700">{t}</div>
-            <div className="mt-1 text-xs text-slate-500">Pencadang: .................. · Penyokong: .................. · Sokong ___ / Bantah ___ / Berkecuali ___ · ⬜ LULUS ⬜ TIDAK LULUS</div>
-          </div>
-        ))}
+        <TeksD k="usul_standard" />
         <H2 t="Usul & Cadangan daripada Ahli Kariah" />
         {usul.length === 0 ? <p className="text-sm text-slate-400">Tiada usul ahli direkodkan. (Usul yang di-key di modul Usul &amp; Undian akan dipaparkan di sini.)</p> : (
           <div className="space-y-2">{usul.map((u, i) => (

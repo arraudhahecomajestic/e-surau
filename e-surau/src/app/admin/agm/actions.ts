@@ -2,8 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getProfil, isPentadbir } from "@/lib/sesi";
+import { getProfil, isPentadbir, isBendahari, isAdmin } from "@/lib/sesi";
 import { panggilAI } from "@/lib/ai";
+
+// Kunci naratif kewangan — boleh diedit Bendahari (atau SU). Naratif lain: SU sahaja.
+const KEWANGAN_KEYS = ["ulasan_kewangan", "nota_kewangan", "perakuan_bendahari", "laporan_juruaudit"];
+async function bolehTeks(kunci: string) {
+  const p = await getProfil();
+  if (KEWANGAN_KEYS.includes(kunci)) return isBendahari(p) || isAdmin(p);
+  return isAdmin(p); // naratif SU
+}
 
 const NAMA_SURAU = "Surau Ar-Raudhah, Eco Majestic";
 
@@ -221,7 +229,7 @@ GAYA WAJIB: Bahasa Melayu baku & formal, nada tertib, jelas & padat. Panjang ber
 
 // ---- Teks naratif laporan ----
 export async function simpanTeks(agmId: string, kunci: string, nilai: string): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehTeks(kunci))) return { ok: false, msg: "Tiada akses untuk bahagian ini." };
   if (!agmId || !kunci) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   await db.from("agm_laporan_teks").upsert(
@@ -358,6 +366,57 @@ export async function tentukanPemenang(jawatanId: string): Promise<{ ok: boolean
   return { ok: true, keputusan: String(data ?? "") };
 }
 
+// ---- Kewangan Buku (muat naik CSV oleh Bendahari) ----
+function baris1csv(line: string): string[] {
+  const out: string[] = []; let cur = ""; let dlm = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (dlm && line[i + 1] === '"') { cur += '"'; i++; } else dlm = !dlm; }
+    else if (c === "," && !dlm) { out.push(cur); cur = ""; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out.map((x) => x.trim());
+}
+const angka = (s: string) => { const v = parseFloat((s ?? "").replace(/[^0-9.\-]/g, "")); return isNaN(v) ? 0 : v; };
+
+export async function muatnaikKewangan(agmId: string, csv: string): Promise<{ ok: boolean; msg?: string; bil?: number }> {
+  const p = await getProfil();
+  if (!(isBendahari(p) || isAdmin(p))) return { ok: false, msg: "Tiada akses (Bendahari/SU sahaja)." };
+  if (!agmId || !csv.trim()) return { ok: false, msg: "Fail CSV kosong." };
+  const BHG = ["pendapatan", "perbelanjaan", "aset", "liabiliti", "tabung"];
+  const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const rows: any[] = [];
+  let susunan: Record<string, number> = {};
+  for (const line of lines) {
+    const c = baris1csv(line);
+    const bhg = (c[0] ?? "").toLowerCase();
+    if (bhg === "bahagian" || !BHG.includes(bhg)) continue; // langkau header / baris tak sah
+    const label = c[1] ?? "";
+    if (!label) continue;
+    susunan[bhg] = (susunan[bhg] ?? 0) + 1;
+    rows.push({ agm_id: agmId, bahagian: bhg, label: label.slice(0, 200), n1: angka(c[2]), n2: angka(c[3]), n3: angka(c[4]), n4: angka(c[5]), susunan: susunan[bhg] });
+  }
+  if (rows.length === 0) return { ok: false, msg: "Tiada baris sah dalam CSV. Semak format & bahagian." };
+  const db = createAdminClient();
+  await db.from("agm_kewangan").delete().eq("agm_id", agmId);
+  const { error } = await db.from("agm_kewangan").insert(rows);
+  if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
+  revalidatePath("/admin/agm/kewangan");
+  revalidatePath("/admin/agm/buku");
+  return { ok: true, bil: rows.length };
+}
+
+export async function padamKewangan(agmId: string): Promise<{ ok: boolean }> {
+  const p = await getProfil();
+  if (!(isBendahari(p) || isAdmin(p))) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_kewangan").delete().eq("agm_id", agmId);
+  revalidatePath("/admin/agm/kewangan");
+  revalidatePath("/admin/agm/buku");
+  return { ok: true };
+}
+
 // ---- AI: Bantu tulis / perkemas teks laporan ----
 const PANDUAN_BAHAGIAN: Record<string, { tajuk: string; panduan: string }> = {
   kata_aluan_pengerusi: {
@@ -443,7 +502,7 @@ export async function bantuTulisLaporan(
   arahan: string,
   draft: string,
 ): Promise<{ ok: boolean; teks?: string; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehTeks(kunci))) return { ok: false, msg: "Tiada akses untuk bahagian ini." };
   const bhg = PANDUAN_BAHAGIAN[kunci];
   const sistem = `Anda pembantu penulisan untuk Ahli Jawatankuasa ${NAMA_SURAU}. Tugas anda membantu menulis bahagian "${bhg?.tajuk ?? kunci}" untuk Buku Laporan Tahunan Mesyuarat Agung Kariah.
 ${bhg?.panduan ?? ""}
