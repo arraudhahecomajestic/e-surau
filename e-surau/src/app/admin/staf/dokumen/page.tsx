@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isAdmin } from "@/lib/sesi";
+import { getProfil, isMaster } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AdminNav from "@/components/AdminNav";
@@ -12,7 +12,7 @@ export default async function DokumenStafPage({ searchParams }: { searchParams: 
     return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
-  if (!isAdmin(profil)) return <TiadaAkses />;
+  if (!isMaster(profil)) return <TiadaAkses />;
 
   const db = createAdminClient();
   const { data: stafData } = await db.from("staf_gaji_config").select("profil_id, nama, jawatan").order("nama");

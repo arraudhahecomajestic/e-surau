@@ -23,7 +23,7 @@ export default function AgmLaporanTeksPanel({ agmId, nilaiAwal }: { agmId: strin
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-surau/30 bg-surau/5 p-4 text-sm text-slate-700">
-        <b className="text-surau">✨ Bantu tulis (AI)</b> — taip nota kasar atau isi angka rujukan dalam kotak
+        <b className="text-surau">Bantu tulis (AI)</b> — taip nota kasar atau isi angka rujukan dalam kotak
         “Nota / arahan”, kemudian tekan butang AI. AI akan draf atau perkemas teks dalam Bahasa Melayu
         formal. Kau boleh edit sepuas hati sebelum <b>Simpan</b>. AI tidak akan reka angka yang kau tak
         beri — jadi tampal angka sebenar (dari Laporan Angka Auto) untuk hasil terbaik.
@@ -53,7 +53,7 @@ function SeksyenTeks({ agmId, b, awal }: { agmId: string; b: Bahagian; awal: str
     if (r.ok && r.teks) {
       setSebelum(teks);        // simpan versi lama utk undo
       setTeks(r.teks);
-      setMsg("✨ AI dah tulis — semak & edit, kemudian Simpan.");
+      setMsg("AI dah tulis — semak & edit, kemudian Simpan.");
       setTimeout(() => setMsg(""), 4000);
     } else {
       setRalat(r.msg ?? "AI gagal. Cuba lagi.");
@@ -64,7 +64,7 @@ function SeksyenTeks({ agmId, b, awal }: { agmId: string; b: Bahagian; awal: str
     if (sebelum === null) return;
     setTeks(sebelum);
     setSebelum(null);
-    setMsg("↩ Dikembalikan.");
+    setMsg("Dikembalikan.");
     setTimeout(() => setMsg(""), 2500);
   }
 
@@ -101,11 +101,11 @@ function SeksyenTeks({ agmId, b, awal }: { agmId: string; b: Bahagian; awal: str
           disabled={busyAI}
           className="rounded-lg bg-surau px-3 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50"
         >
-          {busyAI ? "AI menulis…" : adaKandungan ? "✨ Perkemas dengan AI" : "✨ Bantu tulis (AI)"}
+          {busyAI ? "AI menulis…" : adaKandungan ? "Perkemas dengan AI" : "Bantu tulis (AI)"}
         </button>
         {sebelum !== null && (
           <button onClick={undo} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-            ↩ Undo AI
+            Undo AI
           </button>
         )}
       </div>

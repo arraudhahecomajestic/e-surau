@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getProfil, isAdmin, type Profil } from "@/lib/sesi";
+import { getProfil, type Profil, isMaster } from "@/lib/sesi";
 
 function bolehUrus(p: Profil | null): boolean {
-  return isAdmin(p);
+  return isMaster(p);
 }
 
 // Jadual kerja staf — simpan/kemas kini ikut tarikh (upsert).

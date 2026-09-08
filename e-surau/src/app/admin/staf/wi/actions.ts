@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getProfil, isAdmin } from "@/lib/sesi";
+import { getProfil, isMaster } from "@/lib/sesi";
 
 export async function simpanWi(formData: FormData) {
-  if (!isAdmin(await getProfil())) return;
+  if (!isMaster(await getProfil())) return;
   const id = String(formData.get("id") ?? "");
   const tajuk = String(formData.get("tajuk") ?? "").trim();
   const kandungan = String(formData.get("kandungan") ?? "").trim();
@@ -23,7 +23,7 @@ export async function simpanWi(formData: FormData) {
 }
 
 export async function padamWi(formData: FormData) {
-  if (!isAdmin(await getProfil())) return;
+  if (!isMaster(await getProfil())) return;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const db = createAdminClient();

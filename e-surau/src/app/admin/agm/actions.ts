@@ -12,8 +12,8 @@ async function boleh() {
 }
 
 // ---- Maklumat AGM (cipta / kemas) ----
-export async function simpanAgm(formData: FormData): Promise<void> {
-  if (!(await boleh())) return;
+export async function simpanAgm(formData: FormData): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses. Sila log masuk sebagai AJK/Admin." };
   const db = createAdminClient();
   const id = String(formData.get("id") ?? "");
   const rec: any = {
@@ -26,9 +26,10 @@ export async function simpanAgm(formData: FormData): Promise<void> {
     atur_cara: String(formData.get("atur_cara") ?? "").slice(0, 4000) || null,
     status: ["akan_datang", "sedang", "selesai"].includes(String(formData.get("status"))) ? String(formData.get("status")) : "akan_datang",
   };
-  if (id) await db.from("agm").update(rec).eq("id", id);
-  else await db.from("agm").insert(rec);
+  const { error } = id ? await db.from("agm").update(rec).eq("id", id) : await db.from("agm").insert(rec);
+  if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
   revalidatePath("/admin/agm");
+  return { ok: true };
 }
 
 // ---- Daftar hadir ----
@@ -41,7 +42,8 @@ export async function tandaHadir(agmId: string, ahliId: string | null, nama: str
     const { data: ada } = await db.from("agm_hadir").select("id").eq("agm_id", agmId).eq("ahli_id", ahliId).maybeSingle();
     if (ada?.id) return { ok: true }; // sudah didaftar
   }
-  await db.from("agm_hadir").insert({ agm_id: agmId, ahli_id: ahliId, nama: nama.trim(), no_ahli: noAhli || null });
+  const { error } = await db.from("agm_hadir").insert({ agm_id: agmId, ahli_id: ahliId, nama: nama.trim(), no_ahli: noAhli || null });
+  if (error) return { ok: false, msg: `Gagal daftar: ${error.message}` };
   revalidatePath("/admin/agm");
   return { ok: true };
 }
@@ -50,6 +52,25 @@ export async function padamHadir(id: string): Promise<{ ok: boolean }> {
   if (!(await boleh())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_hadir").delete().eq("id", id);
+  revalidatePath("/admin/agm");
+  return { ok: true };
+}
+
+// Buka / tutup daftar hadir (QR check-in)
+export async function tetapkanDaftarBuka(agmId: string, buka: boolean): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  const db = createAdminClient();
+  const { error } = await db.from("agm").update({ daftar_buka: buka }).eq("id", agmId);
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath("/admin/agm");
+  return { ok: true };
+}
+
+// Sahkan kehadiran golongan "perlu semak" (2025 belum kemas kini)
+export async function sahkanHadir(id: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_hadir").update({ perlu_semak: false }).eq("id", id);
   revalidatePath("/admin/agm");
   return { ok: true };
 }
@@ -66,19 +87,21 @@ export async function tambahUsul(agmId: string, tajuk: string, keterangan: strin
   const db = createAdminClient();
   const { data: last } = await db.from("agm_usul").select("no").eq("agm_id", agmId).order("no", { ascending: false }).limit(1).maybeSingle();
   const no = ((last?.no as number) ?? 0) + 1;
-  await db.from("agm_usul").insert({ agm_id: agmId, no, tajuk: tajuk.trim().slice(0, 300), keterangan: keterangan.trim().slice(0, 2000) || null });
+  const { error } = await db.from("agm_usul").insert({ agm_id: agmId, no, tajuk: tajuk.trim().slice(0, 300), keterangan: keterangan.trim().slice(0, 2000) || null });
+  if (error) return { ok: false, msg: `Gagal tambah usul: ${error.message}` };
   revalidatePath("/admin/agm");
   return { ok: true };
 }
 
-export async function kemasUndi(id: string, setuju: number, tolak: number, berkecuali: number, keputusanManual: string, catatan: string): Promise<{ ok: boolean }> {
+export async function kemasUndi(id: string, setuju: number, tolak: number, berkecuali: number, keputusanManual: string, catatan: string): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false };
   const db = createAdminClient();
   const s = Math.max(0, Math.round(setuju || 0));
   const t = Math.max(0, Math.round(tolak || 0));
   const b = Math.max(0, Math.round(berkecuali || 0));
   const kep = ["lulus", "tolak", "tangguh"].includes(keputusanManual) ? keputusanManual : keputusanAuto(s, t);
-  await db.from("agm_usul").update({ undi_setuju: s, undi_tolak: t, undi_berkecuali: b, keputusan: kep || null, catatan: catatan.slice(0, 1000) || null }).eq("id", id);
+  const { error } = await db.from("agm_usul").update({ undi_setuju: s, undi_tolak: t, undi_berkecuali: b, keputusan: kep || null, catatan: catatan.slice(0, 1000) || null }).eq("id", id);
+  if (error) return { ok: false, msg: `Gagal simpan undi: ${error.message}` };
   revalidatePath("/admin/agm");
   return { ok: true };
 }

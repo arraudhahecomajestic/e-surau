@@ -8,7 +8,7 @@ import { gredDari } from "@/lib/penilaian";
 
 function bolehGaji(p: Profil | null): boolean {
   // Gaji = hal sulit → SU/AJK (pentadbir) atau master sahaja. Bukan bendahari sahaja.
-  return isPentadbir(p) || isMaster(p);
+  return isMaster(p);
 }
 
 // Tarik config + ringkasan attendance untuk seorang staf pada satu bulan.

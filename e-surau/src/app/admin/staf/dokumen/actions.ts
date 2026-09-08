@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getProfil, isAdmin } from "@/lib/sesi";
+import { getProfil, isMaster } from "@/lib/sesi";
 
 // Simpan rekod dokumen staf (fail sudah dimuat naik ke storage di sisi klien).
 export async function simpanDokumen(data: {
@@ -16,7 +16,7 @@ export async function simpanDokumen(data: {
   catatan?: string;
 }): Promise<{ ok: boolean; msg?: string }> {
   const p = await getProfil();
-  if (!isAdmin(p)) return { ok: false, msg: "Hanya SU/Admin boleh urus dokumen staf." };
+  if (!isMaster(p)) return { ok: false, msg: "Hanya SU boleh urus dokumen staf." };
   if (!data.profil_id) return { ok: false, msg: "Sila pilih staf." };
   if (!data.url_fail) return { ok: false, msg: "Sila muat naik fail dokumen." };
   const tajuk = (data.tajuk ?? "").trim();
@@ -44,7 +44,7 @@ export async function simpanDokumen(data: {
 // Padam rekod + fail storage.
 export async function padamDokumen(id: string): Promise<{ ok: boolean; msg?: string }> {
   const p = await getProfil();
-  if (!isAdmin(p)) return { ok: false, msg: "Hanya SU/Admin boleh padam dokumen staf." };
+  if (!isMaster(p)) return { ok: false, msg: "Hanya SU boleh padam dokumen staf." };
   if (!id) return { ok: false, msg: "ID tidak sah." };
 
   const db = createAdminClient();

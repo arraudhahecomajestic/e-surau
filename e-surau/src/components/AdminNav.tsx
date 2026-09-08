@@ -75,11 +75,9 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
       ] },
     ];
   } else {
-    // Admin / Master — penuh
-    atas = [
-      { href: "/admin", label: "Permohonan" },
-      { href: "/admin/staf", label: "Staf" },
-    ];
+    // Admin / Master — penuh. Staf & Gaji hanya untuk SU (master).
+    atas = [{ href: "/admin", label: "Permohonan" }];
+    if (master) atas.push({ href: "/admin/staf", label: "Staf" });
     kumpulan = [
       { label: "Keahlian", items: KEAHLIAN },
       { label: "Kewangan", items: KEWANGAN },

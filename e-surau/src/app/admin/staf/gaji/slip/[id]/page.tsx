@@ -14,7 +14,7 @@ export default async function SlipGajiPage({ params }: { params: { id: string } 
     return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
-  if (!(isPentadbir(profil) || isMaster(profil))) return <TiadaAkses />;
+  if (!isMaster(profil)) return <TiadaAkses />;
 
   const db = createAdminClient();
   const { data } = await db.from("staf_gaji").select("*").eq("id", params.id).maybeSingle();

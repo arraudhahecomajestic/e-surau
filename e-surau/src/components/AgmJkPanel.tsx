@@ -135,13 +135,13 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
     if (r.ok && r.teks) {
       setSebelum(laporan);
       setLaporan(r.teks);
-      setMsg("✨ AI dah tulis — semak & Simpan.");
+      setMsg("AI dah tulis — semak & Simpan.");
       setTimeout(() => setMsg(""), 4000);
     } else {
       setRalat(r.msg ?? "AI gagal. Cuba lagi.");
     }
   }
-  function undo() { if (sebelum === null) return; setLaporan(sebelum); setSebelum(null); setMsg("↩ Dikembalikan."); setTimeout(() => setMsg(""), 2500); }
+  function undo() { if (sebelum === null) return; setLaporan(sebelum); setSebelum(null); setMsg("Dikembalikan."); setTimeout(() => setMsg(""), 2500); }
 
   const bilAhli = ahli.split("\n").map((x) => x.trim()).filter(Boolean).length;
   const adaLaporan = laporan.trim().length > 0;
@@ -164,9 +164,9 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
         <textarea value={arahan} onChange={(e) => setArahan(e.target.value)} rows={2} placeholder="cth: program utama biro tahun ni, pencapaian, bilangan aktiviti…" className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm" /></label>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button onClick={bantuAI} disabled={busyAI} className="rounded-lg bg-surau px-3 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">
-          {busyAI ? "AI menulis…" : adaLaporan ? "✨ Perkemas dengan AI" : "✨ Bantu tulis (AI)"}
+          {busyAI ? "AI menulis…" : adaLaporan ? "Perkemas dengan AI" : "Bantu tulis (AI)"}
         </button>
-        {sebelum !== null && <button onClick={undo} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">↩ Undo AI</button>}
+        {sebelum !== null && <button onClick={undo} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">Undo AI</button>}
       </div>
       <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Laporan biro (pilihan)</span>
         <textarea value={laporan} onChange={(e) => setLaporan(e.target.value)} rows={5} placeholder="Ringkasan aktiviti & pencapaian biro sepanjang tahun…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm leading-relaxed" /></label>

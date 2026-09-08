@@ -22,7 +22,7 @@ export default async function AdminAgmPage() {
   let usul: any[] = [];
   if (agm?.id) {
     const [{ data: h }, { data: u }] = await Promise.all([
-      db.from("agm_hadir").select("id, ahli_id, nama, no_ahli, masa_daftar").eq("agm_id", agm.id).order("masa_daftar", { ascending: true }),
+      db.from("agm_hadir").select("id, ahli_id, nama, no_ahli, no_kp, kaedah, perlu_semak, masa_daftar").eq("agm_id", agm.id).order("masa_daftar", { ascending: true }),
       db.from("agm_usul").select("*").eq("agm_id", agm.id).order("no", { ascending: true }),
     ]);
     hadir = (h as any[]) ?? [];
@@ -47,9 +47,9 @@ export default async function AdminAgmPage() {
           <p className="mt-1 text-sm text-slate-600">Maklumat mesyuarat, daftar kehadiran &amp; semakan kuorum, serta usul &amp; undian — untuk kegunaan AJK.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="/admin/agm/jk" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">👥 Senarai JK &amp; Biro</a>
-          <a href="/admin/agm/laporan-teks" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">✍️ Naratif Laporan (AI)</a>
-          <a href="/admin/agm/laporan" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">📊 Laporan Tahunan (Angka Auto)</a>
+          <a href="/admin/agm/jk" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Senarai JK &amp; Biro</a>
+          <a href="/admin/agm/laporan-teks" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Naratif Laporan (AI)</a>
+          <a href="/admin/agm/laporan" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">Laporan Tahunan (Angka Auto)</a>
         </div>
       </div>
       <AgmPanel agm={agm} hadir={hadir} usul={usul} ahli={ahli} tahunLalai={new Date().getFullYear()} />
