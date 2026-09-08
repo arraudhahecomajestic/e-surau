@@ -80,7 +80,11 @@ export default function StafPortal({
 
 function ClockCard({ shift, label, rec, sedangKerja, onDone }: { shift: string; label: string; rec?: Kehadiran; sedangKerja: boolean; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
-  async function tekan() { setBusy(true); await clockShift(shift); setBusy(false); onDone(); }
+  async function tekan() {
+    // Pengesahan sebelum Clock Out — elak tertekan dua kali (tamat shift tak sengaja)
+    if (sedangKerja && !window.confirm("Sahkan CLOCK OUT?\nAnda akan tamatkan shift ini.")) return;
+    setBusy(true); await clockShift(shift); setBusy(false); onDone();
+  }
   return (
     <div className={`rounded-xl border-2 p-4 ${sedangKerja ? "border-green-400 bg-green-50" : "border-slate-200"}`}>
       <div className="font-semibold text-slate-900">{label}</div>

@@ -2,10 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { tugasBaru, batalTugasan, tindakLaporan, tambahChecklistItem, toggleChecklistItem } from "@/app/admin/staf/actions";
+import { tugasBaru, batalTugasan, tindakLaporan, tambahChecklistItem, toggleChecklistItem, kemasKehadiran, padamKehadiran } from "@/app/admin/staf/actions";
 import { labelShift } from "@/lib/staf";
 
-type Kehadiran = { nama: string | null; shift: string; masuk: string | null; keluar: string | null };
+type Kehadiran = { id?: string; nama: string | null; shift: string; masuk: string | null; keluar: string | null };
+
+// Tukar ISO(UTC) → nilai input datetime-local ikut waktu Malaysia (UTC+8)
+function keInput(iso: string | null): string {
+  if (!iso) return "";
+  try { return new Date(new Date(iso).getTime() + 8 * 3600000).toISOString().slice(0, 16); } catch { return ""; }
+}
+// Tukar nilai input datetime-local (waktu Malaysia) → ISO(UTC)
+function keISO(val: string): string | null {
+  if (!val) return null;
+  try { return new Date(val + ":00+08:00").toISOString(); } catch { return null; }
+}
 type Tugas = { id: string; tajuk: string; keterangan: string | null; status: string; tarikh_tugas: string; tarikh_siap: string | null; nota_siap: string | null };
 type Laporan = { id: string; tajuk: string; keterangan: string | null; url_gambar: string | null; status: string; oleh: string | null; tindakan: string | null; tarikh: string };
 type Item = { id: number; tajuk: string; shift: string; aktif: boolean };
@@ -38,20 +49,11 @@ export default function AdminStafPanel({
         {kehadiran.length === 0 ? (
           <p className="text-sm text-slate-400">Belum ada rekod clock-in hari ini.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-slate-500"><th className="py-1 pr-4">Nama</th><th className="py-1 pr-4">Shift</th><th className="py-1 pr-4">Masuk</th><th className="py-1 pr-4">Keluar</th></tr></thead>
-              <tbody>
-                {kehadiran.map((k, i) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="py-1.5 pr-4 font-medium text-slate-800">{k.nama ?? "—"}</td>
-                    <td className="py-1.5 pr-4">{labelShift(k.shift)}</td>
-                    <td className="py-1.5 pr-4">{jam(k.masuk)}</td>
-                    <td className="py-1.5 pr-4">{k.keluar ? jam(k.keluar) : <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">Sedang kerja</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {kehadiran.map((k, i) => (
+              <KehadiranRow key={k.id ?? i} k={k} onDone={() => router.refresh()} />
+            ))}
+            <p className="pt-1 text-xs text-slate-400">Tekan &quot;Laras&quot; untuk betulkan masa masuk/keluar, buang keluar (jika tersalah clock out), atau padam rekod.</p>
           </div>
         )}
       </section>
@@ -239,5 +241,74 @@ function ChecklistPanel({ checklist, onDone }: { checklist: Item[]; onDone: () =
         ))}
       </div>
     </section>
+  );
+}
+
+// Baris kehadiran dengan keupayaan laras (betulkan masa / buang keluar / padam).
+function KehadiranRow({ k, onDone }: { k: Kehadiran; onDone: () => void }) {
+  const [buka, setBuka] = useState(false);
+  const [masuk, setMasuk] = useState(keInput(k.masuk));
+  const [keluar, setKeluar] = useState(keInput(k.keluar));
+  const [busy, setBusy] = useState(false);
+  const boleh = !!k.id;
+
+  async function simpan() {
+    if (!k.id) return;
+    setBusy(true);
+    await kemasKehadiran(k.id, keISO(masuk), keISO(keluar));
+    setBusy(false); setBuka(false); onDone();
+  }
+  async function buangKeluar() {
+    if (!k.id) return;
+    if (!window.confirm("Buang masa keluar? Staf akan kembali 'Sedang kerja'.")) return;
+    setBusy(true);
+    await kemasKehadiran(k.id, k.masuk, null);
+    setBusy(false); setBuka(false); onDone();
+  }
+  async function padam() {
+    if (!k.id) return;
+    if (!window.confirm("Padam rekod kehadiran ini? Tindakan tak boleh undur.")) return;
+    setBusy(true);
+    await padamKehadiran(k.id);
+    setBusy(false); onDone();
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-slate-800">{k.nama ?? "—"}</div>
+          <div className="text-xs text-slate-500">
+            {labelShift(k.shift)} · Masuk {jam(k.masuk)} · Keluar{" "}
+            {k.keluar ? jam(k.keluar) : <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-700">Sedang kerja</span>}
+          </div>
+        </div>
+        {boleh && (
+          <button type="button" onClick={() => setBuka((v) => !v)} className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            {buka ? "Tutup" : "Laras"}
+          </button>
+        )}
+      </div>
+
+      {buka && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-medium text-slate-600">Masa Masuk</span>
+              <input type="datetime-local" value={masuk} onChange={(e) => setMasuk(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-slate-600">Masa Keluar</span>
+              <input type="datetime-local" value={keluar} onChange={(e) => setKeluar(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">{busy ? "…" : "Simpan"}</button>
+            {k.keluar && <button type="button" disabled={busy} onClick={buangKeluar} className="rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50">Buang keluar</button>}
+            <button type="button" disabled={busy} onClick={padam} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50">Padam rekod</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -25,6 +25,7 @@ const AKTIVITI: Item[] = [
 ];
 const SETIAUSAHA: Item[] = [
   { href: "/admin/su", label: "Panel Setiausaha" },
+  { href: "/admin/agm", label: "Mesyuarat Agung (AGM)" },
   { href: "/admin/su/mesyuarat", label: "Minit Mesyuarat" },
   { href: "/admin/su/surat", label: "Surat Rasmi" },
   { href: "/admin/tender", label: "Tender & Iklan" },
@@ -61,6 +62,7 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
         { href: "/admin/tuntutan", label: "Tuntutan (sah)" },
       ] },
       { label: "Kandungan", items: [
+        { href: "/admin/agm", label: "Mesyuarat Agung (AGM)" },
         { href: "/admin/pengumuman", label: "Pengumuman" },
         { href: "/admin/maklum-balas", label: "Maklum Balas" },
         { href: "/admin/kandungan", label: "Kandungan Surau" },

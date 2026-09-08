@@ -20,7 +20,7 @@ export default async function AdminStafPage() {
   const tarikh = hariIni();
 
   const [kehadiranRes, tugasRes, laporanRes, itemRes, logRes] = await Promise.all([
-    db.from("staf_kehadiran").select("nama, shift, masuk, keluar").eq("tarikh", tarikh).order("masuk", { ascending: true }),
+    db.from("staf_kehadiran").select("id, nama, shift, masuk, keluar").eq("tarikh", tarikh).order("masuk", { ascending: true }),
     db.from("staf_tugasan").select("id, tajuk, keterangan, status, tarikh_tugas, tarikh_siap, nota_siap").neq("status", "batal").order("tarikh_tugas", { ascending: false }).limit(50),
     db.from("staf_laporan").select("id, tajuk, keterangan, url_gambar, status, oleh, tindakan, tarikh").order("tarikh", { ascending: false }).limit(50),
     db.from("staf_checklist_item").select("id, tajuk, shift, aktif").order("susunan", { ascending: true }),

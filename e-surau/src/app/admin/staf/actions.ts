@@ -69,6 +69,30 @@ export async function ambilKehadiranBulan(
   return { ok: true, jadual: (j as any[]) ?? [], kehadiran: (k as any[]) ?? [] };
 }
 
+// Laras rekod kehadiran (betulkan masuk/keluar). Hantar ISO string atau null.
+export async function kemasKehadiran(
+  id: string, masuk: string | null, keluar: string | null,
+): Promise<{ ok: boolean; msg?: string }> {
+  if (!bolehUrus(await getProfil())) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "ID tidak sah." };
+  const db = createAdminClient();
+  const { error } = await db.from("staf_kehadiran").update({ masuk: masuk || null, keluar: keluar || null }).eq("id", id);
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath("/admin/staf");
+  return { ok: true };
+}
+
+// Padam rekod kehadiran (cth tersalah clock in/out).
+export async function padamKehadiran(id: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!bolehUrus(await getProfil())) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "ID tidak sah." };
+  const db = createAdminClient();
+  const { error } = await db.from("staf_kehadiran").delete().eq("id", id);
+  if (error) return { ok: false, msg: error.message };
+  revalidatePath("/admin/staf");
+  return { ok: true };
+}
+
 export async function padamJadual(id: string): Promise<{ ok: boolean }> {
   if (!bolehUrus(await getProfil())) return { ok: false };
   const db = createAdminClient();
