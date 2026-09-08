@@ -171,6 +171,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
       {/* B2 ATUR CARA */}
       <Sec><H1 no={2} t={`Atur Cara Mesyuarat Agung Tahun ${tahunAgm}`} />
+        {teks.atur_cara?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.atur_cara}</div> : <>
         <table className="mb-3 w-full border-collapse text-sm"><tbody>
           <tr><td className={cellL + " font-semibold"}>Tarikh</td><td className={cellL}>{agm.tarikh ?? BLANK}</td></tr>
           <tr><td className={cellL + " font-semibold"}>Masa</td><td className={cellL}>{agm.masa ?? "Selepas solat Maghrib berjemaah"}</td></tr>
@@ -179,14 +180,17 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Masa</Th><Th>Perkara</Th><Th>Tanggungjawab</Th></tr></thead><tbody>
           {[["7.00 mlm","Ketibaan & pendaftaran kehadiran (kaunter dibuka)","AJK Pendaftaran"],["7.20 mlm","Solat Maghrib berjemaah","Imam"],["7.45 mlm","Jamuan","AJK Jamuan"],["8.25 mlm","Solat Isyak berjemaah","Imam"],["8.45 mlm","Bacaan Al-Fatihah & Doa Pembuka","Imam"],["8.50 mlm","Kata-kata aluan & perutusan Pengerusi","Pengerusi"],["9.00 mlm","Mesyuarat Agung bermula (rujuk Agenda, Bahagian 3)","Pengerusi"],["9.45 mlm","Sesi soal jawab & pembentangan usul","Pengerusi"],["10.10 mlm","Perletakan jawatan & pembubaran JK","Pengerusi"],["10.15 mlm","Pemilihan AJK penggal baharu","Pengerusi Sementara"],["10.45 mlm","Pengumuman keputusan & ucapan Pengerusi baharu","Pengendali Pemilihan"],["11.00 mlm","Hal-hal lain & ucapan penangguhan","Pengerusi"],["11.10 mlm","Tasbih Kaffarah, Al-Asr & Doa Penutup","Imam"],["11.15 mlm","Bersurai","—"]].map((r,i)=>(<tr key={i}><td className={cellL+" whitespace-nowrap text-slate-500"}>{r[0]}</td><td className={cellL}>{r[1]}</td><td className={cellL+" text-slate-500"}>{r[2]}</td></tr>))}
         </tbody></table>
-        <p className="mt-2 text-[11px] text-slate-400">Waktu adalah anggaran; sahkan waktu Maghrib/Isyak zon SGR01 pada {agm.tarikh ?? tahunAgm}. Atur cara tertakluk pindaan Pengerusi.{agm.atur_cara?.trim() ? " Nota tambahan tersimpan dalam Maklumat Mesyuarat." : ""}</p>
+        <p className="mt-2 text-[11px] text-slate-400">Waktu adalah anggaran; sahkan waktu Maghrib/Isyak zon SGR01 pada {agm.tarikh ?? tahunAgm}. Atur cara tertakluk pindaan Pengerusi.</p>
+        </>}
       </Sec>
 
       {/* B3 AGENDA */}
       <Sec><H1 no={3} t={`Agenda Mesyuarat Agung Tahun ${tahunAgm}`} />
+        {teks.agenda?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.agenda}</div> : <>
         <table className="w-full border-collapse text-sm"><tbody>
           {[["1.0","Ucapan Pengerusi dan Perutusan Tahunan"],["2.0","Pengesahan Minit Mesyuarat Agung Tahunan yang lalu"],["3.0","Perkara Berbangkit daripada Minit yang lalu"],["4.0",`Pembentangan Laporan Setiausaha bagi tahun ${tahunAgm}`],["5.0","Pembentangan Laporan Biro-Biro"],["","5.1 – 5.6  "+namaBiroDoc.join(" · ")],["6.0",`Pembentangan Penyata Kewangan berakhir 31 Disember ${thn}`],["7.0","Pembentangan Laporan Juruaudit Dalaman"],["8.0","Sesi Soal Jawab dan Perbahasan"],["9.0","Pembentangan Usul dan Cadangan"],["10.0","Perletakan Jawatan & Pembubaran Jawatankuasa"],["11.0","Pemilihan Ahli Jawatankuasa Penggal Baharu"],["12.0","Hal-Hal Lain"],["13.0","Penangguhan Mesyuarat"]].map((r,i)=>(<tr key={i} className="border-b border-slate-100"><td className={"w-12 px-2 py-1 font-bold text-surau"+(r[0]?"":" text-transparent")}>{r[0]||"·"}</td><td className={"px-2 py-1 "+(r[0]?"":"text-slate-500")}>{r[1]}</td></tr>))}
         </tbody></table>
+        </>}
       </Sec>
 
       {/* B4 SENARAI JK */}
@@ -201,6 +205,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
       {/* B5 SURAT NOTIS */}
       <Sec><H1 no={5} t={`Surat Notis Mesyuarat Agung Tahun ${tahunAgm}`} />
+        {teks.surat_notis?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.surat_notis}</div> : <>
         <table className="mb-3 w-full border-collapse text-sm"><tbody>
           <tr><td className={cellL + " w-32 font-semibold"}>Rujukan Kami</td><td className={cellL}>SAR/SU/MAT/{tahunAgm}/01</td></tr>
           <tr><td className={cellL + " font-semibold"}>Tarikh</td><td className={cellL}>{BLANK}</td></tr>
@@ -221,6 +226,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         </ol>
         <p className="mt-3 text-sm">Sekian, terima kasih. <i>"Berkhidmat untuk Agama, Kariah dan Negara"</i>. Wassalam.</p>
         <div className="mt-6 text-sm text-slate-600">Saya yang menjalankan amanah,<br /><br />.................................................<br /><b>SYAHMI SELIMAN</b><br />Setiausaha, Surau Ar Raudhah, Eco Majestic</div>
+        </>}
       </Sec>
 
       {/* B6 LAPORAN SETIAUSAHA */}
@@ -253,17 +259,19 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         </tbody></table>
 
         <H2 t="6.5 Sistem e-Surau" />
+        {teks.modul_esurau?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.modul_esurau}</div> : (
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Modul</Th><Th>Fungsi</Th></tr></thead><tbody>
           {[["Keahlian Kariah","Pendaftaran dalam talian, semakan No. KP automatik, muat naik dokumen, tandatangan elektronik, portal ahli"],["Khairat Kematian","Pendaftaran skim, logik kelayakan tanggungan, tuntutan & pampasan"],["Kewangan Surau","Kutipan & perbelanjaan mengikut tabung, penyata, kawalan terbit oleh Bendahari"],["Ibadah & Program","Yassin & Tahlil, senarai program & RSVP"],["Sewaan Fasiliti","Tempahan dua peringkat, pengiraan kos, bayaran dalam talian"],["Portal Staf","Punch-in kehadiran, checklist tugas, pelaporan kerosakan"],["Sistem Gaji","Pengiraan gaji dari kehadiran & slip gaji"],["AGM & Pemilihan","QR daftar hadir, pencalonan, undian, buku laporan"],["Penajaan","Logo penaja & direktori Rakan Surau"],["Pembayaran Digital","Integrasi CHIP — FPX, kad & e-dompet"]].map((r,i)=>(<tr key={i}><td className={cellL+" w-40 font-semibold text-slate-700"}>{r[0]}</td><td className={cellL+" text-slate-600"}>{r[1]}</td></tr>))}
-        </tbody></table>
+        </tbody></table>)}
 
         <H2 t="6.7 Cabaran" />
+        {teks.su_cabaran?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.su_cabaran}</div> : (
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Cabaran</Th><Th>Kesan & Tindakan</Th></tr></thead><tbody>
           {[["Pendapatan bermusim, perbelanjaan tetap","Kutipan tinggi pada Ramadan; utiliti & emolumen berlaku setiap bulan. Tindakan: kukuhkan infaq langganan, sewaan & Rakan Surau."],["Kos program naik bila surau kawal mutu","Tindakan: kutipan penajaan, yuran vendor & booth secara berdisiplin."],[`Tunggakan yuran khairat`,`${khairatTunggak} ahli tertunggak. Tindakan: peringatan automatik & kempen kutipan berjadual.`],["Kebergantungan kepada individu","Tindakan: struktur biro diperkemas & tugasan didokumen dalam sistem."]].map((r,i)=>(<tr key={i}><td className={cellL+" w-1/3 font-semibold text-slate-700"}>{r[0]}</td><td className={cellL+" text-slate-600"}>{r[1]}</td></tr>))}
-        </tbody></table>
+        </tbody></table>)}
 
         <H2 t="6.8 Penutup & Penghargaan" />
-        <p className="text-sm leading-relaxed text-slate-700">Setiausaha merakamkan setinggi penghargaan kepada Nazir Surau, Pengerusi, seluruh AJK & ketua biro, imam & bilal, staf surau, para penaja & Rakan Surau, serta seluruh ahli kariah Eco Majestic. Segala kekurangan dipohon kemaafan.</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{teks.su_penghargaan?.trim() || "Setiausaha merakamkan setinggi penghargaan kepada Nazir Surau, Pengerusi, seluruh AJK & ketua biro, imam & bilal, staf surau, para penaja & Rakan Surau, serta seluruh ahli kariah Eco Majestic. Segala kekurangan dipohon kemaafan."}</p>
         <div className="mt-4 text-sm text-slate-600">.................................................<br /><b>SYAHMI SELIMAN</b> · Setiausaha</div>
       </Sec>
 
@@ -292,6 +300,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <tr className="font-bold"><td className={cellL}>LEBIHAN / (KURANGAN)</td><td className={cellR}>{rm(tMasuk25 - tKeluar25)}</td><td className={cellR}>{rm(tMasuk24 - tKeluar24)}</td></tr>
         </tbody></table>
         <p className="mt-1 text-[11px] text-slate-400">Angka dipetakan automatik dari kategori sistem (padanan kata kunci). Sila semak &amp; laras dengan Bendahari sebelum muktamad.</p>
+        {teks.ulasan_kewangan?.trim() && <div className="mt-3"><div className="mb-1 text-xs font-bold uppercase text-slate-500">Ulasan Bendahari</div><div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.ulasan_kewangan}</div></div>}
 
         <H2 t="8.2 Penyata Kedudukan Kewangan (perlu isi Bendahari)" />
         <table className="w-full border-collapse text-sm"><tbody>
@@ -305,24 +314,34 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         </tbody></table>
         <p className="mt-1 text-[11px] text-slate-400">Baki pembukaan (1 Jan) perlu diisi Bendahari; baki penutup dikira selepas itu.</p>
 
+        <H2 t="8.4 Nota kepada Penyata Kewangan" />
+        {teks.nota_kewangan?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.nota_kewangan}</div> : (
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
+            <li>Asas perakaunan: penyata disediakan atas asas tunai — pendapatan diiktiraf apabila diterima, perbelanjaan apabila dibayar.</li>
+            <li>Tabung Khairat: yuran khairat &amp; pampasan diasingkan daripada Tabung Am.</li>
+            <li>Aset tetap, sumbangan barangan &amp; perkara luar biasa: {BLANK}.</li>
+          </ol>)}
+
         <H2 t="8.5 Perakuan Bendahari" />
-        <p className="text-sm">Saya, {BLANK}, Bendahari Surau Ar Raudhah, mengesahkan penyata kewangan bagi tahun berakhir 31 Disember {thn} adalah benar &amp; lengkap pada pengetahuan saya.</p>
+        {teks.perakuan_bendahari?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.perakuan_bendahari}</div>
+          : <p className="text-sm">Saya, {BLANK}, Bendahari Surau Ar Raudhah, mengesahkan penyata kewangan bagi tahun berakhir 31 Disember {thn} adalah benar &amp; lengkap pada pengetahuan saya.</p>}
         <div className="mt-4 text-sm text-slate-500">................................................. · Tarikh: {BLANK}</div>
 
         <H2 t="8.6 Laporan Juruaudit Dalaman" />
+        {teks.laporan_juruaudit?.trim() ? <div className="whitespace-pre-wrap text-sm leading-relaxed">{teks.laporan_juruaudit}</div> : (
         <table className="w-full border-collapse text-sm"><tbody>
           <tr><td className={cellL+" w-40 font-semibold"}>Skop semakan</td><td className={cellL}>Buku tunai · Resit · Baucar · Penyata bank · Rekod e-Surau</td></tr>
           <tr><td className={cellL+" font-semibold"}>Tarikh audit</td><td className={cellL}>{BLANK}</td></tr>
           <tr><td className={cellL+" font-semibold"}>Penemuan</td><td className={cellL}>{BLANK}</td></tr>
           <tr><td className={cellL+" font-semibold"}>Pengesahan</td><td className={cellL}>Pada pendapat kami, penyata kewangan {BLANK} menggambarkan kedudukan kewangan surau pada 31 Disember {thn}.</td></tr>
-        </tbody></table>
+        </tbody></table>)}
         <div className="mt-4 flex gap-8 text-sm text-slate-500"><div>.....................<br />Juruaudit 1</div><div>.....................<br />Juruaudit 2</div></div>
       </Sec>
 
       {/* B9 USUL */}
       <Sec><H1 no={9} t="Pembentangan Usul / Cadangan" />
         <p className="mb-3 text-sm text-slate-600">Setiap usul memerlukan pencadang &amp; penyokong daripada ahli kariah yang layak mengundi.</p>
-        {[
+        {teks.usul_standard?.trim() ? <div className="mb-3 whitespace-pre-wrap text-sm leading-relaxed">{teks.usul_standard}</div> : [
           "Bahawa Mesyuarat mengesahkan minit Mesyuarat Agung Tahunan yang lalu sebagai rekod yang benar.",
           "Bahawa Mesyuarat menerima Laporan Setiausaha sebagaimana Bahagian 6.",
           "Bahawa Mesyuarat menerima Laporan Biro-Biro sebagaimana Bahagian 7.",

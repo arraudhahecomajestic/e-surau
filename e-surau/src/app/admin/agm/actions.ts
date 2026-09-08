@@ -376,6 +376,38 @@ const PANDUAN_BAHAGIAN: Record<string, { tajuk: string; panduan: string }> = {
     tajuk: "Laporan Setiausaha",
     panduan: "Laporan tahunan Setiausaha: ringkasan pentadbiran (bilangan mesyuarat AJK diadakan), aktiviti & program sepanjang tahun, pencapaian utama (cth sistem e-Surau, khairat kematian), cabaran, dan diakhiri dengan penghargaan kepada semua pihak. Rujuk angka yang diberi penulis; jangan reka angka.",
   },
+  atur_cara: {
+    tajuk: "Atur Cara Mesyuarat",
+    panduan: "Atur cara majlis mengikut masa & tanggungjawab (ketibaan, solat, jamuan, ucapan, mesyuarat, pemilihan, penangguhan). Tulis kemas sebagai jadual/senarai bermasa.",
+  },
+  su_cabaran: {
+    tajuk: "Laporan Setiausaha — Cabaran",
+    panduan: "Cabaran yang dihadapi surau sepanjang tahun dan tindakan yang diambil. Nada jujur & berorientasikan penyelesaian.",
+  },
+  su_penghargaan: {
+    tajuk: "Laporan Setiausaha — Penutup & Penghargaan",
+    panduan: "Perenggan penutup Laporan Setiausaha: penghargaan kepada Nazir, Pengerusi, AJK, biro, imam/bilal, staf, penaja & ahli kariah; mohon kemaafan atas kekurangan; doa ringkas.",
+  },
+  nota_kewangan: {
+    tajuk: "Nota kepada Penyata Kewangan",
+    panduan: "Nota kaki penyata kewangan: asas perakaunan (tunai), pengasingan Tabung Khairat, aset tetap, sumbangan dalam bentuk barangan, perkara luar biasa. Ringkas & berpoin.",
+  },
+  perakuan_bendahari: {
+    tajuk: "Perakuan Bendahari",
+    panduan: "Perakuan rasmi Bendahari mengesahkan penyata kewangan adalah benar & lengkap. Format perakuan pendek dengan ruang nama & tarikh.",
+  },
+  laporan_juruaudit: {
+    tajuk: "Laporan Juruaudit Dalaman",
+    panduan: "Laporan juruaudit dalaman: skop semakan, tarikh audit, penemuan, syor penambahbaikan, dan pengesahan bahawa penyata menggambarkan kedudukan kewangan surau. Nada profesional & berkecuali.",
+  },
+  usul_standard: {
+    tajuk: "Usul Standard AGM",
+    panduan: "Senarai usul standard AGM (pengesahan minit, menerima Laporan SU/Biro/Kewangan, meluluskan belanjawan, had kuasa perbelanjaan, dasar penajaan, kadar khairat, lantik juruaudit). Tulis sebagai senarai bernombor yang formal.",
+  },
+  modul_esurau: {
+    tajuk: "Ringkasan Sistem e-Surau",
+    panduan: "Ringkasan modul & fungsi sistem e-Surau serta nilai kepada surau (telus, selamat, berterusan).",
+  },
   prakata_setiausaha: {
     tajuk: "Prakata Setiausaha",
     panduan: "Prakata daripada Setiausaha yang memperkenalkan Buku Laporan Tahunan ini, meringkaskan skop laporan (pentadbiran, kewangan, aktiviti, keahlian) dan menjemput ahli meneliti kandungannya. Nada tertib & kemas.",

@@ -28,8 +28,8 @@ export default async function AgmLaporanTeksPage() {
         <Link href="/admin/agm" className="text-sm text-surau hover:underline">← Kembali ke AGM</Link>
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Naratif Buku Laporan Tahunan</h1>
-        <p className="mt-1 text-sm text-slate-600">Bahagian teks yang perlu ditulis AJK — dengan bantuan AI. Bahagian angka dijana automatik di halaman Laporan (Angka Auto).</p>
+        <h1 className="text-2xl font-bold text-slate-900">Isi Kandungan Buku Laporan</h1>
+        <p className="mt-1 text-sm text-slate-600">Softcopy setiap seksyen teks Buku Laporan — dengan bantuan AI. Yang dibiar kosong akan guna teks lalai dalam buku. Angka keahlian &amp; kewangan dijana automatik.</p>
       </div>
       {!agm ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
