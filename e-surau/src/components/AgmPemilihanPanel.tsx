@@ -9,7 +9,7 @@ import {
 import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
-type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
+type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
 type Undian = { undi_dikeluarkan: number; undi_dikembalikan: number; undi_rosak: number; undi_sah: number };
 
 const KAT: Record<string, string> = { induk: "Induk", biro: "Biro", ajk: "AJK", audit: "Juruaudit" };
@@ -110,10 +110,7 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
   const [busy, setBusy] = useState(false);
   const [ralat, setRalat] = useState("");
 
-  // kiraan undi
-  const [dikeluarkan, setDikeluarkan] = useState(undian?.undi_dikeluarkan ?? 0);
-  const [dikembalikan, setDikembalikan] = useState(undian?.undi_dikembalikan ?? 0);
-  const [rosak, setRosak] = useState(undian?.undi_rosak ?? 0);
+  // kiraan undi (angkat tangan)
   const [undi, setUndi] = useState<Record<string, number>>(() => Object.fromEntries(calon.map((c) => [c.id, c.jumlah_undi])));
   const [msgKira, setMsgKira] = useState("");
   const [keputusan, setKeputusan] = useState("");
@@ -134,8 +131,8 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
   async function simpanKira() {
     setBusy(true); setMsgKira("");
     const senarai = sah.map((c) => ({ calonId: c.id, undi: undi[c.id] ?? 0 }));
-    const r = await simpanKiraan(agmId, jawatan.id, dikeluarkan, dikembalikan, rosak, senarai); setBusy(false);
-    if (r?.ok) { setMsgKira(r.beza === 0 ? "Disimpan · undi seimbang ✓" : `Disimpan · BEZA ${r.beza} (undi sah vs jumlah calon tak sepadan)`); router.refresh(); }
+    const r = await simpanKiraan(agmId, jawatan.id, senarai); setBusy(false);
+    if (r?.ok) { setMsgKira(`Disimpan · jumlah undi: ${r.jumlah ?? 0}`); router.refresh(); }
     else setMsgKira(r?.msg ?? "Gagal simpan kiraan.");
   }
   async function pemenang() {
@@ -144,9 +141,7 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
     if (r?.ok) { setKeputusan(hurufBesar(r.keputusan ?? "")); router.refresh(); } else setKeputusan(r?.msg ?? "Gagal.");
   }
 
-  const undiSah = Math.max(0, dikembalikan - rosak);
-  const jumlahCalon = sah.reduce((s, c) => s + (undi[c.id] ?? 0), 0);
-  const beza = undiSah - jumlahCalon;
+  const jumlahUndi = sah.reduce((s, c) => s + (undi[c.id] ?? 0), 0);
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -166,6 +161,7 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
                   {c.no_ahli && <span className="ml-2 text-xs text-slate-400">{c.no_ahli}</span>}
                   <span className="ml-2"><StatusBadge s={c.status} /></span>
                   {c.menang && <span className="ml-2 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white">PEMENANG</span>}
+                  <div className="mt-0.5 text-xs text-slate-500">IC: {c.no_kp ?? "—"} · Tel: {c.telefon ?? "—"}</div>
                   <div className="mt-0.5 text-xs text-slate-500">Cadang: {c.pencadang_nama ?? "—"} · Sokong: {c.penyokong_nama ?? "—"}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2 text-xs">
@@ -201,16 +197,8 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
       {/* Kiraan undi */}
       {sah.length > 0 && (
         <div className="rounded-lg border border-slate-200 p-3">
-          <div className="mb-2 text-sm font-semibold text-slate-800">Kiraan Undi (kertas)</div>
-          <div className="grid grid-cols-3 gap-2">
-            <label className="block"><span className="text-xs text-slate-600">Dikeluarkan</span>
-              <input type="number" min={0} value={dikeluarkan} onChange={(e) => setDikeluarkan(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-            <label className="block"><span className="text-xs text-slate-600">Dikembalikan</span>
-              <input type="number" min={0} value={dikembalikan} onChange={(e) => setDikembalikan(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-            <label className="block"><span className="text-xs text-slate-600">Rosak</span>
-              <input type="number" min={0} value={rosak} onChange={(e) => setRosak(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-          </div>
-          <div className="mt-3 space-y-1.5">
+          <div className="mb-2 text-sm font-semibold text-slate-800">Kiraan Undi (angkat tangan)</div>
+          <div className="space-y-1.5">
             {sah.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-sm text-slate-700">{c.nama}</span>
@@ -218,16 +206,14 @@ function JawatanBlok({ agmId, jawatan, calon, undian, ahli }: { agmId: string; j
               </div>
             ))}
           </div>
-          <div className={`mt-2 text-xs font-semibold ${beza === 0 ? "text-emerald-600" : "text-amber-600"}`}>
-            Undi sah: {undiSah} · Jumlah undi calon: {jumlahCalon} · Beza: {beza} {beza === 0 ? "(seimbang)" : "(semak semula)"}
-          </div>
+          <div className="mt-2 text-xs font-semibold text-slate-600">Jumlah undi diterima: {jumlahUndi}</div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button disabled={busy} onClick={simpanKira} className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-900 disabled:opacity-50">Simpan Kiraan</button>
             <button disabled={busy} onClick={pemenang} className="rounded-lg border border-surau bg-surau/10 px-4 py-1.5 text-xs font-bold text-surau hover:bg-surau/20 disabled:opacity-50">Tentukan Pemenang</button>
             {msgKira && <span className="text-xs font-semibold text-slate-600">{msgKira}</span>}
             {keputusan && <span className="text-xs font-bold text-green-700">Keputusan: {keputusan}</span>}
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">“Tentukan Pemenang” pilih ikut undi tertinggi. Jika bilangan calon ≤ jumlah dipilih, dikira menang tanpa bertanding. Jika seri di kedudukan potong, sistem minta undi ulang.</p>
+          <p className="mt-2 text-[11px] text-slate-400">Masukkan bilangan tangan diangkat bagi setiap calon. “Tentukan Pemenang” pilih ikut undi tertinggi. Jika bilangan calon ≤ jumlah dipilih, dikira menang tanpa bertanding. Jika seri di kedudukan potong, sistem minta undi ulang.</p>
         </div>
       )}
     </section>

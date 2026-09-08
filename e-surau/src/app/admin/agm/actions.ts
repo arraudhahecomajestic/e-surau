@@ -254,7 +254,7 @@ export async function padamJawatan(id: string): Promise<{ ok: boolean }> {
 }
 
 // Pencalonan — nama datang dari database ahli kariah (search & pilih)
-type PilihAhli = { nama: string; ahliId: string | null; noAhli: string | null; telefon?: string | null; fasa?: string | null };
+type PilihAhli = { nama: string; ahliId: string | null; noAhli: string | null; noKp?: string | null; telefon?: string | null };
 export async function tambahCalon(agmId: string, jawatanId: string, calon: PilihAhli, pencadang: PilihAhli, penyokong: PilihAhli): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !jawatanId || !calon?.nama?.trim()) return { ok: false, msg: "Jawatan & nama calon diperlukan." };
@@ -265,14 +265,18 @@ export async function tambahCalon(agmId: string, jawatanId: string, calon: Pilih
     nama: calon.nama.trim().slice(0, 160),
     ahli_id: calon.ahliId || null,
     no_ahli: (calon.noAhli ?? "").slice(0, 40) || null,
+    no_kp: (calon.noKp ?? "").slice(0, 40) || null,
     telefon: (calon.telefon ?? "").slice(0, 40) || null,
-    fasa: (calon.fasa ?? "").slice(0, 60) || null,
     pencadang_nama: pencadang.nama.trim().slice(0, 160),
     pencadang_ahli_id: pencadang.ahliId || null,
     pencadang_no_ahli: (pencadang.noAhli ?? "").slice(0, 40) || null,
+    pencadang_no_kp: (pencadang.noKp ?? "").slice(0, 40) || null,
+    pencadang_telefon: (pencadang.telefon ?? "").slice(0, 40) || null,
     penyokong_nama: penyokong.nama.trim().slice(0, 160),
     penyokong_ahli_id: penyokong.ahliId || null,
     penyokong_no_ahli: (penyokong.noAhli ?? "").slice(0, 40) || null,
+    penyokong_no_kp: (penyokong.noKp ?? "").slice(0, 40) || null,
+    penyokong_telefon: (penyokong.telefon ?? "").slice(0, 40) || null,
     status: "menunggu",
   });
   if (error) return { ok: false, msg: /uq_agm_calon_ahli_jawatan|duplicate/i.test(error.message) ? "Ahli ini sudah dicalonkan untuk jawatan ini." : `Gagal tambah calon: ${error.message}` };
@@ -302,21 +306,19 @@ export async function padamCalon(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-// Kiraan undi (rekonsiliasi kertas) — simpan pusingan + undi calon, salin ke rekod calon
+// Kiraan undi (angkat tangan) — simpan undi calon, salin ke rekod calon
 export async function simpanKiraan(
   agmId: string, jawatanId: string,
-  dikeluarkan: number, dikembalikan: number, rosak: number,
   undiCalon: { calonId: string; undi: number }[],
-): Promise<{ ok: boolean; msg?: string; beza?: number }> {
+): Promise<{ ok: boolean; msg?: string; jumlah?: number }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   const db = createAdminClient();
+  const jumlah = undiCalon.reduce((s, u) => s + Math.max(0, Math.round(u.undi || 0)), 0);
   const { data: und, error: e1 } = await db.from("agm_undian").upsert({
     agm_id: agmId, jawatan_id: jawatanId, pusingan: 1,
-    undi_dikeluarkan: Math.max(0, Math.round(dikeluarkan || 0)),
-    undi_dikembalikan: Math.max(0, Math.round(dikembalikan || 0)),
-    undi_rosak: Math.max(0, Math.round(rosak || 0)),
-    kaedah: "kertas", status: "dikira",
-  }, { onConflict: "jawatan_id,pusingan" }).select("id, undi_sah").maybeSingle();
+    undi_dikeluarkan: 0, undi_dikembalikan: jumlah, undi_rosak: 0,
+    kaedah: "angkat_tangan", status: "dikira",
+  }, { onConflict: "jawatan_id,pusingan" }).select("id").maybeSingle();
   if (e1 || !und) return { ok: false, msg: e1?.message ?? "Gagal simpan undian." };
 
   for (const u of undiCalon) {
@@ -328,11 +330,8 @@ export async function simpanKiraan(
   }
 
   await db.rpc("agm_salin_undi", { p_undian_id: (und as any).id });
-
-  const jumlahCalon = undiCalon.reduce((s, u) => s + Math.max(0, Math.round(u.undi || 0)), 0);
-  const beza = ((und as any).undi_sah ?? 0) - jumlahCalon;
   revalidatePath(P);
-  return { ok: true, beza };
+  return { ok: true, jumlah };
 }
 
 // Tentukan pemenang jawatan (guna fungsi SQL — kira menang tanpa bertanding & seri)
@@ -348,8 +347,20 @@ export async function tentukanPemenang(jawatanId: string): Promise<{ ok: boolean
 // ---- AI: Bantu tulis / perkemas teks laporan ----
 const PANDUAN_BAHAGIAN: Record<string, { tajuk: string; panduan: string }> = {
   kata_aluan_pengerusi: {
-    tajuk: "Kata Alu-aluan Pengerusi",
+    tajuk: "Kata-Kata Aluan Pengerusi",
     panduan: "Kata alu-aluan daripada Pengerusi surau. Mulakan dengan kesyukuran & selawat, ucap terima kasih kepada ahli kariah, AJK dan pihak berkepentingan, nyatakan penghargaan atas sokongan sepanjang tahun, dan harapan untuk tahun mendatang. Nada berwibawa, hormat & memberangsangkan.",
+  },
+  surat_notis: {
+    tajuk: "Surat Notis Mesyuarat Agung",
+    panduan: "Surat notis rasmi memanggil ahli kariah menghadiri Mesyuarat Agung Tahunan. Sertakan tarikh, masa & tempat mesyuarat, tujuan (pembentangan laporan, penyata kewangan, pemilihan AJK, usul), dan jemputan kepada semua ahli kariah untuk hadir. Format surat rasmi ringkas & sopan.",
+  },
+  agenda: {
+    tajuk: "Agenda Mesyuarat Agung",
+    panduan: "Senarai agenda/perkara mesyuarat mengikut turutan: ucapan aluan Pengerusi, pengesahan minit mesyuarat lepas, perkara berbangkit, pembentangan Laporan Setiausaha, pembentangan Penyata Kewangan, laporan biro, usul-usul, pemilihan AJK, hal-hal lain, dan penangguhan. Tuliskan sebagai senarai bernombor yang kemas.",
+  },
+  laporan_setiausaha: {
+    tajuk: "Laporan Setiausaha",
+    panduan: "Laporan tahunan Setiausaha: ringkasan pentadbiran (bilangan mesyuarat AJK diadakan), aktiviti & program sepanjang tahun, pencapaian utama (cth sistem e-Surau, khairat kematian), cabaran, dan diakhiri dengan penghargaan kepada semua pihak. Rujuk angka yang diberi penulis; jangan reka angka.",
   },
   prakata_setiausaha: {
     tajuk: "Prakata Setiausaha",

@@ -5,17 +5,16 @@ import { bantuTulisLaporan, simpanTeks } from "@/app/admin/agm/actions";
 
 type Bahagian = { kunci: string; tajuk: string; desc: string; contoh: string };
 
-// Susunan bahagian naratif Buku Laporan Tahunan
+// Susunan bahagian naratif Buku Laporan Tahunan — ikut Isi Kandungan rasmi
 const BAHAGIAN: Bahagian[] = [
-  { kunci: "kata_aluan_pengerusi", tajuk: "Kata Alu-aluan Pengerusi", desc: "Ucapan pembuka daripada Pengerusi surau.", contoh: "cth: fokus pada kesyukuran, terima kasih ahli kariah & AJK, harapan tahun 2027…" },
-  { kunci: "prakata_setiausaha", tajuk: "Prakata Setiausaha", desc: "Pengenalan ringkas kepada laporan tahunan ini.", contoh: "cth: skop laporan — pentadbiran, kewangan, aktiviti, keahlian…" },
-  { kunci: "ringkasan_eksekutif", tajuk: "Ringkasan Pentadbiran & Pencapaian", desc: "Naratif perjalanan pentadbiran & pencapaian utama tahun ini.", contoh: "cth: bilangan mesyuarat AJK, sistem e-Surau dilancarkan, khairat kematian ditubuhkan…" },
-  { kunci: "ulasan_kewangan", tajuk: "Ulasan Bendahari (Kewangan)", desc: "Ulasan naratif kedudukan kewangan — pasangkan dengan angka dari Laporan Tahunan (Angka Auto).", contoh: "cth: tampal angka kutipan/perbelanjaan dari halaman Angka Auto sebagai rujukan…" },
-  { kunci: "laporan_aktiviti", tajuk: "Ringkasan Laporan Aktiviti", desc: "Ringkasan program & aktiviti sepanjang tahun.", contoh: "cth: senaraikan program — Ihya Ramadhan, kuliah mingguan, gotong-royong…" },
-  { kunci: "cabaran_cadangan", tajuk: "Cabaran & Cadangan Penambahbaikan", desc: "Cabaran yang dihadapi & cadangan untuk tahun hadapan.", contoh: "cth: cabaran kutipan yuran, cadangan naik taraf sistem siaraya…" },
-  { kunci: "penghargaan", tajuk: "Penghargaan", desc: "Ucapan penghargaan kepada semua pihak.", contoh: "cth: ahli kariah, AJK, biro, staf, penaja, pihak berkuasa…" },
-  { kunci: "penutup", tajuk: "Penutup", desc: "Perenggan penutup & doa.", contoh: "cth: rumusan ringkas, mohon keampunan atas kekurangan…" },
+  { kunci: "kata_aluan_pengerusi", tajuk: "1. Kata-Kata Aluan Pengerusi", desc: "Ucapan pembuka daripada Pengerusi surau.", contoh: "cth: fokus pada kesyukuran, terima kasih ahli kariah & AJK, harapan tahun 2027…" },
+  { kunci: "agenda", tajuk: "3. Agenda Mesyuarat Agung", desc: "Senarai perkara/agenda mesyuarat ikut turutan.", contoh: "cth: ucapan aluan, pengesahan minit, laporan SU, penyata kewangan, usul, pemilihan AJK, hal-hal lain…" },
+  { kunci: "surat_notis", tajuk: "5. Surat Notis Mesyuarat Agung", desc: "Surat rasmi memanggil ahli kariah hadir.", contoh: "cth: tarikh/masa/tempat, tujuan, jemputan kepada semua ahli kariah…" },
+  { kunci: "laporan_setiausaha", tajuk: "6. Laporan Setiausaha", desc: "Laporan tahunan pentadbiran, aktiviti & pencapaian.", contoh: "cth: bilangan mesyuarat AJK, program sepanjang tahun, sistem e-Surau, khairat kematian, penghargaan…" },
+  { kunci: "ulasan_kewangan", tajuk: "8. Ulasan Penyata Kewangan (Bendahari)", desc: "Ulasan naratif kedudukan kewangan — angka penuh dijana automatik dalam Buku Laporan.", contoh: "cth: sumber pendapatan utama, perbelanjaan besar, kedudukan tabung am & khairat…" },
 ];
+// Nota: Atur Cara (2) diisi di Maklumat AGM; Senarai JK (4) di Senarai JK & Biro;
+// Laporan Biro (7) di Senarai JK & Biro; Usul (9) di Usul & Undian; Penyata angka (8) auto.
 
 type Nilai = Record<string, string>;
 
