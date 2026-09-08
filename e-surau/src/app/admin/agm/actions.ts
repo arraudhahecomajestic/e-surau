@@ -149,6 +149,39 @@ export async function padamBiro(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// ---- AI: Bantu tulis laporan biro ----
+export async function bantuTulisBiro(
+  nama: string,
+  ketua: string,
+  ahli: string,
+  arahan: string,
+  draft: string,
+): Promise<{ ok: boolean; teks?: string; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  const senaraiAhli = ahli.split("\n").map((x) => x.trim()).filter(Boolean);
+  const konteks = [
+    `Biro: ${nama || "(tiada nama)"}`,
+    ketua.trim() ? `Ketua Biro: ${ketua.trim()}` : "",
+    senaraiAhli.length ? `Ahli: ${senaraiAhli.join(", ")}` : "",
+  ].filter(Boolean).join("\n");
+
+  const sistem = `Anda pembantu penulisan untuk Ahli Jawatankuasa ${NAMA_SURAU}. Tugas anda menulis LAPORAN BIRO untuk Buku Laporan Tahunan Mesyuarat Agung Kariah.
+Laporan biro ialah ringkasan naratif aktiviti, program, pencapaian dan hala tuju biro berkenaan sepanjang tahun.
+KONTEKS BIRO:
+${konteks}
+GAYA WAJIB: Bahasa Melayu baku & formal, nada tertib, jelas & padat. Panjang berpatutan (2 hingga 4 perenggan). JANGAN reka angka, nama program, tarikh atau fakta yang tidak diberikan oleh penulis — jika maklumat tidak diberi, tulis secara umum atau tinggalkan ruang untuk penulis lengkapkan. Pulangkan HANYA teks laporan yang siap — tanpa tajuk, tanpa nota, tanpa penjelasan tambahan.`;
+
+  let teks: string;
+  if (draft.trim()) {
+    teks = `Berikut draf atau nota kasar laporan biro ini. Perkemas, betulkan bahasa & lengkapkannya menjadi laporan yang baik:\n\n"""\n${draft.trim().slice(0, 8000)}\n"""`;
+  } else {
+    teks = `Tuliskan draf awal laporan untuk biro ini berdasarkan konteks & gaya di atas.`;
+  }
+  if (arahan.trim()) teks += `\n\nMaklumat / arahan daripada penulis (gunakan ini):\n${arahan.trim().slice(0, 4000)}`;
+
+  return panggilAI(sistem, teks, 1600);
+}
+
 // ---- Teks naratif laporan ----
 export async function simpanTeks(agmId: string, kunci: string, nilai: string): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };

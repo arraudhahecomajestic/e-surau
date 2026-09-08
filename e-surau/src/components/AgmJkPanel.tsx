@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { tambahJk, padamJk, tambahBiro, kemasBiro, padamBiro } from "@/app/admin/agm/actions";
+import { tambahJk, padamJk, tambahBiro, kemasBiro, padamBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
 type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null };
@@ -118,13 +118,33 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
   const [setiausaha, setSetiausaha] = useState(b.setiausaha ?? "");
   const [ahli, setAhli] = useState(b.ahli ?? "");
   const [laporan, setLaporan] = useState(b.laporan ?? "");
+  const [arahan, setArahan] = useState("");
+  const [sebelum, setSebelum] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busyAI, setBusyAI] = useState(false);
   const [msg, setMsg] = useState("");
+  const [ralat, setRalat] = useState("");
 
-  async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan, setiausaha, ahli); setBusy(false); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
+  async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan, setiausaha, ahli); setBusy(false); setSebelum(null); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
   async function padam() { if (!window.confirm("Padam biro ini & laporannya?")) return; setBusy(true); await padamBiro(b.id); setBusy(false); onDone(); }
 
+  async function bantuAI() {
+    setBusyAI(true); setRalat(""); setMsg("");
+    const r = await bantuTulisBiro(b.nama, ketua, ahli, arahan, laporan);
+    setBusyAI(false);
+    if (r.ok && r.teks) {
+      setSebelum(laporan);
+      setLaporan(r.teks);
+      setMsg("✨ AI dah tulis — semak & Simpan.");
+      setTimeout(() => setMsg(""), 4000);
+    } else {
+      setRalat(r.msg ?? "AI gagal. Cuba lagi.");
+    }
+  }
+  function undo() { if (sebelum === null) return; setLaporan(sebelum); setSebelum(null); setMsg("↩ Dikembalikan."); setTimeout(() => setMsg(""), 2500); }
+
   const bilAhli = ahli.split("\n").map((x) => x.trim()).filter(Boolean).length;
+  const adaLaporan = laporan.trim().length > 0;
 
   return (
     <div className="rounded-lg border border-slate-200 p-3">
@@ -140,11 +160,20 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
       </div>
       <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Ahli-ahli <span className="text-slate-400">(satu nama setiap baris — {bilAhli} ahli)</span></span>
         <textarea value={ahli} onChange={(e) => setAhli(e.target.value)} rows={4} placeholder={"cth:\nTimbalan Pengerusi\nImam 1\nBilal 1"} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm leading-relaxed" /></label>
+      <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Nota / arahan untuk AI (pilihan)</span>
+        <textarea value={arahan} onChange={(e) => setArahan(e.target.value)} rows={2} placeholder="cth: program utama biro tahun ni, pencapaian, bilangan aktiviti…" className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm" /></label>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button onClick={bantuAI} disabled={busyAI} className="rounded-lg bg-surau px-3 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">
+          {busyAI ? "AI menulis…" : adaLaporan ? "✨ Perkemas dengan AI" : "✨ Bantu tulis (AI)"}
+        </button>
+        {sebelum !== null && <button onClick={undo} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">↩ Undo AI</button>}
+      </div>
       <label className="mt-2 block"><span className="text-xs font-medium text-slate-600">Laporan biro (pilihan)</span>
-        <textarea value={laporan} onChange={(e) => setLaporan(e.target.value)} rows={4} placeholder="Ringkasan aktiviti & pencapaian biro sepanjang tahun…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
+        <textarea value={laporan} onChange={(e) => setLaporan(e.target.value)} rows={5} placeholder="Ringkasan aktiviti & pencapaian biro sepanjang tahun…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm leading-relaxed" /></label>
       <div className="mt-2 flex items-center gap-3">
-        <button disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">Simpan Biro</button>
+        <button disabled={busy} onClick={simpan} className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-900 disabled:opacity-50">Simpan Biro</button>
         {msg && <span className="text-xs font-semibold text-emerald-600">{msg}</span>}
+        {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
       </div>
     </div>
   );

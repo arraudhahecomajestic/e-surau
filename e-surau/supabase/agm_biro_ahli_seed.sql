@@ -1,6 +1,6 @@
 -- =====================================================================
--- e-Surau · Tambah medan Setiausaha & Ahli pada agm_biro + seed 4 biro
--- Selamat run berulang (guard ikut nama biro).
+-- e-Surau · Tambah medan Setiausaha & Ahli pada agm_biro + seed 9 biro
+-- Selamat run berulang (guard ikut nama biro — tak gandakan).
 -- =====================================================================
 
 -- 1) Tambah lajur (jika belum ada)
@@ -40,6 +40,41 @@ cross join (values
     null,
     null,
     4
+  ),
+  (
+    'Biro Multimedia dan Perhubungan Awam',
+    'Mohammed Salihin bin Ali',
+    null,
+    null,
+    5
+  ),
+  (
+    'Biro Kebajikan, Khairat Kematian & Kemasyarakatan',
+    'Bendahari',
+    'Penolong Bendahari',
+    null,
+    6
+  ),
+  (
+    'Biro Pengurusan Jenazah dan Tanah Kubur',
+    'Mohamad Syahmi bin Seliman',
+    null,
+    E'Ummi Kalsom binti Rahmat\nZai\nFadzli',
+    7
+  ),
+  (
+    'Biro Penyelenggaraan dan Pembangunan',
+    'Syarwani bin Mat Daud',
+    null,
+    E'Mohamad Syahmi bin Seliman',
+    8
+  ),
+  (
+    'Biro Hospitaliti dan Keselamatan',
+    'Siak 1 (Mohd Azrun bin Abd. Rahman)',
+    'Siak 2 (Syed Wahiyuddin bin Syed Mustaman)',
+    null,
+    9
   )
 ) as v(nama, ketua, setiausaha, ahli, susunan)
 where not exists (
