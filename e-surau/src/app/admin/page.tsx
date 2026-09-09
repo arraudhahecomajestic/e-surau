@@ -24,7 +24,7 @@ export default async function AdminPage() {
   const db = createAdminClient();
   const { data, error } = await db
     .from("ahli_kariah")
-    .select("id, no_ahli, nama, no_kp, telefon, status, peringkat, maklumat_disahkan, sumber, tarikh_daftar, tarikh_kemaskini")
+    .select("id, no_ahli, nama, no_kp, telefon, status, peringkat, maklumat_disahkan, sah_fizikal, sumber, tarikh_daftar, tarikh_kemaskini")
     .order("tarikh_daftar", { ascending: false });
 
   // Susun ikut KEUTAMAAN TINDAKAN — fokus perhatian SU di atas:
