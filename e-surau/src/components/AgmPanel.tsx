@@ -178,7 +178,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
               <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2">
                 <div className="min-w-0"><div className="truncate text-sm font-medium text-slate-800">{a.nama}</div><div className="text-xs text-slate-400">{a.no_ahli ?? "—"}</div></div>
                 {dah ? <span className="text-xs font-semibold text-green-600">✓ Hadir</span>
-                  : <button disabled={busy} onClick={() => daftar(a)} className="rounded-lg bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">+ Hadir</button>}
+                  : <button disabled={busy} onClick={() => daftar(a)} className="rounded-lg bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">Hadir</button>}
               </div>
             );
           })}
@@ -242,7 +242,7 @@ function UsulUndian({ agm, usul }: { agm: Agm; usul: Usul[] }) {
       <div className="mb-4 space-y-2 rounded-lg bg-slate-50 p-3">
         <input value={tajuk} onChange={(e) => setTajuk(e.target.value)} placeholder="Tajuk usul baharu (cth: Luluskan Belanjawan 2027)" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
         <textarea value={ket} onChange={(e) => setKet(e.target.value)} rows={2} placeholder="Keterangan (pilihan)" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-        <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">{busy ? "Menambah…" : "+ Tambah Usul"}</button>
+        <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">{busy ? "Menambah…" : "Tambah Usul"}</button>
         {ralat && <p className="text-xs font-semibold text-red-600">{ralat}</p>}
       </div>
 

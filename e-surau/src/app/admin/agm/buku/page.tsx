@@ -130,7 +130,6 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const belRows = kewAda("perbelanjaan") ? kewOf("perbelanjaan").map((r) => ({ label: r.label, a: n(r.n1), b: n(r.n2) })) : keluar25.map((s, i) => ({ label: s.label, a: s.jum, b: keluar24[i].jum }));
   const pendTot = kewAda("pendapatan") ? { a: kewJum("pendapatan", "n1"), b: kewJum("pendapatan", "n2") } : { a: tMasuk25, b: tMasuk24 };
   const belTot = kewAda("perbelanjaan") ? { a: kewJum("perbelanjaan", "n1"), b: kewJum("perbelanjaan", "n2") } : { a: tKeluar25, b: tKeluar24 };
-  const kewSumber = kewAda("pendapatan") || kewAda("perbelanjaan") ? "dimuat naik Bendahari" : "dijana automatik";
 
   // ---- komponen ----
   const H1 = ({ no, t }: { no: number | string; t: string }) => (<div className="mb-4 mt-2 border-b-2 border-surau pb-1"><div className="text-xs font-semibold uppercase tracking-widest text-surau/70">{typeof no === "number" ? `Bahagian ${no}` : no}</div><h2 className="text-xl font-extrabold text-slate-900">{t}</h2></div>);
@@ -173,7 +172,6 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <li>Senarai Nama Jawatankuasa Surau Ar Raudhah</li><li>Surat Notis Mesyuarat Agung Tahun {tahunAgm}</li><li>Laporan Setiausaha</li>
           <li>Laporan Biro-Biro</li><li>Laporan Penyata Kewangan Berakhir 31 Disember {thn}</li><li>Pembentangan Usul / Cadangan</li>
         </ol>
-        <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-500"><b>Nota Penyediaan:</b> Buku ini disediakan oleh Setiausaha untuk edaran kepada ahli kariah. Ruangan bertanda {BLANK} hendaklah diisi dengan maklumat sebenar sebelum dicetak. Angka keahlian &amp; kewangan dijana automatik dari sistem e-Surau.</p>
       </Sec>
 
       {/* B1 KATA ALUAN */}
@@ -197,7 +195,6 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <table className="w-full border-collapse text-sm"><tbody>
             {jkSorted.map((j, i) => (<tr key={i} className="border-b border-slate-100"><td className="w-8 py-1 text-slate-400">{i + 1}.</td><td className="w-1/2 py-1 font-medium text-slate-700">{j.jawatan}</td><td className="py-1 text-slate-800">{j.nama}</td></tr>))}
           </tbody></table>)}
-        <p className="mt-3 text-xs text-slate-400">Rekod kehadiran mesyuarat jawatankuasa: {BLANK} (isi manual).</p>
       </Sec>
 
       {/* B5 SURAT NOTIS */}
@@ -219,7 +216,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <Row2 k="Petugas & staf surau" v={`${jk.filter((j)=>j.kumpulan==="staf").length || BLANK} orang`} />
         </tbody></table>
 
-        <H2 t="6.3 Keahlian Ahli Kariah (dijana automatik)" />
+        <H2 t="6.3 Keahlian Ahli Kariah" />
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Kategori</Th><Th>Bilangan</Th><Th>Peratus</Th></tr></thead><tbody>
           <Row3 k="Jumlah rekod dalam sistem" a={ahli.length} b="100%" bold />
           <Row3 k="Ahli diluluskan (LULUS)" a={lulus.length} b={pct(lulus.length, ahli.length)} />
@@ -259,7 +256,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
       {/* B8 KEWANGAN */}
       <Sec><H1 no={8} t={`Laporan Penyata Kewangan Berakhir 31 Disember ${thn}`} />
-        <H2 t={`8.1 Penyata Pendapatan & Perbelanjaan (${kewSumber})`} />
+        <H2 t="8.1 Penyata Pendapatan & Perbelanjaan" />
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Pendapatan</Th><Th>{thn} (RM)</Th><Th>{thnL} (RM)</Th></tr></thead><tbody>
           {pendRows.map((s, i) => <tr key={i}><td className={cellL}>{s.label}</td><td className={cellR}>{s.a ? rm(s.a) : "—"}</td><td className={cellR}>{s.b ? rm(s.b) : "—"}</td></tr>)}
           <tr className="font-bold"><td className={cellL}>JUMLAH PENDAPATAN</td><td className={cellR}>{rm(pendTot.a)}</td><td className={cellR}>{rm(pendTot.b)}</td></tr>
@@ -269,7 +266,6 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <tr className="font-bold"><td className={cellL}>JUMLAH PERBELANJAAN</td><td className={cellR}>{rm(belTot.a)}</td><td className={cellR}>{rm(belTot.b)}</td></tr>
           <tr className="font-bold"><td className={cellL}>LEBIHAN / (KURANGAN)</td><td className={cellR}>{rm(pendTot.a - belTot.a)}</td><td className={cellR}>{rm(pendTot.b - belTot.b)}</td></tr>
         </tbody></table>
-        <p className="mt-1 text-[11px] text-slate-400">{kewSumber === "dimuat naik Bendahari" ? "Angka dimuat naik oleh Bendahari (CSV)." : "Angka dipetakan automatik dari kategori sistem — Bendahari boleh muat naik CSV di halaman Angka Kewangan untuk angka rasmi."}</p>
         <div className="mt-3"><div className="mb-1 text-xs font-bold uppercase text-slate-500">Ulasan Bendahari</div><TeksD k="ulasan_kewangan" /></div>
 
         <H2 t="8.2 Penyata Kedudukan Kewangan" />

@@ -58,7 +58,7 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
           <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama penuh" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
         <label className="block"><span className="text-xs font-medium text-slate-600">Biro (pilihan)</span>
           <input value={biro} onChange={(e) => setBiro(e.target.value)} placeholder="cth: Biro Program" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-        <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">+ Tambah ke Senarai</button></div>
+        <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah ke Senarai</button></div>
       </div>
 
       {jk.length === 0 ? <p className="text-sm text-slate-400">Belum ada nama dalam senarai.</p> : (
@@ -104,7 +104,7 @@ function LaporanBiro({ agmId, biro }: { agmId: string; biro: Biro[] }) {
         <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama biro (cth: Biro Dakwah)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm sm:col-span-2" />
         <input value={ketua} onChange={(e) => setKetua(e.target.value)} placeholder="Ketua biro (pilihan)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
         <input value={setiausaha} onChange={(e) => setSetiausaha(e.target.value)} placeholder="Setiausaha biro (pilihan)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-        <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">+ Tambah Biro</button></div>
+        <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah Biro</button></div>
       </div>
 
       {biro.length === 0 ? <p className="text-sm text-slate-400">Belum ada biro.</p> : (

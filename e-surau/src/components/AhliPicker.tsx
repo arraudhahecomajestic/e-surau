@@ -2,10 +2,10 @@
 
 import { useMemo, useRef, useState } from "react";
 
-export type AhliRingkas = { id: string; no_ahli: string | null; nama: string; no_kp?: string | null; telefon?: string | null };
-export type PilihanAhli = { nama: string; ahliId: string | null; noAhli: string | null; noKp: string | null; telefon: string | null };
+export type AhliRingkas = { id: string; no_ahli: string | null; nama: string; no_kp?: string | null; telefon?: string | null; alamat?: string | null };
+export type PilihanAhli = { nama: string; ahliId: string | null; noAhli: string | null; noKp: string | null; telefon: string | null; alamat: string | null };
 
-export const KOSONG: PilihanAhli = { nama: "", ahliId: null, noAhli: null, noKp: null, telefon: null };
+export const KOSONG: PilihanAhli = { nama: "", ahliId: null, noAhli: null, noKp: null, telefon: null, alamat: null };
 
 export default function AhliPicker({
   label, ahli, nilai, onChange, placeholder,
@@ -33,7 +33,7 @@ export default function AhliPicker({
     setBuka(true);
   }
   function pilih(a: AhliRingkas) {
-    onChange({ nama: a.nama, ahliId: a.id, noAhli: a.no_ahli ?? null, noKp: a.no_kp ?? null, telefon: a.telefon ?? null });
+    onChange({ nama: a.nama, ahliId: a.id, noAhli: a.no_ahli ?? null, noKp: a.no_kp ?? null, telefon: a.telefon ?? null, alamat: a.alamat ?? null });
     setBuka(false);
   }
 
@@ -49,10 +49,13 @@ export default function AhliPicker({
         className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
       />
       {nilai.ahliId && (
-        <div className="mt-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">
-          ✓ {nilai.noAhli ?? "ahli"}
-          <span className="text-emerald-600"> · IC: {nilai.noKp ?? "—"}</span>
-          <span className="text-emerald-600"> · Tel: {nilai.telefon ?? "—"}</span>
+        <div className="mt-2 border-t border-dashed border-slate-200 pt-2">
+          <InfoRow k="Nama" v={nilai.nama} />
+          <InfoRow k="No Ahli Kariah" v={nilai.noAhli} />
+          <InfoRow k="No IC" v={nilai.noKp} />
+          <InfoRow k="Alamat" v={nilai.alamat} />
+          <InfoRow k="No Tel" v={nilai.telefon} />
+          <div className="mt-1.5 text-[11px] font-semibold text-emerald-600">✓ Terpaut ke rekod ahli</div>
         </div>
       )}
       {buka && padanan.length > 0 && (
@@ -70,6 +73,15 @@ export default function AhliPicker({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function InfoRow({ k, v }: { k: string; v: string | null }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-slate-100 py-1 text-[12.5px] last:border-0">
+      <span className="shrink-0 text-slate-500">{k}</span>
+      <span className="text-right font-semibold text-slate-800">{v && v.trim() ? v : "—"}</span>
     </div>
   );
 }

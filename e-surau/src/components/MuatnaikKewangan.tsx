@@ -79,7 +79,7 @@ export default function MuatnaikKewangan({ agmId, bilSediaAda }: { agmId: string
       <p className="mb-3 text-sm text-slate-600">Bendahari muat turun templat, isi angka dalam Excel/Sheets, simpan sebagai CSV, kemudian muat naik di sini. Angka akan terus dipaparkan dalam Buku Laporan Bahagian 8.</p>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <button onClick={turunTemplat} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">↓ Muat turun templat CSV</button>
+        <button onClick={turunTemplat} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Muat turun templat CSV</button>
         {bilSediaAda > 0 && <span className="text-xs font-medium text-emerald-600">{bilSediaAda} baris tersimpan sekarang</span>}
       </div>
 

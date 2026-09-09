@@ -63,7 +63,6 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
     <section className="rounded-xl border border-slate-200 bg-white p-5">
       <button onClick={() => setBuka((v) => !v)} className="flex w-full items-center justify-between text-left">
         <h2 className="font-semibold text-slate-900">Urus Jawatan &amp; Bilangan Dipilih</h2>
-        <span className="text-xs text-slate-400">{buka ? "tutup" : "buka"}</span>
       </button>
       {buka && (
         <div className="mt-3 space-y-3">
@@ -88,7 +87,7 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
             <label className="flex items-center gap-2 text-sm text-slate-600">Bil. dipilih
               <input type="number" min={1} value={bil} onChange={(e) => setBil(Number(e.target.value))} className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
             <div className="flex items-center gap-3 sm:col-span-2">
-              <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">+ Tambah Jawatan</button>
+              <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah Jawatan</button>
               {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
             </div>
           </div>
@@ -103,7 +102,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
   const router = useRouter();
   const sah = calon.filter((c) => c.status === "sah" || c.status === "menang_tanpa_bertanding");
   const pemenangNama = calon.find((c) => c.menang)?.nama ?? null;
-  const [buka, setBuka] = useState(!pemenangNama); // auto-tutup jika dah ada pemenang
+  const [buka, setBuka] = useState(false); // tutup default — klik baru buka
 
   // borang tambah calon — nama dari database ahli kariah
   const [cCalon, setCCalon] = useState<PilihanAhli>(KOSONG);
@@ -150,12 +149,8 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
       <button onClick={() => setBuka((v) => !v)} className="flex w-full items-center justify-between gap-2 text-left">
         <span className="flex flex-wrap items-baseline gap-2">
           <span className="font-bold text-surau">{jawatan.nama}</span>
-          {!buka && pemenangNama && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">✓ {pemenangNama}</span>}
+          {!buka && pemenangNama && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">{pemenangNama}</span>}
           {!buka && !pemenangNama && calon.length > 0 && <span className="text-xs text-slate-400">{calon.length} calon</span>}
-        </span>
-        <span className="flex shrink-0 items-center gap-2">
-          <span className="text-xs text-slate-400">{KAT[jawatan.kategori] ?? jawatan.kategori} · dipilih {jawatan.bil_dipilih}</span>
-          <span className={`text-[10px] text-slate-400 transition-transform ${buka ? "rotate-180" : ""}`}>▼</span>
         </span>
       </button>
 
@@ -192,7 +187,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
 
       {/* Tambah calon — cari nama dari database ahli kariah */}
       <details className="mb-3 rounded-lg bg-slate-50 p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-700">+ Tambah calon</summary>
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">Tambah calon</summary>
         <div className="mt-2 grid gap-3 sm:grid-cols-3">
           <AhliPicker label="Calon" ahli={ahli} nilai={cCalon} onChange={setCCalon} placeholder="Cari nama calon…" />
           <AhliPicker label="Pencadang" ahli={ahli} nilai={cPencadang} onChange={setCPencadang} placeholder="Cari nama pencadang…" />
@@ -202,7 +197,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
           <button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-1.5 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah Calon</button>
           {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
         </div>
-        <p className="mt-1 text-[11px] text-slate-400">Taip nama, pilih dari senarai ahli berdaftar. Tanda ✓ bermakna terpaut ke rekod ahli.</p>
+        <p className="mt-1 text-[11px] text-slate-400">Taip nama, pilih dari senarai ahli berdaftar. Maklumat ahli terus dipaparkan menegak.</p>
       </details>
 
       {/* Kiraan undi */}

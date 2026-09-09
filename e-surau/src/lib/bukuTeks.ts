@@ -43,9 +43,7 @@ Pengerusi, Surau Ar Raudhah, Eco Majestic`,
 10.45 mlm — Pengumuman keputusan & ucapan Pengerusi baharu
 11.00 mlm — Hal-hal lain & ucapan penangguhan — Pengerusi
 11.10 mlm — Tasbih Kaffarah, Al-Asr & Doa Penutup — Imam
-11.15 mlm — Bersurai
-
-(Waktu adalah anggaran; sahkan waktu Maghrib/Isyak zon SGR01. Atur cara tertakluk pindaan Pengerusi.)`,
+11.15 mlm — Bersurai`,
 
     agenda:
 `1.0  Ucapan Pengerusi dan Perutusan Tahunan
