@@ -110,7 +110,9 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
     return ahli.filter((a) => a.nama.toLowerCase().includes(q) || (a.no_ahli ?? "").toLowerCase().includes(q)).slice(0, 8);
   }, [cari, ahli]);
 
-  const capai = agm.kuorum > 0 && hadir.length >= agm.kuorum;
+  const bilLayak = hadir.filter((h) => bolehUndi(h)).length;
+  const bilPemerhati = hadir.length - bilLayak;
+  const capai = agm.kuorum > 0 && bilLayak >= agm.kuorum;
 
   async function daftar(a: Ahli) {
     setBusy(true); setRalat("");
@@ -131,15 +133,12 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
     if (r?.ok) router.refresh(); else setRalat(r?.msg ?? "Gagal tukar status daftar.");
   }
 
-  const bilUndi = hadir.filter((h) => bolehUndi(h)).length;
-  const bilHadirSahaja = hadir.length - bilUndi;
-
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-semibold text-slate-900">Daftar Kehadiran &amp; Kuorum</h2>
         <div className={`rounded-lg px-3 py-1.5 text-sm font-bold ${capai ? "bg-green-100 text-green-700" : agm.kuorum > 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}>
-          Hadir: {hadir.length}{agm.kuorum > 0 ? ` / ${agm.kuorum}` : ""} {agm.kuorum > 0 && (capai ? "· Kuorum CUKUP ✓" : "· belum cukup")}
+          Layak: {bilLayak}{agm.kuorum > 0 ? ` / ${agm.kuorum}` : ""} {agm.kuorum > 0 && (capai ? "· Kuorum CUKUP" : "· belum cukup")}
         </div>
       </div>
 
@@ -172,7 +171,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
               <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-slate-800">{a.nama}</div>
-                  <div className="text-xs text-slate-400">{a.no_ahli ?? "—"} · {a.layak ? <span className="text-green-600">boleh undi</span> : <span className="text-slate-400">hadir sahaja</span>}</div>
+                  <div className="text-xs text-slate-400">{a.no_ahli ?? "—"} · {a.layak ? <span className="text-green-600">layak undi</span> : <span className="text-slate-400">pemerhati</span>}</div>
                 </div>
                 {dah ? <span className="text-xs font-semibold text-green-600">Hadir</span>
                   : <button disabled={busy} onClick={() => daftar(a)} className="rounded-lg bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">Hadir</button>}
@@ -191,7 +190,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
 
       {/* Senarai hadir */}
       <div className="mt-4">
-        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length}) <span className="font-normal text-slate-400">· boleh undi {bilUndi} · hadir sahaja {bilHadirSahaja}</span></div>
+        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length}) <span className="font-normal text-slate-400">· layak undi {bilLayak} · pemerhati {bilPemerhati}</span></div>
         {hadir.length === 0 ? <p className="text-sm text-slate-400">Belum ada yang didaftar.</p> : (
           <ol className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
             {hadir.map((h, i) => {
@@ -204,8 +203,8 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
                   {h.no_ahli && <span className="text-xs text-slate-400">{h.no_ahli}</span>}
                   {h.kaedah === "qr" && <span className="rounded bg-blue-50 px-1.5 text-[10px] text-blue-600">QR</span>}
                   {layak
-                    ? <span className="rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-700">Boleh undi</span>
-                    : <span className="rounded bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-500">Hadir sahaja</span>}
+                    ? <span className="rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-700">Layak undi</span>
+                    : <span className="rounded bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-500">Pemerhati</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <ButangPadam onPadam={() => buang(h.id)} soalan="Padam nama ni?" />

@@ -196,7 +196,6 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Status Kelulusan</span>
           <Chip label="Semua" bil={kira.jumlah} aktif={!backlog && kelulusan === "semua"} onClick={() => pilihKelulusan("semua")} warna="bg-slate-700" />
-          <Chip label="Menunggu" bil={kira.menunggu} aktif={!backlog && kelulusan === "menunggu"} onClick={() => pilihKelulusan("menunggu")} warna="bg-slate-500" />
           <Chip label="Diluluskan" bil={kira.lulus} aktif={!backlog && kelulusan === "lulus"} onClick={() => pilihKelulusan("lulus")} warna="bg-green-700" />
           <Chip label="Ditolak" bil={kira.tolak} aktif={!backlog && kelulusan === "tolak"} onClick={() => pilihKelulusan("tolak")} warna="bg-red-600" />
         </div>
