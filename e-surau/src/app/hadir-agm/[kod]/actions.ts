@@ -34,19 +34,21 @@ export async function checkinAgm(kod: string, ic: string, namaManual: string): P
 
   const agmId = agm.id as string;
 
-  // 2) Cari ahli kariah lulus ikut IC
+  // 2) Cari ahli kariah ikut IC (mana-mana ahli boleh hadir)
   const { data: ahli } = await db
     .from("ahli_kariah")
-    .select("id, no_ahli, nama, status")
+    .select("id, no_ahli, nama, status, maklumat_disahkan")
     .in("no_kp", calon)
-    .eq("status", "lulus")
     .limit(1)
     .maybeSingle();
 
-  // 3) Jika tak jumpa — perlukan nama (golongan 2025 belum kemas kini)
+  // 3) Jika tak jumpa — perlukan nama (walk-in)
   const jumpa = !!ahli?.id;
   const nama = jumpa ? (ahli!.nama as string) : namaManual.trim();
   if (!jumpa && !nama) return { status: "perlu_nama" };
+
+  // Layak undi = diluluskan + dah kemaskini. Selainnya hadir sahaja.
+  const layak = jumpa && ahli!.status === "lulus" && !!ahli!.maklumat_disahkan;
 
   // 4) Daftar hadir (guna IC digit sebagai kunci unik)
   const rec = {
@@ -56,7 +58,7 @@ export async function checkinAgm(kod: string, ic: string, namaManual: string): P
     no_ahli: jumpa ? (ahli!.no_ahli as string | null) : null,
     no_kp: digit,
     kaedah: "qr",
-    perlu_semak: !jumpa,
+    perlu_semak: !layak,
   };
   const { error } = await db.from("agm_hadir").insert(rec);
   if (error) {
@@ -66,5 +68,5 @@ export async function checkinAgm(kod: string, ic: string, namaManual: string): P
     }
     return { status: "ralat", msg: "Gagal daftar. Sila maklum kepada petugas." };
   }
-  return { status: jumpa ? "sah" : "perlu_semak", nama };
+  return { status: layak ? "sah" : "perlu_semak", nama };
 }

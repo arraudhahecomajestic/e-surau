@@ -39,8 +39,8 @@ export default function CheckinAgm({ kod, tajuk, tahun }: { kod: string; tajuk: 
         </>}
         {hasil.status === "perlu_semak" && <>
           <h2 className="text-xl font-bold text-slate-900">Kehadiran Direkod</h2>
-          <p className="mt-1 text-slate-600">Terima kasih, <b>{hasil.nama}</b>. Anda telah didaftarkan hadir & layak mengundi.</p>
-          <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">Rekod anda belum dikemas kini dalam sistem — petugas akan menyemak nanti. Hak mengundi anda tidak terjejas.</p>
+          <p className="mt-1 text-slate-600">Terima kasih, <b>{hasil.nama}</b>. Anda telah didaftarkan hadir.</p>
+          <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">Pendaftaran anda belum lengkap (belum kemas kini / belum diluluskan), jadi anda hadir sahaja &amp; belum layak mengundi. Sila kemas kini maklumat dalam sistem atau hubungi petugas.</p>
         </>}
         {hasil.status === "sudah" && <>
           <h2 className="text-xl font-bold text-slate-900">Anda Sudah Didaftarkan</h2>
@@ -71,7 +71,7 @@ export default function CheckinAgm({ kod, tajuk, tahun }: { kod: string; tajuk: 
       {perluNama && (
         <label className="mt-3 block">
           <span className="text-sm font-medium text-slate-700">Nama Penuh</span>
-          <p className="mb-1 text-xs text-amber-600">IC anda belum ada dalam sistem. Sila masukkan nama penuh (anda tetap boleh hadir & mengundi).</p>
+          <p className="mb-1 text-xs text-amber-600">IC anda belum ada dalam sistem. Sila masukkan nama penuh — anda tetap boleh hadir (hadir sahaja, belum layak mengundi).</p>
           <input
             value={nama}
             onChange={(e) => setNama(e.target.value)}

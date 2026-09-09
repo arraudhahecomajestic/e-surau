@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { simpanAgm, tandaHadir, padamHadir, tambahUsul, kemasUndi, padamUsul, tetapkanDaftarBuka, sahkanHadir } from "@/app/admin/agm/actions";
+import { simpanAgm, tandaHadir, padamHadir, tambahUsul, kemasUndi, padamUsul, tetapkanDaftarBuka } from "@/app/admin/agm/actions";
 import QrDaftar from "@/components/QrDaftar";
 import ButangPadam from "@/components/ButangPadam";
 
 type Agm = { id: string; tajuk: string; tahun: number; tarikh: string | null; masa: string | null; tempat: string | null; kuorum: number; atur_cara: string | null; status: string; kod?: string | null; daftar_buka?: boolean };
 type Hadir = { id: string; ahli_id: string | null; nama: string; no_ahli: string | null; no_kp?: string | null; kaedah?: string | null; perlu_semak?: boolean; masa_daftar: string };
 type Usul = { id: string; no: number; tajuk: string; keterangan: string | null; undi_setuju: number; undi_tolak: number; undi_berkecuali: number; keputusan: string | null; catatan: string | null };
-type Ahli = { id: string; no_ahli: string | null; nama: string };
+type Ahli = { id: string; no_ahli: string | null; nama: string; layak: boolean };
 
 export default function AgmPanel({ agm, hadir, usul, ahli, tahunLalai }: { agm: Agm | null; hadir: Hadir[]; usul: Usul[]; ahli: Ahli[]; tahunLalai: number }) {
   return (
@@ -102,6 +102,8 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
   const [busy, setBusy] = useState(false);
   const [ralat, setRalat] = useState("");
   const sudah = useMemo(() => new Set(hadir.map((h) => h.ahli_id).filter(Boolean) as string[]), [hadir]);
+  const layakIds = useMemo(() => new Set(ahli.filter((a) => a.layak).map((a) => a.id)), [ahli]);
+  const bolehUndi = (h: Hadir) => !!h.ahli_id && layakIds.has(h.ahli_id);
   const padanan = useMemo(() => {
     const q = cari.trim().toLowerCase();
     if (!q) return [] as Ahli[];
@@ -128,11 +130,9 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
     const r = await tetapkanDaftarBuka(agm.id, !agm.daftar_buka); setBusy(false);
     if (r?.ok) router.refresh(); else setRalat(r?.msg ?? "Gagal tukar status daftar.");
   }
-  async function sahkan(id: string) { setBusy(true); await sahkanHadir(id); setBusy(false); router.refresh(); }
 
-  const bilSemak = hadir.filter((h) => h.perlu_semak).length;
-  const bilAhli = hadir.filter((h) => h.ahli_id).length;
-  const bilLuar = hadir.filter((h) => !h.ahli_id && !h.perlu_semak).length;
+  const bilUndi = hadir.filter((h) => bolehUndi(h)).length;
+  const bilHadirSahaja = hadir.length - bilUndi;
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -162,12 +162,6 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
         {agm.daftar_buka && agm.kod && <div className="mt-3"><QrDaftar kod={agm.kod} /></div>}
       </div>
 
-      {bilSemak > 0 && (
-        <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          {bilSemak} orang daftar guna IC yang belum dikemas kini dalam sistem (pendaftar 2025). Mereka dikira hadir &amp; layak mengundi — tandakan “Sah” selepas disemak.
-        </div>
-      )}
-
       {/* Carian ahli */}
       <input value={cari} onChange={(e) => setCari(e.target.value)} placeholder="Cari ahli (nama / no. ahli) untuk daftar hadir…" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
       {padanan.length > 0 && (
@@ -176,8 +170,11 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
             const dah = sudah.has(a.id);
             return (
               <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                <div className="min-w-0"><div className="truncate text-sm font-medium text-slate-800">{a.nama}</div><div className="text-xs text-slate-400">{a.no_ahli ?? "—"}</div></div>
-                {dah ? <span className="text-xs font-semibold text-green-600">✓ Hadir</span>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">{a.nama}</div>
+                  <div className="text-xs text-slate-400">{a.no_ahli ?? "—"} · {a.layak ? <span className="text-green-600">boleh undi</span> : <span className="text-slate-400">hadir sahaja</span>}</div>
+                </div>
+                {dah ? <span className="text-xs font-semibold text-green-600">Hadir</span>
                   : <button disabled={busy} onClick={() => daftar(a)} className="rounded-lg bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">Hadir</button>}
               </div>
             );
@@ -194,25 +191,28 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
 
       {/* Senarai hadir */}
       <div className="mt-4">
-        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length}) <span className="font-normal text-slate-400">· ahli berdaftar {bilAhli} · 2025 {bilSemak} · luar {bilLuar}</span></div>
+        <div className="mb-1 text-xs font-semibold text-slate-500">Senarai hadir ({hadir.length}) <span className="font-normal text-slate-400">· boleh undi {bilUndi} · hadir sahaja {bilHadirSahaja}</span></div>
         {hadir.length === 0 ? <p className="text-sm text-slate-400">Belum ada yang didaftar.</p> : (
           <ol className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
-            {hadir.map((h, i) => (
+            {hadir.map((h, i) => {
+              const layak = bolehUndi(h);
+              return (
               <li key={h.id} className="flex items-center justify-between gap-3 px-3 py-1.5">
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2">
                   <span className="text-slate-400">{i + 1}.</span>
                   <span className="truncate">{h.nama}</span>
                   {h.no_ahli && <span className="text-xs text-slate-400">{h.no_ahli}</span>}
                   {h.kaedah === "qr" && <span className="rounded bg-blue-50 px-1.5 text-[10px] text-blue-600">QR</span>}
-                  {h.perlu_semak && <span className="rounded bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">2025 · perlu semak</span>}
-                  {!h.ahli_id && !h.perlu_semak && <span className="rounded bg-slate-100 px-1.5 text-[10px] text-slate-500">luar</span>}
+                  {layak
+                    ? <span className="rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-700">Boleh undi</span>
+                    : <span className="rounded bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-500">Hadir sahaja</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {h.perlu_semak && <button onClick={() => sahkan(h.id)} className="text-xs font-semibold text-green-600 hover:underline">sah</button>}
                   <ButangPadam onPadam={() => buang(h.id)} soalan="Padam nama ni?" />
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ol>
         )}
       </div>

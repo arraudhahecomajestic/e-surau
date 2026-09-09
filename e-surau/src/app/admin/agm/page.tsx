@@ -29,14 +29,16 @@ export default async function AdminAgmPage() {
     usul = (u as any[]) ?? [];
   }
 
-  // Senarai ahli layak mengundi (status lulus)
+  // Semua ahli boleh hadir; "layak undi" = diluluskan + dah kemaskini.
   const { data: ahliRows } = await db
     .from("ahli_kariah")
-    .select("id, no_ahli, nama, status")
-    .eq("status", "lulus")
+    .select("id, no_ahli, nama, status, maklumat_disahkan")
     .order("nama", { ascending: true })
-    .limit(5000);
-  const ahli = ((ahliRows as any[]) ?? []).map((a) => ({ id: a.id, no_ahli: a.no_ahli, nama: a.nama }));
+    .limit(8000);
+  const ahli = ((ahliRows as any[]) ?? []).map((a) => ({
+    id: a.id, no_ahli: a.no_ahli, nama: a.nama,
+    layak: a.status === "lulus" && !!a.maklumat_disahkan,
+  }));
 
   return (
     <div className="space-y-6">

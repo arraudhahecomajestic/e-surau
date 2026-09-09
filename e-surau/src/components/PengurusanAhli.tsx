@@ -142,10 +142,14 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
     <div className="space-y-5">
       {/* KAD RINGKASAN */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kad label="Jumlah Ahli" nilai={kira.jumlah} warna="text-slate-900" />
-        <Kad label="Belum Kemas Kini" nilai={kira.belum} warna="text-orange-600" />
-        <Kad label="Dah Kemas Kini" nilai={kira.dah} warna="text-green-600" />
-        <Kad label="Menunggu Kelulusan" nilai={kira.menungguReal} warna="text-amber-600" />
+        <Kad label="Jumlah Ahli" nilai={kira.jumlah} warna="text-slate-900"
+          onClick={() => { setKelulusan("semua"); setKemaskini("semua"); setTerkiniOn(false); }} />
+        <Kad label="Belum Kemas Kini" nilai={kira.belum} warna="text-orange-600"
+          onClick={() => { setKelulusan("semua"); setKemaskini("belum"); setTerkiniOn(false); }} />
+        <Kad label="Dah Kemas Kini" nilai={kira.dah} warna="text-green-600"
+          onClick={() => { setKelulusan("semua"); setKemaskini("dah"); setTerkiniOn(false); }} />
+        <Kad label="Menunggu Kelulusan" nilai={kira.menungguReal} warna="text-amber-600"
+          onClick={() => { setKelulusan("menunggu"); setKemaskini("dah"); setTerkiniOn(false); }} />
       </div>
 
       {/* KAWALAN */}
@@ -262,12 +266,16 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
   );
 }
 
-function Kad({ label, nilai, warna }: { label: string; nilai: number; warna: string }) {
+function Kad({ label, nilai, warna, onClick }: { label: string; nilai: number; warna: string; onClick?: () => void }) {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm">
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-xl bg-white p-4 text-left shadow-sm transition hover:shadow-md hover:ring-2 hover:ring-surau/30"
+    >
       <div className={`text-2xl font-bold ${warna}`}>{nilai}</div>
       <div className="text-xs text-slate-500">{label}</div>
-    </div>
+    </button>
   );
 }
 function Chip({ label, bil, aktif, onClick, warna }: { label: string; bil: number; aktif: boolean; onClick: () => void; warna: string }) {
