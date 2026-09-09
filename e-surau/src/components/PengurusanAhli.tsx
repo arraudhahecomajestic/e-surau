@@ -40,6 +40,11 @@ function infoPeringkat(status: string, peringkat: string | null): { label: strin
   }
 }
 
+// Menunggu kelulusan sebenar: dah kemas kini, status menunggu, & belum ditolak di mana-mana peringkat.
+function perluLulus(a: Ahli): boolean {
+  return !!a.maklumat_disahkan && a.status === "menunggu" && a.peringkat !== "ditolak_su" && a.peringkat !== "ditolak_nazir";
+}
+
 function topengKp(kp: string | null): string {
   const d = (kp || "").replace(/\s/g, "");
   if (!d) return "—";
@@ -67,6 +72,7 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
   const [kelulusan, setKelulusan] = useState<Kelulusan>("semua");
   const [kemaskini, setKemaskini] = useState<TapisKemaskini>("semua");
   const [terkiniOn, setTerkiniOn] = useState(false);
+  const [backlog, setBacklog] = useState(false); // mod "Menunggu Kelulusan" sebenar
   const [papar, setPapar] = useState(false);
   const [disalin, setDisalin] = useState(false);
   const [muka, setMuka] = useState(1);
@@ -76,8 +82,8 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
     jumlah: senarai.length,
     belum: senarai.filter((a) => !a.maklumat_disahkan).length,
     dah: senarai.filter((a) => a.maklumat_disahkan).length,
-    // Menunggu kelulusan yang SEBENAR: dah kemas kini, tapi AJK belum luluskan.
-    menungguReal: senarai.filter((a) => a.maklumat_disahkan && a.status === "menunggu").length,
+    // Menunggu kelulusan SEBENAR: dah kemas kini, status menunggu, & belum ditolak di mana-mana peringkat.
+    menungguReal: senarai.filter(perluLulus).length,
     menunggu: senarai.filter((a) => a.status === "menunggu").length,
     lulus: senarai.filter((a) => a.status === "lulus").length,
     tolak: senarai.filter((a) => a.status === "tolak").length,
@@ -87,10 +93,13 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
   const ditapis = useMemo(() => {
     const cari = q.trim().toLowerCase();
     return senarai.filter((a) => {
-      if (kelulusan !== "semua" && a.status !== kelulusan) return false;
-      if (kemaskini === "belum" && a.maklumat_disahkan) return false;
-      if (kemaskini === "dah" && !a.maklumat_disahkan) return false;
-      if (terkiniOn && masaAktiviti(a) < ambangBaru) return false;
+      if (backlog) { if (!perluLulus(a)) return false; }
+      else {
+        if (kelulusan !== "semua" && a.status !== kelulusan) return false;
+        if (kemaskini === "belum" && a.maklumat_disahkan) return false;
+        if (kemaskini === "dah" && !a.maklumat_disahkan) return false;
+        if (terkiniOn && masaAktiviti(a) < ambangBaru) return false;
+      }
       if (!cari) return true;
       return (
         (a.nama || "").toLowerCase().includes(cari) ||
@@ -99,10 +108,13 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
         (a.telefon || "").includes(cari)
       );
     });
-  }, [senarai, q, kelulusan, kemaskini, terkiniOn, ambangBaru]);
+  }, [senarai, q, kelulusan, kemaskini, terkiniOn, backlog, ambangBaru]);
 
   // Reset ke muka 1 bila carian/penapis bertukar
-  useEffect(() => { setMuka(1); }, [q, kelulusan, kemaskini, terkiniOn]);
+  useEffect(() => { setMuka(1); }, [q, kelulusan, kemaskini, terkiniOn, backlog]);
+  // Tekan mana-mana chip = keluar mod backlog
+  function pilihKelulusan(v: Kelulusan) { setBacklog(false); setKelulusan(v); }
+  function pilihKemaskini(v: TapisKemaskini) { setBacklog(false); setKemaskini(v); }
   const jumMuka = Math.max(1, Math.ceil(ditapis.length / PER_MUKA));
   const mukaSemasa = Math.min(muka, jumMuka);
   const halaman = ditapis.slice((mukaSemasa - 1) * PER_MUKA, mukaSemasa * PER_MUKA);
@@ -143,13 +155,13 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
       {/* KAD RINGKASAN */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kad label="Jumlah Ahli" nilai={kira.jumlah} warna="text-slate-900"
-          onClick={() => { setKelulusan("semua"); setKemaskini("semua"); setTerkiniOn(false); }} />
+          onClick={() => { setBacklog(false); setKelulusan("semua"); setKemaskini("semua"); setTerkiniOn(false); }} />
         <Kad label="Belum Kemas Kini" nilai={kira.belum} warna="text-orange-600"
-          onClick={() => { setKelulusan("semua"); setKemaskini("belum"); setTerkiniOn(false); }} />
+          onClick={() => { setBacklog(false); setKelulusan("semua"); setKemaskini("belum"); setTerkiniOn(false); }} />
         <Kad label="Dah Kemas Kini" nilai={kira.dah} warna="text-green-600"
-          onClick={() => { setKelulusan("semua"); setKemaskini("dah"); setTerkiniOn(false); }} />
+          onClick={() => { setBacklog(false); setKelulusan("semua"); setKemaskini("dah"); setTerkiniOn(false); }} />
         <Kad label="Menunggu Kelulusan" nilai={kira.menungguReal} warna="text-amber-600"
-          onClick={() => { setKelulusan("menunggu"); setKemaskini("dah"); setTerkiniOn(false); }} />
+          onClick={() => { setKelulusan("semua"); setKemaskini("semua"); setTerkiniOn(false); setBacklog(true); }} />
       </div>
 
       {/* KAWALAN */}
@@ -183,20 +195,21 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Status Kelulusan</span>
-          <Chip label="Semua" bil={kira.jumlah} aktif={kelulusan === "semua"} onClick={() => setKelulusan("semua")} warna="bg-slate-700" />
-          <Chip label="Menunggu" bil={kira.menunggu} aktif={kelulusan === "menunggu"} onClick={() => setKelulusan("menunggu")} warna="bg-slate-500" />
-          <Chip label="Diluluskan" bil={kira.lulus} aktif={kelulusan === "lulus"} onClick={() => setKelulusan("lulus")} warna="bg-green-700" />
-          <Chip label="Ditolak" bil={kira.tolak} aktif={kelulusan === "tolak"} onClick={() => setKelulusan("tolak")} warna="bg-red-600" />
+          <Chip label="Semua" bil={kira.jumlah} aktif={!backlog && kelulusan === "semua"} onClick={() => pilihKelulusan("semua")} warna="bg-slate-700" />
+          <Chip label="Menunggu" bil={kira.menunggu} aktif={!backlog && kelulusan === "menunggu"} onClick={() => pilihKelulusan("menunggu")} warna="bg-slate-500" />
+          <Chip label="Diluluskan" bil={kira.lulus} aktif={!backlog && kelulusan === "lulus"} onClick={() => pilihKelulusan("lulus")} warna="bg-green-700" />
+          <Chip label="Ditolak" bil={kira.tolak} aktif={!backlog && kelulusan === "tolak"} onClick={() => pilihKelulusan("tolak")} warna="bg-red-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
           <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Kemas Kini</span>
-          <Chip label="Semua" bil={kira.jumlah} aktif={kemaskini === "semua"} onClick={() => setKemaskini("semua")} warna="bg-slate-700" />
-          <Chip label="Belum kemas kini" bil={kira.belum} aktif={kemaskini === "belum"} onClick={() => setKemaskini("belum")} warna="bg-orange-500" />
-          <Chip label="Dah kemas kini" bil={kira.dah} aktif={kemaskini === "dah"} onClick={() => setKemaskini("dah")} warna="bg-green-600" />
+          <Chip label="Semua" bil={kira.jumlah} aktif={!backlog && kemaskini === "semua"} onClick={() => pilihKemaskini("semua")} warna="bg-slate-700" />
+          <Chip label="Belum kemas kini" bil={kira.belum} aktif={!backlog && kemaskini === "belum"} onClick={() => pilihKemaskini("belum")} warna="bg-orange-500" />
+          <Chip label="Dah kemas kini" bil={kira.dah} aktif={!backlog && kemaskini === "dah"} onClick={() => pilihKemaskini("dah")} warna="bg-green-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Paparan Pantas</span>
-          <Chip label="Aktiviti 7 hari" bil={kira.terkini} aktif={terkiniOn} onClick={() => setTerkiniOn((v) => !v)} warna="bg-blue-600" />
+          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Menunggu Kelulusan</span>
+          <Chip label="Perlu diluluskan" bil={kira.menungguReal} aktif={backlog} onClick={() => { setKelulusan("semua"); setKemaskini("semua"); setTerkiniOn(false); setBacklog(true); }} warna="bg-amber-600" />
+          <Chip label="Aktiviti 7 hari" bil={kira.terkini} aktif={!backlog && terkiniOn} onClick={() => { setBacklog(false); setTerkiniOn((v) => !v); }} warna="bg-blue-600" />
         </div>
       </div>
 
@@ -238,8 +251,8 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
                   <td className="px-4 py-2.5 text-center"><span className={`inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${pr.cls}`}>{pr.label}</span></td>
                   <td className="px-4 py-2.5">
                     {a.maklumat_disahkan
-                      ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Dah kemas kini</span>
-                      : <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Belum kemas kini</span>}
+                      ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Selesai</span>
+                      : <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Belum</span>}
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-2">
