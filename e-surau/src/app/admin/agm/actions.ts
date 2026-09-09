@@ -180,12 +180,14 @@ export async function tambahBiro(agmId: string, nama: string, ketua: string, set
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !nama.trim()) return { ok: false, msg: "Nama biro diperlukan." };
   const db = createAdminClient();
+  const kod = (globalThis.crypto?.randomUUID?.() ?? String(Math.random())).replace(/-/g, "").slice(0, 10);
   await db.from("agm_biro").insert({
     agm_id: agmId,
     nama: nama.trim().slice(0, 160),
     ketua: ketua.trim().slice(0, 160) || null,
     setiausaha: setiausaha.trim().slice(0, 160) || null,
     ahli: ahli.trim().slice(0, 4000) || null,
+    kod,
   });
   revalidatePath("/admin/agm/jk");
   return { ok: true };
@@ -208,6 +210,21 @@ export async function padamBiro(id: string): Promise<{ ok: boolean }> {
   if (!(await boleh())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_biro").delete().eq("id", id);
+  revalidatePath("/admin/agm/jk");
+  return { ok: true };
+}
+
+// Buang fail laporan yang dimuat naik (biro kekal, cuma fail dibuang).
+export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  const { data: b } = await db.from("agm_biro").select("fail_url").eq("id", id).maybeSingle();
+  const url = (b as any)?.fail_url as string | undefined;
+  if (url) {
+    const m = url.match(/\/kandungan\/(.+)$/);
+    if (m?.[1]) { try { await db.storage.from("kandungan").remove([decodeURIComponent(m[1])]); } catch { /* abai */ } }
+  }
+  await db.from("agm_biro").update({ fail_url: null, fail_nama: null, fail_masa: null }).eq("id", id);
   revalidatePath("/admin/agm/jk");
   return { ok: true };
 }

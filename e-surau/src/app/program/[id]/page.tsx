@@ -6,6 +6,7 @@ import BorangDaftarProgramManual from "@/components/BorangDaftarProgramManual";
 import SumbangProgramForm from "@/components/SumbangProgramForm";
 import BorangRsvpProgram from "@/components/BorangRsvpProgram";
 import PosterCarousel from "@/components/PosterCarousel";
+import GaleriProgram from "@/components/GaleriProgram";
 import TambahKalendar from "@/components/TambahKalendar";
 import { bayaranOnlineDibuka } from "@/lib/tetapanSistem";
 
@@ -141,6 +142,8 @@ export default async function JemputanProgramPage({ params, searchParams }: { pa
           {p.sumbangan_dibuka && (p.berbayar || !p.rsvp_dibuka || penuh) && (
             <SumbangProgramForm programId={p.id} nota={p.sumbangan_nota} bayaranDibuka={bayaranOnline} />
           )}
+
+          <GaleriProgram gambar={p.gambar_urls ?? []} tajuk={p.tajuk} />
         </div>
       </article>
 

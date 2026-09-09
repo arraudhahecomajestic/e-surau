@@ -72,7 +72,7 @@ export async function kemasProgram(formData: FormData) {
   if (!id) return;
   const db = createAdminClient();
   // Hanya pencipta program (atau Admin/Master) boleh edit.
-  const { data: prog } = await db.from("program").select("dicipta_oleh, poster_url, poster_urls").eq("id", id).single();
+  const { data: prog } = await db.from("program").select("dicipta_oleh, poster_url, poster_urls, gambar_urls").eq("id", id).single();
   if (!bolehUrusProgram(p, (prog as any)?.dicipta_oleh)) return;
 
   // Poster berbilang (galeri swipe): senarai URL dihantar sebagai JSON dari
@@ -87,9 +87,20 @@ export async function kemasProgram(formData: FormData) {
   }
   const posterUrl: string | null = posterUrls[0] ?? null; // poster utama (keserasian ke belakang)
 
+  // Galeri gambar dokumentasi (4–10 keping) — sama pola dgn poster.
+  let gambarUrls: string[] = (prog as any)?.gambar_urls ?? [];
+  const gambarRaw = formData.get("gambar_urls");
+  if (typeof gambarRaw === "string") {
+    try {
+      const arr = JSON.parse(gambarRaw);
+      if (Array.isArray(arr)) gambarUrls = arr.filter((u) => typeof u === "string" && u.trim()).slice(0, 10);
+    } catch { /* kekalkan sedia ada */ }
+  }
+
   await db.from("program").update({
     poster_url: posterUrl,
     poster_urls: posterUrls,
+    gambar_urls: gambarUrls,
     tajuk: String(formData.get("tajuk") ?? ""),
     keterangan: String(formData.get("keterangan") ?? "") || null,
     kategori: String(formData.get("kategori") ?? "") || null,

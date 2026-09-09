@@ -11,6 +11,7 @@ import EksportPeserta from "@/components/EksportPeserta";
 import ImportRsvp from "@/components/ImportRsvp";
 import SenaraiRsvp from "@/components/SenaraiRsvp";
 import PosterProgramInput from "@/components/PosterProgramInput";
+import GambarProgramInput from "@/components/GambarProgramInput";
 import KongsiMaklumBalas from "@/components/KongsiMaklumBalas";
 import KongsiCheckIn from "@/components/KongsiCheckIn";
 
@@ -118,6 +119,7 @@ export default async function EditProgramPage({ params }: { params: { id: string
           <input name="had_peserta" type="number" min="1" defaultValue={p.had_peserta ?? ""} placeholder="Had peserta (kosong = tiada had)" className="inp sm:col-span-2" />
           <textarea name="keterangan" rows={3} defaultValue={p.keterangan ?? ""} placeholder="Keterangan / butiran program" className="inp sm:col-span-2" />
           <PosterProgramInput awal={(p.poster_urls && p.poster_urls.length ? p.poster_urls : (p.poster_url ? [p.poster_url] : []))} />
+          <GambarProgramInput awal={p.gambar_urls ?? []} />
           <div className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
             <span className="mb-1 block text-xs font-medium text-slate-600">Pautan Group WhatsApp (pilihan) — butang "Sertai Group WhatsApp" dipapar selepas kariah siap RSVP</span>
             <input name="wa_group" type="url" defaultValue={p.wa_group ?? ""} placeholder="https://chat.whatsapp.com/… (tampal link group yang JK pilih)" className="inp" />

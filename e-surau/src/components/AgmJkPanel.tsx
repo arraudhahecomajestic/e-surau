@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { tambahJk, padamJk, simpanSusunanJk, tambahBiro, kemasBiro, padamBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
+import { tambahJk, padamJk, simpanSusunanJk, tambahBiro, kemasBiro, padamBiro, padamFailBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
 import ButangPadam from "@/components/ButangPadam";
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
-type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null };
+type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null; kod: string | null; fail_url: string | null; fail_nama: string | null; fail_masa: string | null };
 
 export default function AgmJkPanel({ agmId, jk, biro }: { agmId: string; jk: Jk[]; biro: Biro[] }) {
   return (
@@ -59,8 +59,7 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-1 font-semibold text-slate-900">Senarai Jawatankuasa</h2>
-      <p className="mb-3 text-xs text-slate-500">Seret mana-mana baris untuk susun ikut keutamaan. Tekan <b>Simpan Susunan</b> supaya turutan kekal &amp; terpapar sama dalam Buku Laporan (Bahagian 4).</p>
+      <h2 className="mb-3 font-semibold text-slate-900">Senarai Jawatankuasa</h2>
 
       <div className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
         <label className="block"><span className="text-xs font-medium text-slate-600">Jawatan</span>
@@ -120,7 +119,10 @@ function LaporanBiro({ agmId, biro }: { agmId: string; biro: Biro[] }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-3 font-semibold text-slate-900">Biro-Biro &amp; Laporan</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold text-slate-900">Biro-Biro &amp; Laporan</h2>
+        <a href="/Templat_Laporan_Biro_SAR.docx" className="rounded-lg border border-surau/40 bg-surau/5 px-3 py-1.5 text-xs font-semibold text-surau hover:bg-surau/10">Muat turun templete laporan</a>
+      </div>
 
       <div className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
         <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama biro (cth: Biro Dakwah)" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm sm:col-span-2" />
@@ -148,8 +150,19 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
   const [msg, setMsg] = useState("");
   const [ralat, setRalat] = useState("");
 
+  const [salin, setSalin] = useState(false);
+  const pautan = (typeof window !== "undefined" ? window.location.origin : "") + "/laporan-biro/" + (b.kod ?? "");
+
   async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan, setiausaha, ahli); setBusy(false); setSebelum(null); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
   async function padam() { setBusy(true); await padamBiro(b.id); setBusy(false); onDone(); }
+  async function buangFail() { setBusy(true); await padamFailBiro(b.id); setBusy(false); onDone(); }
+  async function salinPautan() {
+    try { await navigator.clipboard.writeText(pautan); setSalin(true); setTimeout(() => setSalin(false), 2000); } catch { /* abai */ }
+  }
+  function bilaTeks(iso: string | null) {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" }); } catch { return ""; }
+  }
 
   async function bantuAI() {
     setBusyAI(true); setRalat(""); setMsg("");
@@ -175,6 +188,27 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
         <div className="font-semibold text-slate-900">{b.nama}</div>
         <ButangPadam onPadam={padam} label="padam biro" soalan="Padam biro ni & laporannya?" />
       </div>
+
+      {/* Pautan muat naik sendiri + status fail */}
+      {b.kod && (
+        <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+          <div className="text-xs font-medium text-slate-600">Pautan muat naik untuk ketua biro (hantar via WhatsApp)</div>
+          <div className="mt-1 flex items-center gap-2">
+            <input readOnly value={pautan} className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600" onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" onClick={salinPautan} className="shrink-0 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900">{salin ? "Disalin ✓" : "Salin"}</button>
+          </div>
+          {b.fail_url ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <a href={b.fail_url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 hover:bg-emerald-100">Muat turun laporan</a>
+              <span className="text-slate-500">{b.fail_nama}{b.fail_masa ? ` · ${bilaTeks(b.fail_masa)}` : ""}</span>
+              <ButangPadam onPadam={buangFail} label="padam fail" soalan="Buang fail laporan ni?" />
+            </div>
+          ) : (
+            <div className="mt-2 text-xs text-slate-400">Belum ada fail dimuat naik.</div>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block"><span className="text-xs font-medium text-slate-600">Ketua biro</span>
           <input value={ketua} onChange={(e) => setKetua(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
