@@ -20,7 +20,6 @@ const KAWASAN: Record<string, string> = {
   karisma: "Apartment Karisma", harmoni: "Apartment Harmoni", simfoni: "Apartment Simfoni", lain: "Lain-lain",
 };
 // Turutan senarai JK (satu senarai, tiada tajuk kategori): induk → imam/bilal/siak → ajk → JK kira-kira
-const JK_ORDER: Record<string, number> = { induk: 0, staf: 1, ajk_biasa: 2, juruaudit: 3, ketua_biro: 4, penaung: 5 };
 
 // Pemetaan kategori sistem -> baris tetap Buku Laporan (padanan kata kunci)
 const SUMBER = [
@@ -62,7 +61,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
   const [teksRes, jkRes, biroRes, usulRes, ahliRes, tggRes, kutRes, belRes, khaRes, progRes, kewRes] = await Promise.all([
     db.from("agm_laporan_teks").select("kunci, nilai").eq("agm_id", agm.id),
-    db.from("agm_jk").select("kumpulan, jawatan, nama, susunan").eq("agm_id", agm.id).order("kumpulan").order("susunan"),
+    db.from("agm_jk").select("kumpulan, jawatan, nama, susunan").eq("agm_id", agm.id).order("susunan").order("dicipta"),
     db.from("agm_biro").select("nama, ketua, setiausaha, ahli, laporan, susunan").eq("agm_id", agm.id).order("susunan"),
     db.from("agm_usul").select("no, tajuk, keterangan, keputusan, undi_setuju, undi_tolak, undi_berkecuali").eq("agm_id", agm.id).order("no"),
     db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar").limit(20000),
@@ -90,7 +89,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const menunggu = ahli.filter((a) => a.status === "menunggu").length;
   const baru = ahli.filter((a) => String(a.tarikh_daftar ?? "").slice(0, 4) === String(thn)).length;
   const ikutFasa = Object.keys(KAWASAN).map((kod) => ({ label: KAWASAN[kod], bil: lulus.filter((a) => (a.kawasan ?? "lain") === kod).length })).filter((x) => x.bil > 0);
-  const jkSorted = [...jk].sort((a, b) => (JK_ORDER[a.kumpulan] ?? 9) - (JK_ORDER[b.kumpulan] ?? 9) || (n(a.susunan) - n(b.susunan)));
+  const jkSorted = [...jk].sort((a, b) => n(a.susunan) - n(b.susunan));
   const biroNama = biro.map((b) => b.nama);
   const khairatAktif = khairat.filter((k) => k.status === "aktif").length;
   const khairatTunggak = khairat.filter((k) => k.status === "tertunggak").length;

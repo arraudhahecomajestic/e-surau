@@ -1,22 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { tambahJk, padamJk, tambahBiro, kemasBiro, padamBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
+import { tambahJk, padamJk, simpanSusunanJk, tambahBiro, kemasBiro, padamBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
 import ButangPadam from "@/components/ButangPadam";
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
 type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null };
-
-const KUMP: { kod: string; label: string }[] = [
-  { kod: "penaung", label: "Penaung & Penasihat" },
-  { kod: "induk", label: "Jawatankuasa Induk" },
-  { kod: "ketua_biro", label: "Ketua Biro" },
-  { kod: "ajk_biasa", label: "Ahli Jawatankuasa Biasa" },
-  { kod: "juruaudit", label: "Juruaudit Dalaman" },
-  { kod: "staf", label: "Petugas & Staf Surau" },
-];
-const labelKump = (k: string) => KUMP.find((x) => x.kod === k)?.label ?? k;
 
 export default function AgmJkPanel({ agmId, jk, biro }: { agmId: string; jk: Jk[]; biro: Biro[] }) {
   return (
@@ -27,56 +17,88 @@ export default function AgmJkPanel({ agmId, jk, biro }: { agmId: string; jk: Jk[
   );
 }
 
-/* ---- Senarai JK ---- */
+/* ---- Senarai JK (senarai rata + seret untuk susun) ---- */
 function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
   const router = useRouter();
-  const [kumpulan, setKumpulan] = useState("induk");
   const [jawatan, setJawatan] = useState("");
   const [nama, setNama] = useState("");
   const [biro, setBiro] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // susunan setempat untuk drag & drop
+  const [urutan, setUrutan] = useState<Jk[]>(jk);
+  const [dragI, setDragI] = useState<number | null>(null);
+  const [overI, setOverI] = useState<number | null>(null);
+  const [ubah, setUbah] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  // selaras semula bila data dari server berubah (lepas refresh)
+  useEffect(() => { setUrutan(jk); setUbah(false); }, [jk]);
+
   async function tambah() {
     if (!jawatan.trim() || !nama.trim()) return;
-    setBusy(true); await tambahJk(agmId, kumpulan, jawatan, nama, biro); setBusy(false);
+    setBusy(true); await tambahJk(agmId, "induk", jawatan, nama, biro); setBusy(false);
     setJawatan(""); setNama(""); setBiro(""); router.refresh();
   }
   async function buang(id: string) { setBusy(true); await padamJk(id); setBusy(false); router.refresh(); }
 
+  function jatuh(ke: number) {
+    if (dragI === null || dragI === ke) { setDragI(null); setOverI(null); return; }
+    const arr = [...urutan];
+    const [pindah] = arr.splice(dragI, 1);
+    arr.splice(ke, 0, pindah);
+    setUrutan(arr); setUbah(true); setDragI(null); setOverI(null);
+  }
+  async function simpanSusunan() {
+    setBusy(true); setMsg("");
+    const r = await simpanSusunanJk(agmId, urutan.map((x) => x.id));
+    setBusy(false);
+    if (r?.ok) { setUbah(false); setMsg("✓ Susunan disimpan — buku laporan dah kemas kini."); setTimeout(() => setMsg(""), 3500); router.refresh(); }
+    else setMsg(r?.msg ?? "Gagal simpan susunan.");
+  }
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-3 font-semibold text-slate-900">Senarai Jawatankuasa</h2>
+      <h2 className="mb-1 font-semibold text-slate-900">Senarai Jawatankuasa</h2>
+      <p className="mb-3 text-xs text-slate-500">Seret mana-mana baris untuk susun ikut keutamaan. Tekan <b>Simpan Susunan</b> supaya turutan kekal &amp; terpapar sama dalam Buku Laporan (Bahagian 4).</p>
 
       <div className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
-        <label className="block"><span className="text-xs font-medium text-slate-600">Kumpulan</span>
-          <select value={kumpulan} onChange={(e) => setKumpulan(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-            {KUMP.map((k) => <option key={k.kod} value={k.kod}>{k.label}</option>)}
-          </select></label>
         <label className="block"><span className="text-xs font-medium text-slate-600">Jawatan</span>
           <input value={jawatan} onChange={(e) => setJawatan(e.target.value)} placeholder="cth: Pengerusi" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
         <label className="block"><span className="text-xs font-medium text-slate-600">Nama</span>
           <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama penuh" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
-        <label className="block"><span className="text-xs font-medium text-slate-600">Biro (pilihan)</span>
+        <label className="block sm:col-span-2"><span className="text-xs font-medium text-slate-600">Biro (pilihan)</span>
           <input value={biro} onChange={(e) => setBiro(e.target.value)} placeholder="cth: Biro Program" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
         <div className="sm:col-span-2"><button disabled={busy} onClick={tambah} className="rounded-lg bg-surau px-4 py-2 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Tambah ke Senarai</button></div>
       </div>
 
-      {jk.length === 0 ? <p className="text-sm text-slate-400">Belum ada nama dalam senarai.</p> : (
-        <div className="space-y-4">
-          {KUMP.filter((k) => jk.some((j) => j.kumpulan === k.kod)).map((k) => (
-            <div key={k.kod}>
-              <div className="mb-1 text-xs font-bold uppercase tracking-wide text-surau">{k.label}</div>
-              <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
-                {jk.filter((j) => j.kumpulan === k.kod).map((j) => (
-                  <li key={j.id} className="flex items-center justify-between gap-3 px-3 py-1.5">
-                    <span className="min-w-0"><b>{j.jawatan}</b> — {j.nama}{j.biro ? <span className="ml-2 text-xs text-slate-400">({j.biro})</span> : ""}</span>
-                    <span className="shrink-0"><ButangPadam onPadam={() => buang(j.id)} soalan="Padam ahli JK ni?" /></span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+      {urutan.length === 0 ? <p className="text-sm text-slate-400">Belum ada nama dalam senarai.</p> : (
+        <>
+          <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
+            {urutan.map((j, i) => (
+              <li
+                key={j.id}
+                draggable
+                onDragStart={() => setDragI(i)}
+                onDragOver={(e) => { e.preventDefault(); setOverI(i); }}
+                onDrop={() => jatuh(i)}
+                onDragEnd={() => { setDragI(null); setOverI(null); }}
+                className={`flex cursor-grab items-center justify-between gap-3 px-3 py-2 active:cursor-grabbing ${overI === i && dragI !== null && dragI !== i ? "bg-surau/10" : ""} ${dragI === i ? "opacity-40" : ""}`}
+              >
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="w-6 shrink-0 select-none text-right text-xs font-semibold text-slate-400">{i + 1}.</span>
+                  <span className="min-w-0"><b>{j.jawatan}</b> — {j.nama}{j.biro ? <span className="ml-2 text-xs text-slate-400">({j.biro})</span> : ""}</span>
+                </span>
+                <span className="shrink-0"><ButangPadam onPadam={() => buang(j.id)} soalan="Padam ahli JK ni?" /></span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex items-center gap-3">
+            <button disabled={busy || !ubah} onClick={simpanSusunan} className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-900 disabled:opacity-40">{busy ? "Menyimpan…" : "Simpan Susunan"}</button>
+            {ubah && <span className="text-xs font-medium text-amber-600">Susunan belum disimpan</span>}
+            {msg && <span className="text-xs font-semibold text-emerald-600">{msg}</span>}
+          </div>
+        </>
       )}
     </section>
   );

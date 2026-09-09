@@ -144,7 +144,10 @@ export async function tambahJk(agmId: string, kumpulan: string, jawatan: string,
   if (!agmId || !nama.trim() || !jawatan.trim()) return { ok: false, msg: "Jawatan & nama diperlukan." };
   const db = createAdminClient();
   const k = KUMP_JK.includes(kumpulan) ? kumpulan : "induk";
-  await db.from("agm_jk").insert({ agm_id: agmId, kumpulan: k, jawatan: jawatan.trim().slice(0, 120), nama: nama.trim().slice(0, 160), biro: biro.trim().slice(0, 120) || null });
+  // letak di hujung senarai (susunan paling besar + 1)
+  const { data: maxRow } = await db.from("agm_jk").select("susunan").eq("agm_id", agmId).order("susunan", { ascending: false }).limit(1);
+  const seterusnya = (((maxRow as any[])?.[0]?.susunan) ?? 0) + 1;
+  await db.from("agm_jk").insert({ agm_id: agmId, kumpulan: k, jawatan: jawatan.trim().slice(0, 120), nama: nama.trim().slice(0, 160), biro: biro.trim().slice(0, 120) || null, susunan: seterusnya });
   revalidatePath("/admin/agm/jk");
   return { ok: true };
 }
@@ -154,6 +157,21 @@ export async function padamJk(id: string): Promise<{ ok: boolean }> {
   const db = createAdminClient();
   await db.from("agm_jk").delete().eq("id", id);
   revalidatePath("/admin/agm/jk");
+  return { ok: true };
+}
+
+// Simpan susunan baharu (drag & drop) — susunan = kedudukan dalam senarai
+export async function simpanSusunanJk(agmId: string, ids: string[]): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!agmId || !Array.isArray(ids) || ids.length === 0) return { ok: false, msg: "Senarai kosong." };
+  const db = createAdminClient();
+  try {
+    await Promise.all(ids.map((id, i) => db.from("agm_jk").update({ susunan: i + 1 }).eq("id", id).eq("agm_id", agmId)));
+  } catch (e: any) {
+    return { ok: false, msg: e?.message ?? "Gagal simpan susunan." };
+  }
+  revalidatePath("/admin/agm/jk");
+  revalidatePath("/admin/agm/buku");
   return { ok: true };
 }
 

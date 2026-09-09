@@ -20,7 +20,7 @@ export default async function AgmJkPage() {
   let biro: any[] = [];
   if (agm?.id) {
     const [{ data: j }, { data: b }] = await Promise.all([
-      db.from("agm_jk").select("*").eq("agm_id", agm.id).order("kumpulan", { ascending: true }).order("susunan", { ascending: true }).order("dicipta", { ascending: true }),
+      db.from("agm_jk").select("*").eq("agm_id", agm.id).order("susunan", { ascending: true }).order("dicipta", { ascending: true }),
       db.from("agm_biro").select("*").eq("agm_id", agm.id).order("susunan", { ascending: true }).order("dicipta", { ascending: true }),
     ]);
     jk = (j as any[]) ?? [];
