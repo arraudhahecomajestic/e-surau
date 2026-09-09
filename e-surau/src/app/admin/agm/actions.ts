@@ -9,6 +9,9 @@ import { panggilAI } from "@/lib/ai";
 const KEWANGAN_KEYS = ["ulasan_kewangan", "nota_kewangan", "perakuan_bendahari", "laporan_juruaudit"];
 async function bolehTeks(kunci: string) {
   const p = await getProfil();
+  // Laporan Juruaudit Dalaman — diisi oleh juruaudit (peranan AJK) atau SU.
+  // Tidak perlu akses penuh Kewangan (CSV/angka) — cukup peranan pentadbir (AJK/Admin).
+  if (kunci === "laporan_juruaudit") return isPentadbir(p);
   if (KEWANGAN_KEYS.includes(kunci)) return isBendahari(p) || isAdmin(p);
   return isAdmin(p); // naratif SU
 }
