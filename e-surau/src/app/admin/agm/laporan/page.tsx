@@ -26,7 +26,7 @@ export default async function LaporanAgmPage({ searchParams }: { searchParams?: 
   const db = createAdminClient();
 
   const [ahliRes, kutipanRes, belanjaRes, khairatRes, programRes, penajaRes] = await Promise.all([
-    db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar").limit(20000),
+    db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar, maklumat_disahkan, peringkat").limit(20000),
     db.from("kutipan").select("jumlah, tarikh, kategori:kategori_kutipan(nama, jenis_khairat)").gte("tarikh", mula).lte("tarikh", tamat).limit(20000),
     db.from("perbelanjaan").select("jumlah, tarikh, dari_khairat, status, kategori:kategori_belanja(nama)").eq("status", "dibayar").gte("tarikh", mula).lte("tarikh", tamat).limit(20000),
     db.from("keahlian_khairat").select("status").limit(20000),
@@ -41,10 +41,13 @@ export default async function LaporanAgmPage({ searchParams }: { searchParams?: 
   const program = (programRes.data as any[]) ?? [];
   const penaja = (penajaRes.data as any[]) ?? [];
 
-  // ---- Keahlian ----
+  // ---- Keahlian (selaras dengan panel Pengurusan Ahli) ----
   const lulus = ahli.filter((a) => a.status === "lulus");
-  const menunggu = ahli.filter((a) => a.status === "menunggu").length;
-  const aktif = lulus.filter((a) => a.aktif).length;
+  const tolak = ahli.filter((a) => a.status === "tolak").length;
+  const belumKemaskini = ahli.filter((a) => !a.maklumat_disahkan).length;
+  const dahKemaskini = ahli.filter((a) => a.maklumat_disahkan).length;
+  // Menunggu kelulusan SEBENAR: dah kemas kini, status menunggu, belum ditolak di mana-mana peringkat.
+  const menungguReal = ahli.filter((a) => a.maklumat_disahkan && a.status === "menunggu" && a.peringkat !== "ditolak_su" && a.peringkat !== "ditolak_nazir").length;
   const baruTahunIni = ahli.filter((a) => String(a.tarikh_daftar ?? "").slice(0, 4) === String(tahun)).length;
   const ikutKawasan = Object.keys(KAWASAN).map((kod) => ({ kod, label: KAWASAN[kod], bil: lulus.filter((a) => (a.kawasan ?? "lain") === kod).length }))
     .filter((x) => x.bil > 0).sort((a, b) => b.bil - a.bil);
@@ -101,9 +104,12 @@ export default async function LaporanAgmPage({ searchParams }: { searchParams?: 
       </div>
 
       <Seksyen tajuk="6.3 Keahlian Ahli Kariah">
-        <Baris k="Jumlah ahli diluluskan (LULUS)" v={String(lulus.length)} tebal />
-        <Baris k="Ahli aktif" v={String(aktif)} />
-        <Baris k="Permohonan menunggu kelulusan" v={String(menunggu)} />
+        <Baris k="Jumlah ahli berdaftar" v={String(ahli.length)} tebal />
+        <Baris k="Diluluskan" v={String(lulus.length)} />
+        <Baris k="Ditolak" v={String(tolak)} />
+        <Baris k="Dah kemas kini" v={String(dahKemaskini)} />
+        <Baris k="Belum kemas kini" v={String(belumKemaskini)} />
+        <Baris k="Menunggu kelulusan (dah kemas kini)" v={String(menungguReal)} />
         <Baris k={`Pendaftaran baharu tahun ${tahun}`} v={String(baruTahunIni)} />
         <div className="mt-3 mb-1 text-xs font-semibold uppercase text-slate-500">Pecahan mengikut fasa / kawasan (ahli LULUS)</div>
         {ikutKawasan.map((x) => <Baris key={x.kod} k={x.label} v={String(x.bil)} />)}
