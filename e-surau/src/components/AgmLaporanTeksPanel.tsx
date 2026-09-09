@@ -23,7 +23,7 @@ export const SEKSYEN_KEWANGAN: Bahagian[] = [
   { kunci: "ulasan_kewangan", tajuk: "B8 · Ulasan Bendahari", desc: "Ulasan naratif kedudukan kewangan (angka dijana automatik / CSV).", contoh: "cth: sumber pendapatan utama, perbelanjaan besar, kedudukan tabung am & khairat…" },
   { kunci: "nota_kewangan", tajuk: "B8.4 · Nota kepada Penyata Kewangan", desc: "Nota kaki penyata kewangan.", contoh: "cth: asas tunai, pengasingan tabung khairat, aset tetap, sumbangan barangan…" },
   { kunci: "perakuan_bendahari", tajuk: "B8.5 · Perakuan Bendahari", desc: "Perakuan rasmi Bendahari.", contoh: "cth: pengesahan penyata benar & lengkap, nama & tarikh…" },
-  { kunci: "laporan_juruaudit", tajuk: "B8.6 · Laporan Juruaudit Dalaman", desc: "Laporan juruaudit (skop, penemuan, pengesahan).", contoh: "cth: skop semakan, tarikh audit, penemuan, syor, pengesahan…" },
+  // B8.6 Laporan Juruaudit dipindahkan ke page khas /admin/agm/juruaudit (akses juruaudit AJK).
 ];
 
 type Nilai = Record<string, string>;
