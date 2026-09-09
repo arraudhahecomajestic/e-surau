@@ -207,7 +207,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   {h.perlu_semak && <button onClick={() => sahkan(h.id)} className="text-xs font-semibold text-green-600 hover:underline">sah</button>}
-                  <button onClick={() => buang(h.id)} className="text-xs text-red-500 hover:underline">buang</button>
+                  <button onClick={() => buang(h.id)} className="text-xs text-red-500 hover:underline">padam</button>
                 </span>
               </li>
             ))}

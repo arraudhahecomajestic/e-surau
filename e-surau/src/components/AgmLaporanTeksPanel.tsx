@@ -11,7 +11,7 @@ export const SEKSYEN_SU: Bahagian[] = [
   { kunci: "atur_cara", tajuk: "B2 · Atur Cara Mesyuarat", desc: "Ganti teks atur cara lalai.", contoh: "cth: 7.00 Ketibaan · 7.20 Maghrib · 7.45 Jamuan · 8.50 Ucapan Pengerusi · 9.00 Mesyuarat…" },
   { kunci: "agenda", tajuk: "B3 · Agenda Mesyuarat", desc: "Ganti agenda lalai 1.0–13.0.", contoh: "cth: 1.0 Ucapan Pengerusi · 2.0 Pengesahan minit · 4.0 Laporan SU · 6.0 Penyata Kewangan…" },
   { kunci: "surat_notis", tajuk: "B5 · Surat Notis Mesyuarat", desc: "Ganti badan surat notis lalai.", contoh: "cth: tarikh/masa/tempat, tujuan, hak mengundi, tarikh tutup pencalonan & usul, kuorum…" },
-  { kunci: "laporan_setiausaha", tajuk: "B6.1 · Laporan Setiausaha (Pendahuluan & Pentadbiran)", desc: "Naratif pentadbiran, mesyuarat & aktiviti.", contoh: "cth: bilangan mesyuarat AJK, program sepanjang tahun, dasar tadbir urus baharu…" },
+  { kunci: "laporan_setiausaha", tajuk: "B6.1 · Laporan Setiausaha (Pendahuluan & Pentadbiran)", desc: "Pentadbiran, mesyuarat & aktiviti.", contoh: "cth: bilangan mesyuarat AJK, program sepanjang tahun, dasar tadbir urus baharu…" },
   { kunci: "modul_esurau", tajuk: "B6.4 · Ringkasan Sistem e-Surau", desc: "Ganti ringkasan modul lalai (pilihan).", contoh: "cth: keahlian, khairat, kewangan, program, sewaan, staf, gaji, AGM, penajaan, bayaran…" },
   { kunci: "su_cabaran", tajuk: "B6.5 · Laporan SU — Cabaran", desc: "Ganti senarai cabaran lalai.", contoh: "cth: pendapatan bermusim, tunggakan khairat, kebergantungan kepada segelintir AJK…" },
   { kunci: "su_penghargaan", tajuk: "B6.6 · Laporan SU — Penutup & Penghargaan", desc: "Perenggan penutup & penghargaan.", contoh: "cth: penghargaan kepada Nazir, Pengerusi, AJK, biro, staf, penaja, ahli kariah…" },
@@ -67,7 +67,7 @@ function SeksyenTeks({ agmId, b, awal, lalai }: { agmId: string; b: Bahagian; aw
     setBusySimpan(true); setRalat("");
     const r = await simpanTeks(agmId, b.kunci, teks);
     setBusySimpan(false);
-    if (r.ok) { setMsg("✓ Disimpan — dah kemas kini dalam Buku Laporan."); setSebelum(null); setTersimpan(true); setTimeout(() => setMsg(""), 3000); }
+    if (r.ok) { setMsg("✓ Disimpan"); setSebelum(null); setTersimpan(true); setTimeout(() => setMsg(""), 3000); }
     else setRalat(r.msg ?? "Gagal simpan.");
   }
   function resetLalai() { if (!window.confirm("Ganti dengan teks lalai? Perubahan belum disimpan akan hilang.")) return; setTeks(lalai); }
@@ -76,7 +76,7 @@ function SeksyenTeks({ agmId, b, awal, lalai }: { agmId: string; b: Bahagian; aw
     <section className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-semibold text-slate-900">{b.tajuk}</h2>
-        {tersimpan ? <span className="text-[11px] font-medium text-emerald-600">● versi kau tersimpan</span> : <span className="text-[11px] font-medium text-slate-400">guna teks lalai (belum disimpan)</span>}
+        {tersimpan ? <span className="text-[11px] font-medium text-emerald-600">● Tersimpan</span> : <span className="text-[11px] font-medium text-slate-400">Belum disimpan</span>}
       </div>
       <p className="mb-3 text-xs text-slate-500">{b.desc}</p>
 

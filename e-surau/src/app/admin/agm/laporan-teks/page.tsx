@@ -28,7 +28,7 @@ export default async function AgmLaporanTeksPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between"><Link href="/admin/agm" className="text-sm text-surau hover:underline">← Kembali ke AGM</Link></div>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Naratif Setiausaha (Buku Laporan)</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Bahagian Setiausaha (Buku Laporan)</h1>
         <p className="mt-1 text-sm text-slate-600">Bahagian teks di bawah tanggungjawab SU — Kata Aluan, Atur Cara, Agenda, Surat Notis, Laporan SU &amp; Usul standard. Kewangan diuruskan Bendahari; laporan biro oleh ketua biro.</p>
       </div>
       {!agm ? (
