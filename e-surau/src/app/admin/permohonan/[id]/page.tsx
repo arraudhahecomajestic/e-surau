@@ -8,6 +8,7 @@ import GambarSulit from "@/components/GambarSulit";
 import SulitTeks from "@/components/SulitTeks";
 import ButangHantar from "@/components/ButangHantar";
 import AkaunAhliTindakan from "@/components/AkaunAhliTindakan";
+import PengesahanMaklumat from "@/components/PengesahanMaklumat";
 import { ulasanSU, ulasanNazir, keputusan } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -123,6 +124,8 @@ export default async function PermohonanPage({ params }: { params: { id: string 
           </div>
         )}
       </section>
+
+      <PengesahanMaklumat a={{ id: a.id, sumber: a.sumber, kaedah: a.kaedah, maklumat_disahkan: !!a.maklumat_disahkan, sah_oleh: a.sah_oleh ?? null, sah_tarikh: a.sah_tarikh ?? null, nama: a.nama, no_kp: a.no_kp, telefon: a.telefon, alamat: a.alamat, alamat_kp: a.alamat_kp }} />
 
       {/* BAHAGIAN B1 */}
       <UlasanSeksyen

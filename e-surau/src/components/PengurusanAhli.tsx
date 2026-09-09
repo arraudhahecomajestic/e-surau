@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { sahkanFizikal, batalSahFizikal } from "@/app/admin/keahlianActions";
+import { kaedahAhli, statusMaklumat, LABEL_KAEDAH, LABEL_STATUS, type Kaedah, type StatusMaklumat } from "@/lib/kaedah";
 
 const PER_MUKA = 25;
 
@@ -13,17 +12,20 @@ type Ahli = {
   nama: string;
   no_kp: string | null;
   telefon: string | null;
+  alamat?: string | null;
+  alamat_kp?: string | null;
   status: "menunggu" | "lulus" | "tolak";
   peringkat: string | null;
   maklumat_disahkan: boolean;
-  sah_fizikal?: boolean;
+  kaedah?: string | null;
   sumber: string;
   tarikh_daftar: string | null;
   tarikh_kemaskini: string | null;
 };
 
 type Kelulusan = "semua" | "menunggu" | "lulus" | "tolak";
-type Maklumat = "semua" | "lengkap" | "belum" | "fizikal";
+type TapisKaedah = "semua" | Kaedah;
+type TapisStatus = "semua" | StatusMaklumat;
 
 const HARI_BARU = 7; // ambang "Baru" — aktiviti dalam 7 hari
 function masaAktiviti(a: Ahli): number {
@@ -68,9 +70,9 @@ const PESANAN =
 export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[]; bolehPapar: boolean }) {
   const [q, setQ] = useState("");
   const [kelulusan, setKelulusan] = useState<Kelulusan>("semua");
-  const [maklumat, setMaklumat] = useState<Maklumat>("semua");
+  const [fKaedah, setFKaedah] = useState<TapisKaedah>("semua");
+  const [fStatus, setFStatus] = useState<TapisStatus>("semua");
   const [terkiniOn, setTerkiniOn] = useState(false);
-  const [baruOn, setBaruOn] = useState(false);
   const [papar, setPapar] = useState(false);
   const [disalin, setDisalin] = useState(false);
   const [muka, setMuka] = useState(1);
@@ -81,22 +83,21 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
     menunggu: senarai.filter((a) => a.status === "menunggu").length,
     lulus: senarai.filter((a) => a.status === "lulus").length,
     tolak: senarai.filter((a) => a.status === "tolak").length,
-    lengkap: senarai.filter((a) => a.maklumat_disahkan).length,
-    belum: senarai.filter((a) => !a.maklumat_disahkan).length,
-    fizikal: senarai.filter((a) => a.sah_fizikal).length,
+    gform: senarai.filter((a) => kaedahAhli(a.sumber, a.kaedah) === "gform").length,
+    fizikal: senarai.filter((a) => kaedahAhli(a.sumber, a.kaedah) === "fizikal").length,
+    sah: senarai.filter((a) => statusMaklumat(a) === "sah").length,
+    perlu_semak: senarai.filter((a) => statusMaklumat(a) === "perlu_semak").length,
+    tak_lengkap: senarai.filter((a) => statusMaklumat(a) === "tak_lengkap").length,
     terkini: senarai.filter((a) => masaAktiviti(a) >= ambangBaru).length,
-    baru: senarai.filter((a) => a.sumber === "baru").length,
   }), [senarai, ambangBaru]);
 
   const ditapis = useMemo(() => {
     const cari = q.trim().toLowerCase();
     return senarai.filter((a) => {
       if (kelulusan !== "semua" && a.status !== kelulusan) return false;
-      if (maklumat === "lengkap" && !a.maklumat_disahkan) return false;
-      if (maklumat === "belum" && a.maklumat_disahkan) return false;
-      if (maklumat === "fizikal" && !a.sah_fizikal) return false;
+      if (fKaedah !== "semua" && kaedahAhli(a.sumber, a.kaedah) !== fKaedah) return false;
+      if (fStatus !== "semua" && statusMaklumat(a) !== fStatus) return false;
       if (terkiniOn && masaAktiviti(a) < ambangBaru) return false;
-      if (baruOn && a.sumber !== "baru") return false;
       if (!cari) return true;
       return (
         (a.nama || "").toLowerCase().includes(cari) ||
@@ -105,10 +106,10 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
         (a.telefon || "").includes(cari)
       );
     });
-  }, [senarai, q, kelulusan, maklumat, terkiniOn, baruOn, ambangBaru]);
+  }, [senarai, q, kelulusan, fKaedah, fStatus, terkiniOn, ambangBaru]);
 
   // Reset ke muka 1 bila carian/penapis bertukar
-  useEffect(() => { setMuka(1); }, [q, kelulusan, maklumat, terkiniOn, baruOn]);
+  useEffect(() => { setMuka(1); }, [q, kelulusan, fKaedah, fStatus, terkiniOn]);
   const jumMuka = Math.max(1, Math.ceil(ditapis.length / PER_MUKA));
   const mukaSemasa = Math.min(muka, jumMuka);
   const halaman = ditapis.slice((mukaSemasa - 1) * PER_MUKA, mukaSemasa * PER_MUKA);
@@ -124,11 +125,10 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
       const s = (v ?? "").toString().replace(/"/g, '""');
       return `"${s}"`;
     };
-    const maklumatSel = (a: Ahli) => (a.maklumat_disahkan ? (a.sah_fizikal ? "Disahkan (Fizikal)" : "Disahkan (Online)") : "Belum");
-    const header = ["No. Ahli", "Nama", "No. KP", "Telefon", "Kelulusan", "Maklumat"];
+    const header = ["No. Ahli", "Nama", "No. KP", "Telefon", "Kelulusan", "Kaedah", "Status Maklumat"];
     const baris = ditapis.map((a) => [
       a.no_ahli, a.nama, a.no_kp, a.telefon,
-      kelulusanLabel(a.status), maklumatSel(a),
+      kelulusanLabel(a.status), LABEL_KAEDAH[kaedahAhli(a.sumber, a.kaedah)], LABEL_STATUS[statusMaklumat(a)],
     ]);
     const csv = [header, ...baris].map((r) => r.map(sel).join(",")).join("\r\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
@@ -152,7 +152,7 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
         <Kad label="Jumlah Ahli" nilai={kira.jumlah} warna="text-slate-900" />
         <Kad label="Menunggu Kelulusan" nilai={kira.menunggu} warna="text-amber-600" />
         <Kad label="Diluluskan" nilai={kira.lulus} warna="text-green-600" />
-        <Kad label="Belum Kemas Kini" nilai={kira.belum} warna="text-orange-600" />
+        <Kad label="Perlu Semak" nilai={kira.perlu_semak + kira.tak_lengkap} warna="text-orange-600" />
       </div>
 
       {/* KAWALAN */}
@@ -192,16 +192,21 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
           <Chip label="Ditolak" bil={kira.tolak} aktif={kelulusan === "tolak"} onClick={() => setKelulusan("tolak")} warna="bg-red-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Maklumat Diri</span>
-          <Chip label="Semua" bil={kira.jumlah} aktif={maklumat === "semua"} onClick={() => setMaklumat("semua")} warna="bg-slate-700" />
-          <Chip label="Lengkap" bil={kira.lengkap} aktif={maklumat === "lengkap"} onClick={() => setMaklumat("lengkap")} warna="bg-green-600" />
-          <Chip label="Belum kemas kini" bil={kira.belum} aktif={maklumat === "belum"} onClick={() => setMaklumat("belum")} warna="bg-orange-500" />
-          <Chip label="Borang fizikal" bil={kira.fizikal} aktif={maklumat === "fizikal"} onClick={() => setMaklumat("fizikal")} warna="bg-indigo-600" />
+          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Kaedah</span>
+          <Chip label="Semua" bil={kira.jumlah} aktif={fKaedah === "semua"} onClick={() => setFKaedah("semua")} warna="bg-slate-700" />
+          <Chip label="Google Form" bil={kira.gform} aktif={fKaedah === "gform"} onClick={() => setFKaedah("gform")} warna="bg-blue-700" />
+          <Chip label="Borang Fizikal" bil={kira.fizikal} aktif={fKaedah === "fizikal"} onClick={() => setFKaedah("fizikal")} warna="bg-indigo-600" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Status Maklumat</span>
+          <Chip label="Semua" bil={kira.jumlah} aktif={fStatus === "semua"} onClick={() => setFStatus("semua")} warna="bg-slate-700" />
+          <Chip label="Sah" bil={kira.sah} aktif={fStatus === "sah"} onClick={() => setFStatus("sah")} warna="bg-green-600" />
+          <Chip label="Perlu semak" bil={kira.perlu_semak} aktif={fStatus === "perlu_semak"} onClick={() => setFStatus("perlu_semak")} warna="bg-orange-500" />
+          <Chip label="Tak lengkap" bil={kira.tak_lengkap} aktif={fStatus === "tak_lengkap"} onClick={() => setFStatus("tak_lengkap")} warna="bg-red-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
           <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Paparan Pantas</span>
           <Chip label="Aktiviti 7 hari" bil={kira.terkini} aktif={terkiniOn} onClick={() => setTerkiniOn((v) => !v)} warna="bg-blue-600" />
-          <Chip label="Pemohon Baru" bil={kira.baru} aktif={baruOn} onClick={() => setBaruOn((v) => !v)} warna="bg-emerald-600" />
         </div>
       </div>
 
@@ -218,13 +223,14 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
               <th className="px-4 py-3">Nama</th>
               <th className="px-4 py-3">Telefon</th>
               <th className="px-4 py-3 text-center">Kelulusan</th>
-              <th className="px-4 py-3">Maklumat</th>
+              <th className="px-4 py-3">Kaedah</th>
+              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Tindakan</th>
             </tr>
           </thead>
           <tbody>
             {ditapis.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Tiada rekod padan.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Tiada rekod padan.</td></tr>
             )}
             {halaman.map((a) => {
               const wa = waNombor(a.telefon);
@@ -241,7 +247,8 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
                   </td>
                   <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{bolehLihat ? (a.telefon || "—") : topengTel(a.telefon)}</td>
                   <td className="px-4 py-2.5 text-center"><span className={`inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${pr.cls}`}>{pr.label}</span></td>
-                  <td className="px-4 py-2.5"><MaklumatSel a={a} /></td>
+                  <td className="px-4 py-2.5"><KaedahSel a={a} /></td>
+                  <td className="px-4 py-2.5"><StatusSel a={a} /></td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/permohonan/${a.id}`} className="rounded-lg bg-surau px-3 py-1.5 text-xs font-semibold text-white hover:bg-surau-dark">Semak</Link>
@@ -283,50 +290,14 @@ function Chip({ label, bil, aktif, onClick, warna }: { label: string; bil: numbe
   );
 }
 
-// Sel "Maklumat Diri" — Lengkap (online) / Lengkap · Fizikal / Belum + butang tanda fizikal
-function MaklumatSel({ a }: { a: Ahli }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [sahMode, setSahMode] = useState(false);
+function KaedahSel({ a }: { a: Ahli }) {
+  const k = kaedahAhli(a.sumber, a.kaedah);
+  const cls = k === "fizikal" ? "bg-indigo-100 text-indigo-700" : "bg-blue-100 text-blue-700";
+  return <span className={`rounded px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{LABEL_KAEDAH[k]}</span>;
+}
 
-  async function tanda() {
-    setBusy(true);
-    await sahkanFizikal(a.id);
-    setBusy(false); setSahMode(false); router.refresh();
-  }
-  async function batal() {
-    setBusy(true);
-    await batalSahFizikal(a.id);
-    setBusy(false); router.refresh();
-  }
-
-  if (a.maklumat_disahkan) {
-    return (
-      <div className="flex flex-col items-start gap-1">
-        {a.sah_fizikal
-          ? <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-semibold text-indigo-700">Lengkap · Fizikal</span>
-          : <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">Lengkap</span>}
-        {a.sah_fizikal && (
-          busy
-            ? <span className="text-[11px] text-slate-400">…</span>
-            : <button onClick={batal} className="text-[11px] text-slate-400 hover:text-red-500 hover:underline">batal tanda fizikal</button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-start gap-1">
-      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-500">Belum</span>
-      {sahMode ? (
-        <span className="inline-flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-indigo-700">Sah borang fizikal?</span>
-          <button onClick={tanda} disabled={busy} className="rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{busy ? "…" : "Ya, sah"}</button>
-          <button onClick={() => setSahMode(false)} disabled={busy} className="rounded-md border border-slate-300 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50">Tak</button>
-        </span>
-      ) : (
-        <button onClick={() => setSahMode(true)} className="text-[11px] font-medium text-indigo-600 hover:underline">Sah borang fizikal</button>
-      )}
-    </div>
-  );
+function StatusSel({ a }: { a: Ahli }) {
+  const s = statusMaklumat(a);
+  const cls = s === "sah" ? "bg-green-100 text-green-700" : s === "perlu_semak" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700";
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{LABEL_STATUS[s]}</span>;
 }
