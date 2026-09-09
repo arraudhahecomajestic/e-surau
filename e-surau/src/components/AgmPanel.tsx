@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { simpanAgm, tandaHadir, padamHadir, tambahUsul, kemasUndi, padamUsul, tetapkanDaftarBuka, sahkanHadir } from "@/app/admin/agm/actions";
 import QrDaftar from "@/components/QrDaftar";
+import ButangPadam from "@/components/ButangPadam";
 
 type Agm = { id: string; tajuk: string; tahun: number; tarikh: string | null; masa: string | null; tempat: string | null; kuorum: number; atur_cara: string | null; status: string; kod?: string | null; daftar_buka?: boolean };
 type Hadir = { id: string; ahli_id: string | null; nama: string; no_ahli: string | null; no_kp?: string | null; kaedah?: string | null; perlu_semak?: boolean; masa_daftar: string };
@@ -121,6 +122,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
     if (r?.ok) { setNama(""); router.refresh(); } else setRalat(r?.msg ?? "Gagal daftar.");
   }
   async function buang(id: string) { setBusy(true); await padamHadir(id); setBusy(false); router.refresh(); }
+  // pengesahan dua langkah dikendalikan oleh <ButangPadam />, tak perlu window.confirm lagi.
   async function toggleDaftar() {
     setBusy(true); setRalat("");
     const r = await tetapkanDaftarBuka(agm.id, !agm.daftar_buka); setBusy(false);
@@ -207,7 +209,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   {h.perlu_semak && <button onClick={() => sahkan(h.id)} className="text-xs font-semibold text-green-600 hover:underline">sah</button>}
-                  <button onClick={() => buang(h.id)} className="text-xs text-red-500 hover:underline">padam</button>
+                  <ButangPadam onPadam={() => buang(h.id)} soalan="Padam nama ni?" />
                 </span>
               </li>
             ))}
@@ -273,7 +275,7 @@ function UsulRow({ u, onDone }: { u: Usul; onDone: () => void }) {
     const r = await kemasUndi(u.id, s, t, b, kep, cat); setBusy(false);
     if (r?.ok) { setBuka(false); onDone(); } else setRalat(r?.msg ?? "Gagal simpan undi.");
   }
-  async function padam() { if (!window.confirm("Padam usul ini?")) return; setBusy(true); await padamUsul(u.id); setBusy(false); onDone(); }
+  async function padam() { setBusy(true); await padamUsul(u.id); setBusy(false); onDone(); }
 
   return (
     <div className="rounded-lg border border-slate-200 p-3">
@@ -314,7 +316,7 @@ function UsulRow({ u, onDone }: { u: Usul; onDone: () => void }) {
           </div>
           <div className="mt-3 flex gap-2">
             <button disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-xs font-bold text-white hover:bg-surau-dark disabled:opacity-50">{busy ? "Menyimpan…" : "Simpan Undi"}</button>
-            <button disabled={busy} onClick={padam} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50">Padam usul</button>
+            <ButangPadam onPadam={padam} label="Padam usul" soalan="Pasti padam usul ni?" variant="butang" disabled={busy} />
             {ralat && <span className="self-center text-xs font-semibold text-red-600">{ralat}</span>}
           </div>
         </div>

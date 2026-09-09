@@ -7,6 +7,7 @@ import {
   tambahJawatan, kemasJawatanBil, padamJawatan,
 } from "@/app/admin/agm/actions";
 import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
+import ButangPadam from "@/components/ButangPadam";
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
 type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
@@ -56,7 +57,7 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
     if (r?.ok) { setKod(""); setNama(""); setBil(1); router.refresh(); } else setRalat(r?.msg ?? "Gagal.");
   }
   async function ubahBil(id: string, v: number) { await kemasJawatanBil(id, v); router.refresh(); }
-  async function buang(id: string) { if (!window.confirm("Padam jawatan ini & semua calonnya?")) return; await padamJawatan(id); router.refresh(); }
+  async function buang(id: string) { await padamJawatan(id); router.refresh(); }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -73,7 +74,7 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
                 <span className="flex shrink-0 items-center gap-2">
                   <label className="flex items-center gap-1 text-xs text-slate-500">dipilih
                     <input type="number" min={1} defaultValue={j.bil_dipilih} onBlur={(e) => ubahBil(j.id, Number(e.target.value))} className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-sm" /></label>
-                  <button onClick={() => buang(j.id)} className="text-xs text-red-500 hover:underline">padam</button>
+                  <ButangPadam onPadam={() => buang(j.id)} soalan="Padam jawatan ni & semua calonnya?" />
                 </span>
               </li>
             ))}
@@ -127,7 +128,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
     if (status === "tolak") { sebab = window.prompt("Sebab tolak (pilihan):") ?? ""; }
     await semakCalon(id, status, sebab); router.refresh();
   }
-  async function padam(id: string) { if (!window.confirm("Padam calon ini?")) return; await padamCalon(id); router.refresh(); }
+  async function padam(id: string) { await padamCalon(id); router.refresh(); }
 
   async function simpanKira() {
     setBusy(true); setMsgKira("");
@@ -181,7 +182,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   </>}
                   {c.status === "sah" && <button onClick={() => semak(c.id, "menunggu")} className="text-slate-400 hover:underline">batal sah</button>}
                   {(c.status === "tolak" || c.status === "tarik_diri") && <button onClick={() => semak(c.id, "menunggu")} className="text-slate-400 hover:underline">buka semula</button>}
-                  <button onClick={() => padam(c.id)} className="text-red-500 hover:underline">padam</button>
+                  <ButangPadam onPadam={() => padam(c.id)} soalan={`Padam calon "${c.nama}"?`} />
                 </div>
               </div>
             </li>

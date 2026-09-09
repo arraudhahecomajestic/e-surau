@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { tambahJk, padamJk, tambahBiro, kemasBiro, padamBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
+import ButangPadam from "@/components/ButangPadam";
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
 type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null };
@@ -40,7 +41,7 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
     setBusy(true); await tambahJk(agmId, kumpulan, jawatan, nama, biro); setBusy(false);
     setJawatan(""); setNama(""); setBiro(""); router.refresh();
   }
-  async function buang(id: string) { if (!window.confirm("Padam ahli JK ini?")) return; setBusy(true); await padamJk(id); setBusy(false); router.refresh(); }
+  async function buang(id: string) { setBusy(true); await padamJk(id); setBusy(false); router.refresh(); }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -69,7 +70,7 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
                 {jk.filter((j) => j.kumpulan === k.kod).map((j) => (
                   <li key={j.id} className="flex items-center justify-between gap-3 px-3 py-1.5">
                     <span className="min-w-0"><b>{j.jawatan}</b> — {j.nama}{j.biro ? <span className="ml-2 text-xs text-slate-400">({j.biro})</span> : ""}</span>
-                    <button onClick={() => buang(j.id)} className="shrink-0 text-xs text-red-500 hover:underline">padam</button>
+                    <span className="shrink-0"><ButangPadam onPadam={() => buang(j.id)} soalan="Padam ahli JK ni?" /></span>
                   </li>
                 ))}
               </ul>
@@ -126,7 +127,7 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
   const [ralat, setRalat] = useState("");
 
   async function simpan() { setBusy(true); await kemasBiro(b.id, ketua, laporan, setiausaha, ahli); setBusy(false); setSebelum(null); setMsg("✓ Disimpan"); setTimeout(() => setMsg(""), 2000); onDone(); }
-  async function padam() { if (!window.confirm("Padam biro ini & laporannya?")) return; setBusy(true); await padamBiro(b.id); setBusy(false); onDone(); }
+  async function padam() { setBusy(true); await padamBiro(b.id); setBusy(false); onDone(); }
 
   async function bantuAI() {
     setBusyAI(true); setRalat(""); setMsg("");
@@ -150,7 +151,7 @@ function BiroRow({ b, onDone }: { b: Biro; onDone: () => void }) {
     <div className="rounded-lg border border-slate-200 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="font-semibold text-slate-900">{b.nama}</div>
-        <button onClick={padam} className="text-xs text-red-500 hover:underline">padam biro</button>
+        <ButangPadam onPadam={padam} label="padam biro" soalan="Padam biro ni & laporannya?" />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block"><span className="text-xs font-medium text-slate-600">Ketua biro</span>

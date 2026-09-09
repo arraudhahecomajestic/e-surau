@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { muatnaikKewangan, padamKewangan } from "@/app/admin/agm/actions";
+import ButangPadam from "@/components/ButangPadam";
 
 const TEMPLAT = `bahagian,label,nilai1,nilai2,nilai3,nilai4
 # pendapatan/perbelanjaan/aset/liabiliti: nilai1 = tahun semasa, nilai2 = tahun lalu
@@ -63,7 +64,6 @@ export default function MuatnaikKewangan({ agmId, bilSediaAda }: { agmId: string
     else setRalat(r?.msg ?? "Gagal muat naik.");
   }
   async function padam() {
-    if (!window.confirm("Padam semua angka kewangan yang dimuat naik? Buku akan kembali ke angka auto/ruang kosong.")) return;
     setBusy(true); await padamKewangan(agmId); setBusy(false); setMsg("Angka kewangan dipadam."); router.refresh();
   }
   function turunTemplat() {
@@ -88,7 +88,7 @@ export default function MuatnaikKewangan({ agmId, bilSediaAda }: { agmId: string
         {namaFail && <div className="mt-2 text-xs text-slate-500">Fail dipilih: {namaFail}</div>}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button disabled={busy || !csv} onClick={naik} className="rounded-lg bg-surau px-4 py-2 text-sm font-bold text-white hover:bg-surau-dark disabled:opacity-50">{busy ? "Memproses…" : "Muat Naik"}</button>
-          {bilSediaAda > 0 && <button disabled={busy} onClick={padam} className="rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50">Padam angka</button>}
+          {bilSediaAda > 0 && <ButangPadam onPadam={padam} label="Padam angka" soalan="Padam semua angka kewangan? Buku kembali ke angka auto." variant="butang" disabled={busy} />}
           {msg && <span className="text-xs font-semibold text-emerald-600">{msg}</span>}
           {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
         </div>
