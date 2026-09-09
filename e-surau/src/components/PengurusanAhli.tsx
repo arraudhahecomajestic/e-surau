@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { kaedahAhli, statusMaklumat, LABEL_KAEDAH, LABEL_STATUS, type Kaedah, type StatusMaklumat } from "@/lib/kaedah";
 
 const PER_MUKA = 25;
 
@@ -12,20 +11,16 @@ type Ahli = {
   nama: string;
   no_kp: string | null;
   telefon: string | null;
-  alamat?: string | null;
-  alamat_kp?: string | null;
   status: "menunggu" | "lulus" | "tolak";
   peringkat: string | null;
   maklumat_disahkan: boolean;
-  kaedah?: string | null;
   sumber: string;
   tarikh_daftar: string | null;
   tarikh_kemaskini: string | null;
 };
 
 type Kelulusan = "semua" | "menunggu" | "lulus" | "tolak";
-type TapisKaedah = "semua" | Kaedah;
-type TapisStatus = "semua" | StatusMaklumat;
+type TapisKemaskini = "semua" | "belum" | "dah";
 
 const HARI_BARU = 7; // ambang "Baru" — aktiviti dalam 7 hari
 function masaAktiviti(a: Ahli): number {
@@ -70,8 +65,7 @@ const PESANAN =
 export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[]; bolehPapar: boolean }) {
   const [q, setQ] = useState("");
   const [kelulusan, setKelulusan] = useState<Kelulusan>("semua");
-  const [fKaedah, setFKaedah] = useState<TapisKaedah>("semua");
-  const [fStatus, setFStatus] = useState<TapisStatus>("semua");
+  const [kemaskini, setKemaskini] = useState<TapisKemaskini>("semua");
   const [terkiniOn, setTerkiniOn] = useState(false);
   const [papar, setPapar] = useState(false);
   const [disalin, setDisalin] = useState(false);
@@ -80,14 +74,13 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
   const ambangBaru = Date.now() - HARI_BARU * 86400000;
   const kira = useMemo(() => ({
     jumlah: senarai.length,
+    belum: senarai.filter((a) => !a.maklumat_disahkan).length,
+    dah: senarai.filter((a) => a.maklumat_disahkan).length,
+    // Menunggu kelulusan yang SEBENAR: dah kemas kini, tapi AJK belum luluskan.
+    menungguReal: senarai.filter((a) => a.maklumat_disahkan && a.status === "menunggu").length,
     menunggu: senarai.filter((a) => a.status === "menunggu").length,
     lulus: senarai.filter((a) => a.status === "lulus").length,
     tolak: senarai.filter((a) => a.status === "tolak").length,
-    gform: senarai.filter((a) => kaedahAhli(a.sumber, a.kaedah) === "gform").length,
-    fizikal: senarai.filter((a) => kaedahAhli(a.sumber, a.kaedah) === "fizikal").length,
-    sah: senarai.filter((a) => statusMaklumat(a) === "sah").length,
-    perlu_semak: senarai.filter((a) => statusMaklumat(a) === "perlu_semak").length,
-    tak_lengkap: senarai.filter((a) => statusMaklumat(a) === "tak_lengkap").length,
     terkini: senarai.filter((a) => masaAktiviti(a) >= ambangBaru).length,
   }), [senarai, ambangBaru]);
 
@@ -95,8 +88,8 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
     const cari = q.trim().toLowerCase();
     return senarai.filter((a) => {
       if (kelulusan !== "semua" && a.status !== kelulusan) return false;
-      if (fKaedah !== "semua" && kaedahAhli(a.sumber, a.kaedah) !== fKaedah) return false;
-      if (fStatus !== "semua" && statusMaklumat(a) !== fStatus) return false;
+      if (kemaskini === "belum" && a.maklumat_disahkan) return false;
+      if (kemaskini === "dah" && !a.maklumat_disahkan) return false;
       if (terkiniOn && masaAktiviti(a) < ambangBaru) return false;
       if (!cari) return true;
       return (
@@ -106,10 +99,10 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
         (a.telefon || "").includes(cari)
       );
     });
-  }, [senarai, q, kelulusan, fKaedah, fStatus, terkiniOn, ambangBaru]);
+  }, [senarai, q, kelulusan, kemaskini, terkiniOn, ambangBaru]);
 
   // Reset ke muka 1 bila carian/penapis bertukar
-  useEffect(() => { setMuka(1); }, [q, kelulusan, fKaedah, fStatus, terkiniOn]);
+  useEffect(() => { setMuka(1); }, [q, kelulusan, kemaskini, terkiniOn]);
   const jumMuka = Math.max(1, Math.ceil(ditapis.length / PER_MUKA));
   const mukaSemasa = Math.min(muka, jumMuka);
   const halaman = ditapis.slice((mukaSemasa - 1) * PER_MUKA, mukaSemasa * PER_MUKA);
@@ -125,10 +118,10 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
       const s = (v ?? "").toString().replace(/"/g, '""');
       return `"${s}"`;
     };
-    const header = ["No. Ahli", "Nama", "No. KP", "Telefon", "Kelulusan", "Kaedah", "Status Maklumat"];
+    const header = ["No. Ahli", "Nama", "No. KP", "Telefon", "Kelulusan", "Kemas Kini"];
     const baris = ditapis.map((a) => [
       a.no_ahli, a.nama, a.no_kp, a.telefon,
-      kelulusanLabel(a.status), LABEL_KAEDAH[kaedahAhli(a.sumber, a.kaedah)], LABEL_STATUS[statusMaklumat(a)],
+      kelulusanLabel(a.status), a.maklumat_disahkan ? "Dah kemas kini" : "Belum kemas kini",
     ]);
     const csv = [header, ...baris].map((r) => r.map(sel).join(",")).join("\r\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
@@ -150,9 +143,9 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
       {/* KAD RINGKASAN */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kad label="Jumlah Ahli" nilai={kira.jumlah} warna="text-slate-900" />
-        <Kad label="Menunggu Kelulusan" nilai={kira.menunggu} warna="text-amber-600" />
-        <Kad label="Diluluskan" nilai={kira.lulus} warna="text-green-600" />
-        <Kad label="Perlu Semak" nilai={kira.perlu_semak + kira.tak_lengkap} warna="text-orange-600" />
+        <Kad label="Belum Kemas Kini" nilai={kira.belum} warna="text-orange-600" />
+        <Kad label="Dah Kemas Kini" nilai={kira.dah} warna="text-green-600" />
+        <Kad label="Menunggu Kelulusan" nilai={kira.menungguReal} warna="text-amber-600" />
       </div>
 
       {/* KAWALAN */}
@@ -192,17 +185,10 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
           <Chip label="Ditolak" bil={kira.tolak} aktif={kelulusan === "tolak"} onClick={() => setKelulusan("tolak")} warna="bg-red-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Kaedah</span>
-          <Chip label="Semua" bil={kira.jumlah} aktif={fKaedah === "semua"} onClick={() => setFKaedah("semua")} warna="bg-slate-700" />
-          <Chip label="Google Form" bil={kira.gform} aktif={fKaedah === "gform"} onClick={() => setFKaedah("gform")} warna="bg-blue-700" />
-          <Chip label="Borang Fizikal" bil={kira.fizikal} aktif={fKaedah === "fizikal"} onClick={() => setFKaedah("fizikal")} warna="bg-indigo-600" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Status Maklumat</span>
-          <Chip label="Semua" bil={kira.jumlah} aktif={fStatus === "semua"} onClick={() => setFStatus("semua")} warna="bg-slate-700" />
-          <Chip label="Sah" bil={kira.sah} aktif={fStatus === "sah"} onClick={() => setFStatus("sah")} warna="bg-green-600" />
-          <Chip label="Perlu semak" bil={kira.perlu_semak} aktif={fStatus === "perlu_semak"} onClick={() => setFStatus("perlu_semak")} warna="bg-orange-500" />
-          <Chip label="Tak lengkap" bil={kira.tak_lengkap} aktif={fStatus === "tak_lengkap"} onClick={() => setFStatus("tak_lengkap")} warna="bg-red-600" />
+          <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-surau">Kemas Kini</span>
+          <Chip label="Semua" bil={kira.jumlah} aktif={kemaskini === "semua"} onClick={() => setKemaskini("semua")} warna="bg-slate-700" />
+          <Chip label="Belum kemas kini" bil={kira.belum} aktif={kemaskini === "belum"} onClick={() => setKemaskini("belum")} warna="bg-orange-500" />
+          <Chip label="Dah kemas kini" bil={kira.dah} aktif={kemaskini === "dah"} onClick={() => setKemaskini("dah")} warna="bg-green-600" />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
           <span className="w-32 shrink-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">Paparan Pantas</span>
@@ -223,14 +209,13 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
               <th className="px-4 py-3">Nama</th>
               <th className="px-4 py-3">Telefon</th>
               <th className="px-4 py-3 text-center">Kelulusan</th>
-              <th className="px-4 py-3">Kaedah</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Kemas Kini</th>
               <th className="px-4 py-3 text-right">Tindakan</th>
             </tr>
           </thead>
           <tbody>
             {ditapis.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Tiada rekod padan.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Tiada rekod padan.</td></tr>
             )}
             {halaman.map((a) => {
               const wa = waNombor(a.telefon);
@@ -247,8 +232,11 @@ export default function PengurusanAhli({ senarai, bolehPapar }: { senarai: Ahli[
                   </td>
                   <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{bolehLihat ? (a.telefon || "—") : topengTel(a.telefon)}</td>
                   <td className="px-4 py-2.5 text-center"><span className={`inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${pr.cls}`}>{pr.label}</span></td>
-                  <td className="px-4 py-2.5"><KaedahSel a={a} /></td>
-                  <td className="px-4 py-2.5"><StatusSel a={a} /></td>
+                  <td className="px-4 py-2.5">
+                    {a.maklumat_disahkan
+                      ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Dah kemas kini</span>
+                      : <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700">Belum kemas kini</span>}
+                  </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/permohonan/${a.id}`} className="rounded-lg bg-surau px-3 py-1.5 text-xs font-semibold text-white hover:bg-surau-dark">Semak</Link>
@@ -290,14 +278,3 @@ function Chip({ label, bil, aktif, onClick, warna }: { label: string; bil: numbe
   );
 }
 
-function KaedahSel({ a }: { a: Ahli }) {
-  const k = kaedahAhli(a.sumber, a.kaedah);
-  const cls = k === "fizikal" ? "bg-indigo-100 text-indigo-700" : "bg-blue-100 text-blue-700";
-  return <span className={`rounded px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{LABEL_KAEDAH[k]}</span>;
-}
-
-function StatusSel({ a }: { a: Ahli }) {
-  const s = statusMaklumat(a);
-  const cls = s === "sah" ? "bg-green-100 text-green-700" : s === "perlu_semak" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700";
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{LABEL_STATUS[s]}</span>;
-}
