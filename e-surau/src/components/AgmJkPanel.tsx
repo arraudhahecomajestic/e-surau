@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { tambahJk, padamJk, simpanSusunanJk, tambahBiro, kemasBiro, padamBiro, padamFailBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
+import { tambahJk, padamJk, simpanSusunanJk, tukarKumpulanJk, tambahBiro, kemasBiro, padamBiro, padamFailBiro, bantuTulisBiro } from "@/app/admin/agm/actions";
 import ButangPadam from "@/components/ButangPadam";
+
+const KUMPULAN: [string, string][] = [["induk", "Induk"], ["ketua_biro", "Ketua Biro"], ["ajk_biasa", "AJK Biasa"], ["juruaudit", "Juruaudit"], ["staf", "Staf"]];
 
 type Jk = { id: string; kumpulan: string; jawatan: string; nama: string; biro: string | null };
 type Biro = { id: string; nama: string; ketua: string | null; setiausaha: string | null; ahli: string | null; laporan: string | null; kod: string | null; fail_url: string | null; fail_nama: string | null; fail_masa: string | null };
@@ -23,6 +25,7 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
   const [jawatan, setJawatan] = useState("");
   const [nama, setNama] = useState("");
   const [biro, setBiro] = useState("");
+  const [kumpulan, setKumpulan] = useState("induk");
   const [busy, setBusy] = useState(false);
 
   // susunan setempat untuk drag & drop
@@ -37,10 +40,11 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
 
   async function tambah() {
     if (!jawatan.trim() || !nama.trim()) return;
-    setBusy(true); await tambahJk(agmId, "induk", jawatan, nama, biro); setBusy(false);
+    setBusy(true); await tambahJk(agmId, kumpulan, jawatan, nama, biro); setBusy(false);
     setJawatan(""); setNama(""); setBiro(""); router.refresh();
   }
   async function buang(id: string) { setBusy(true); await padamJk(id); setBusy(false); router.refresh(); }
+  async function tukarKumpulan(id: string, k: string) { setBusy(true); await tukarKumpulanJk(id, k); setBusy(false); router.refresh(); }
 
   function jatuh(ke: number) {
     if (dragI === null || dragI === ke) { setDragI(null); setOverI(null); return; }
@@ -62,6 +66,10 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
       <h2 className="mb-3 font-semibold text-slate-900">Senarai Jawatankuasa</h2>
 
       <div className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
+        <label className="block"><span className="text-xs font-medium text-slate-600">Kumpulan</span>
+          <select value={kumpulan} onChange={(e) => setKumpulan(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+            {KUMPULAN.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select></label>
         <label className="block"><span className="text-xs font-medium text-slate-600">Jawatan</span>
           <input value={jawatan} onChange={(e) => setJawatan(e.target.value)} placeholder="cth: Pengerusi" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" /></label>
         <label className="block"><span className="text-xs font-medium text-slate-600">Nama</span>
@@ -88,7 +96,12 @@ function SenaraiJk({ agmId, jk }: { agmId: string; jk: Jk[] }) {
                   <span className="w-6 shrink-0 select-none text-right text-xs font-semibold text-slate-400">{i + 1}.</span>
                   <span className="min-w-0"><b>{j.jawatan}</b> — {j.nama}{j.biro ? <span className="ml-2 text-xs text-slate-400">({j.biro})</span> : ""}</span>
                 </span>
-                <span className="shrink-0"><ButangPadam onPadam={() => buang(j.id)} soalan="Padam ahli JK ni?" /></span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <select value={j.kumpulan} onChange={(e) => tukarKumpulan(j.id, e.target.value)} disabled={busy} onClick={(e) => e.stopPropagation()} className="rounded border border-slate-200 px-1.5 py-1 text-xs text-slate-600">
+                    {KUMPULAN.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <ButangPadam onPadam={() => buang(j.id)} soalan="Padam ahli JK ni?" />
+                </span>
               </li>
             ))}
           </ul>

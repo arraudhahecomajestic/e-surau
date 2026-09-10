@@ -169,6 +169,19 @@ export async function padamJk(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// Tukar kumpulan seseorang AJK (jejas kiraan dalam Buku Laporan/Laporan).
+export async function tukarKumpulanJk(id: string, kumpulan: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const k = KUMP_JK.includes(kumpulan) ? kumpulan : "induk";
+  const db = createAdminClient();
+  await db.from("agm_jk").update({ kumpulan: k }).eq("id", id);
+  revalidatePath("/admin/agm/jk");
+  revalidatePath("/admin/agm/buku");
+  revalidatePath("/admin/agm/laporan");
+  revalidatePath("/carta");
+  return { ok: true };
+}
+
 // Simpan susunan baharu (drag & drop) — susunan = kedudukan dalam senarai
 export async function simpanSusunanJk(agmId: string, ids: string[]): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
@@ -308,6 +321,50 @@ export async function padamTugasanGerak(id: string): Promise<{ ok: boolean; msg?
   const { error } = await db.from("agm_gerak_kerja").delete().eq("id", id);
   if (error) return { ok: false, msg: `Gagal buang: ${error.message}` };
   revalidatePath("/admin/agm/tugasan");
+  return { ok: true };
+}
+
+// ---- Carta Organisasi: gambar AJK ----
+const GAMBAR_JENIS = new Set(["image/jpeg", "image/png", "image/webp"]);
+const GAMBAR_MAKS = 6 * 1024 * 1024;
+
+export async function muatnaikGambarJk(jkId: string, formData: FormData): Promise<{ ok: boolean; msg?: string; url?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!jkId) return { ok: false, msg: "Data tidak lengkap." };
+  const db = createAdminClient();
+  const { data: jk } = await db.from("agm_jk").select("id, gambar_url").eq("id", jkId).maybeSingle();
+  if (!jk?.id) return { ok: false, msg: "AJK tidak dijumpai." };
+
+  const fail = formData.get("fail");
+  if (!(fail instanceof File) || fail.size === 0) return { ok: false, msg: "Sila pilih gambar." };
+  if (fail.size > GAMBAR_MAKS) return { ok: false, msg: "Gambar terlalu besar (maksimum 6MB)." };
+  if (fail.type && !GAMBAR_JENIS.has(fail.type)) return { ok: false, msg: "Format tidak disokong (JPG/PNG/WEBP sahaja)." };
+
+  const lama = (jk as any).gambar_url as string | undefined;
+  if (lama) { const m = lama.match(/\/kandungan\/(.+)$/); if (m?.[1]) { try { await db.storage.from("kandungan").remove([decodeURIComponent(m[1])]); } catch { /* abai */ } } }
+
+  const ext = fail.type === "image/png" ? "png" : fail.type === "image/webp" ? "webp" : "jpg";
+  const path = `carta-ajk/${jkId}-${Date.now()}.${ext}`;
+  const buf = Buffer.from(await fail.arrayBuffer());
+  const { error } = await db.storage.from("kandungan").upload(path, buf, { contentType: fail.type || "image/jpeg", upsert: true });
+  if (error) return { ok: false, msg: "Gagal muat naik. Cuba lagi." };
+
+  const url = db.storage.from("kandungan").getPublicUrl(path).data.publicUrl;
+  await db.from("agm_jk").update({ gambar_url: url }).eq("id", jkId);
+  revalidatePath("/carta");
+  revalidatePath("/admin/agm/jk");
+  return { ok: true, url };
+}
+
+export async function padamGambarJk(jkId: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  const { data: jk } = await db.from("agm_jk").select("gambar_url").eq("id", jkId).maybeSingle();
+  const url = (jk as any)?.gambar_url as string | undefined;
+  if (url) { const m = url.match(/\/kandungan\/(.+)$/); if (m?.[1]) { try { await db.storage.from("kandungan").remove([decodeURIComponent(m[1])]); } catch { /* abai */ } } }
+  await db.from("agm_jk").update({ gambar_url: null }).eq("id", jkId);
+  revalidatePath("/carta");
+  revalidatePath("/admin/agm/jk");
   return { ok: true };
 }
 
