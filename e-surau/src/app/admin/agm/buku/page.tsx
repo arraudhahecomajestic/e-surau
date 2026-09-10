@@ -137,7 +137,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const H2 = ({ t }: { t: string }) => <h3 className="mt-4 mb-1.5 font-bold text-slate-800">{t}</h3>;
   const DEF = bukuDefaults({ tahunAgm, thn, tarikh: agm.tarikh, masa: agm.masa, tempat: agm.tempat, kuorum: agm.kuorum });
   // Papar teks tersimpan; jika kosong guna teks lalai (sama seperti pra-isi editor "Isi Buku Laporan")
-  const TeksD = ({ k }: { k: string }) => <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{teks[k]?.trim() || DEF[k] || ""}</div>;
+  const TeksD = ({ k }: { k: string }) => <div className="whitespace-pre-wrap text-justify text-sm leading-relaxed text-slate-800">{teks[k]?.trim() || DEF[k] || ""}</div>;
   const Sec = ({ children, pecah = true }: { children: React.ReactNode; pecah?: boolean }) => <section className={`mb-8 ${pecah ? "break-before-page" : ""}`}>{children}</section>;
 
   const cellR = "border border-slate-200 px-2 py-1 text-right font-mono";
@@ -252,7 +252,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
               <div className="font-bold text-slate-900">7.{i + 1} {b.nama}</div>
               <div className="mt-0.5 text-xs text-slate-500">{b.ketua ? `Ketua: ${b.ketua}` : ""}{b.setiausaha ? ` · SU: ${b.setiausaha}` : ""}</div>
               {b.ahli?.trim() && <div className="text-xs text-slate-500">Ahli: {b.ahli.split("\n").map((x: string) => x.trim()).filter(Boolean).join(", ")}</div>}
-              {b.laporan?.trim() ? <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{b.laporan}</div> : <div className="mt-2 text-xs text-slate-400 print-hide">(Laporan belum diisi)</div>}
+              {b.laporan?.trim() ? <div className="mt-2 whitespace-pre-wrap text-justify text-sm leading-relaxed">{b.laporan}</div> : <div className="mt-2 text-xs text-slate-400 print-hide">(Laporan belum diisi)</div>}
             </div>))}</div>)}
       </Sec>
 
