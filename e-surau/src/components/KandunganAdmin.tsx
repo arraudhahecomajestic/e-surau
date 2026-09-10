@@ -22,31 +22,65 @@ async function muatFail(f: File): Promise<{ url: string; jenis: string } | null>
   } catch { return null; }
 }
 
+// Tukar apa jua imej (yang boleh dibaca browser) → JPEG kecil. HEIC di Chrome tak boleh dibaca → null.
+function kecilkanImej(file: File): Promise<File | null> {
+  return new Promise((resolve) => {
+    const rd = new FileReader();
+    rd.onerror = () => resolve(null);
+    rd.onload = () => {
+      const im = new Image();
+      im.onerror = () => resolve(null);
+      im.onload = () => {
+        const MAX = 600, sc = Math.min(1, MAX / Math.max(im.width, im.height));
+        const w = Math.max(1, Math.round(im.width * sc)), h = Math.max(1, Math.round(im.height * sc));
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        cv.getContext("2d")!.drawImage(im, 0, 0, w, h);
+        cv.toBlob((b) => resolve(b ? new File([b], "foto.jpg", { type: "image/jpeg" }) : null), "image/jpeg", 0.85);
+      };
+      im.src = rd.result as string;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+
 // Satu baris carta — nama & jawatan sudah diisi, admin cuma muat naik / tukar gambar.
 function BarisCarta({ c, onDone }: { c: Carta; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
+  const [rosak, setRosak] = useState(false);
   async function pilih(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;
     setBusy(true);
-    const res = await muatFail(f);
-    if (res) await kemasGambarCarta(c.id, res.url);
+    const kecil = await kecilkanImej(f);
+    if (!kecil) { setBusy(false); alert("Gambar tak boleh diproses. Sila guna format JPG atau PNG (bukan HEIC)."); return; }
+    const res = await muatFail(kecil);
+    if (res) { await kemasGambarCarta(c.id, res.url); setRosak(false); }
     setBusy(false); onDone();
   }
-  async function buang() { setBusy(true); await kemasGambarCarta(c.id, ""); setBusy(false); onDone(); }
+  async function buangGambar() {
+    if (!window.confirm("Buang gambar AJK ini? (nama & jawatan kekal)")) return;
+    setBusy(true); await kemasGambarCarta(c.id, ""); setRosak(false); setBusy(false); onDone();
+  }
+  async function padam() {
+    if (!window.confirm(`Padam "${c.jawatan}${c.nama ? " · " + c.nama : ""}" dari carta sepenuhnya?`)) return;
+    await padamCarta(c.id); onDone();
+  }
+  const adaGambar = !!c.gambar_url && !rosak;
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 p-2 text-sm">
       <div className="flex min-w-0 items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {c.gambar_url ? <img src={c.gambar_url} alt={c.nama ?? c.jawatan} className="h-10 w-10 shrink-0 rounded-full object-cover" /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-400">—</div>}
+        {adaGambar
+          ? <img src={c.gambar_url!} alt={c.nama ?? c.jawatan} onError={() => setRosak(true)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
+          : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-400">—</div>}
         <div className="min-w-0"><span className="font-medium text-slate-800">{c.jawatan}</span> {c.nama && <span className="text-slate-500">· {c.nama}</span>}</div>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <label className="cursor-pointer text-xs font-semibold text-surau hover:underline">
           <input type="file" accept="image/*" className="hidden" onChange={pilih} disabled={busy} />
-          {busy ? "Memuat naik…" : c.gambar_url ? "Tukar gambar" : "Muat naik gambar"}
+          {busy ? "Memuat naik…" : adaGambar ? "Tukar gambar" : "Muat naik gambar"}
         </label>
-        {c.gambar_url && <button onClick={buang} disabled={busy} className="text-xs font-semibold text-slate-400 hover:text-red-500 hover:underline disabled:opacity-50">Buang</button>}
-        <button onClick={async () => { await padamCarta(c.id); onDone(); }} className="text-xs font-semibold text-red-600 hover:underline">Padam</button>
+        {adaGambar && <button onClick={buangGambar} disabled={busy} className="text-xs font-semibold text-slate-400 hover:text-red-500 hover:underline disabled:opacity-50">Buang gambar</button>}
+        <button onClick={padam} className="text-xs font-semibold text-red-600 hover:underline">Padam</button>
       </div>
     </div>
   );
@@ -104,7 +138,9 @@ function CartaSeksyen({ carta, onDone }: { carta: Carta[]; onDone: () => void })
   async function pilihGambar(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;
     setBusy(true);
-    const res = await muatFail(f);
+    const kecil = await kecilkanImej(f);
+    if (!kecil) { setBusy(false); setMsg("Gambar tak boleh diproses. Guna JPG atau PNG."); return; }
+    const res = await muatFail(kecil);
     setBusy(false);
     if (res) setGambarUrl(res.url); else setMsg("Gagal muat naik gambar.");
   }

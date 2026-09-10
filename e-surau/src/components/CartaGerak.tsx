@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 export type CartaItem = { jawatan: string; nama: string | null; gambar_url: string | null };
 
 function inisial(nama: string) {
@@ -11,6 +13,17 @@ function pad(list: CartaItem[]): CartaItem[] {
   let u = [...list];
   while (u.length < 10) u = u.concat(list);
   return u;
+}
+
+function Avatar({ c }: { c: CartaItem }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="h-24 w-24 overflow-hidden rounded-full bg-gradient-to-br from-surau to-surau-dark shadow-md ring-4 ring-white">
+      {c.gambar_url && !err
+        ? <img src={c.gambar_url} alt={c.nama ?? c.jawatan} onError={() => setErr(true)} className="h-full w-full object-cover" />
+        : <span className="grid h-full w-full place-content-center text-2xl font-extrabold text-white">{inisial(c.nama || c.jawatan)}</span>}
+    </div>
+  );
 }
 
 export default function CartaGerak({ carta }: { carta: CartaItem[] }) {
@@ -45,11 +58,7 @@ export default function CartaGerak({ carta }: { carta: CartaItem[] }) {
               <div className={`cg-track ${L.kanan ? "cg-kanan" : ""}`} style={{ animationDuration: `${L.laju}s` }}>
                 {track.map((c, i) => (
                   <div key={i} className="flex w-36 shrink-0 flex-col items-center text-center">
-                    <div className="h-24 w-24 overflow-hidden rounded-full bg-gradient-to-br from-surau to-surau-dark shadow-md ring-4 ring-white">
-                      {c.gambar_url
-                        ? <img src={c.gambar_url} alt={c.nama ?? c.jawatan} className="h-full w-full object-cover" />
-                        : <span className="grid h-full w-full place-content-center text-2xl font-extrabold text-white">{inisial(c.nama || c.jawatan)}</span>}
-                    </div>
+                    <Avatar c={c} />
                     <div className="mt-2 text-[13px] font-bold leading-tight text-slate-900">{c.nama || "—"}</div>
                     <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-surau-dark">{c.jawatan}</div>
                   </div>
