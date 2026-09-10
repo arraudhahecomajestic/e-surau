@@ -5,6 +5,7 @@ import { tarikhMs } from "@/lib/format";
 import { bahasaSemasa } from "@/lib/bahasa";
 import { buatT } from "@/lib/i18n";
 import ShareButton from "@/components/ShareButton";
+import CartaGerak from "@/components/CartaGerak";
 
 export const dynamic = "force-dynamic";
 
@@ -61,24 +62,7 @@ export default async function TentangPage() {
       {/* Carta Organisasi */}
       <section id="carta" className="scroll-mt-24">
         <h2 className="mb-4 text-xl font-bold text-slate-900">{tr("Carta Organisasi", "Organisation Chart")}</h2>
-        {carta.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {carta.map((c, i) => (
-              <div key={i} className="rounded-xl bg-white p-4 text-center shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {c.gambar_url
-                  ? <img src={c.gambar_url} alt={c.nama ?? c.jawatan} className="mx-auto h-20 w-20 rounded-full object-cover" />
-                  : <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-surau/10 text-2xl text-surau"></div>}
-                <div className="mt-2 text-sm font-bold text-slate-900">{c.nama || "—"}</div>
-                <div className="text-xs font-medium text-surau">{c.jawatan}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
-            {tr("Carta organisasi akan dikemas kini tidak lama lagi.", "Organisation chart will be updated soon.")}
-          </div>
-        )}
+        <CartaGerak carta={carta as any[]} />
       </section>
 
       {/* Buletin */}

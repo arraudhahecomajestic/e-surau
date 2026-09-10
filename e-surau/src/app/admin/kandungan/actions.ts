@@ -44,6 +44,17 @@ export async function tambahCarta(input: { jawatan: string; nama?: string; gamba
   return { ok: true };
 }
 
+// Kemas / buang gambar untuk satu baris carta (nama & jawatan sudah diisi).
+export async function kemasGambarCarta(id: string, gambarUrl: string): Promise<{ ok: boolean; msg?: string }> {
+  const p = await getProfil();
+  if (!boleh(p)) return { ok: false, msg: "Tiada akses." };
+  const db = createAdminClient();
+  const { error } = await db.from("carta_organisasi").update({ gambar_url: gambarUrl || null }).eq("id", id);
+  if (error) return { ok: false, msg: error.message };
+  revalidasi();
+  return { ok: true };
+}
+
 export async function padamCarta(id: string): Promise<{ ok: boolean }> {
   const p = await getProfil();
   if (!boleh(p)) return { ok: false };
