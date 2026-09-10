@@ -262,7 +262,7 @@ export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ o
     ({ error } = await db.from("agm_gerak_kerja").update({ selesai }).eq("id", id));
   }
   if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
-  revalidatePath("/admin/agm/gerak-kerja");
+  revalidatePath("/admin/agm/tugasan");
   return { ok: true };
 }
 
@@ -273,7 +273,7 @@ export async function simpanCatatanGerak(id: string, teks: string): Promise<{ ok
   const db = createAdminClient();
   const { error } = await db.from("agm_gerak_kerja").update({ catatan: teks.slice(0, 2000) || null }).eq("id", id);
   if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
-  revalidatePath("/admin/agm/gerak-kerja");
+  revalidatePath("/admin/agm/tugasan");
   return { ok: true };
 }
 
@@ -290,7 +290,7 @@ export async function tambahTugasanGerak(agmId: string, fasa: string, fasaNama: 
     tugasan: teks.trim().slice(0, 400), susunan, selesai: false,
   });
   if (error) return { ok: false, msg: `Gagal tambah: ${error.message}` };
-  revalidatePath("/admin/agm/gerak-kerja");
+  revalidatePath("/admin/agm/tugasan");
   return { ok: true };
 }
 
@@ -301,7 +301,7 @@ export async function padamTugasanGerak(id: string): Promise<{ ok: boolean; msg?
   const db = createAdminClient();
   const { error } = await db.from("agm_gerak_kerja").delete().eq("id", id);
   if (error) return { ok: false, msg: `Gagal buang: ${error.message}` };
-  revalidatePath("/admin/agm/gerak-kerja");
+  revalidatePath("/admin/agm/tugasan");
   return { ok: true };
 }
 
