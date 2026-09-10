@@ -8,15 +8,15 @@ import ButangPadam from "@/components/ButangPadam";
 
 type Agm = { id: string; tajuk: string; tahun: number; tarikh: string | null; masa: string | null; tempat: string | null; kuorum: number; atur_cara: string | null; status: string; kod?: string | null; daftar_buka?: boolean };
 type Hadir = { id: string; ahli_id: string | null; nama: string; no_ahli: string | null; no_kp?: string | null; kaedah?: string | null; perlu_semak?: boolean; masa_daftar: string };
-type Usul = { id: string; no: number; tajuk: string; keterangan: string | null; undi_setuju: number; undi_tolak: number; undi_berkecuali: number; keputusan: string | null; catatan: string | null };
+export type Usul = { id: string; no: number; tajuk: string; keterangan: string | null; undi_setuju: number; undi_tolak: number; undi_berkecuali: number; keputusan: string | null; catatan: string | null };
 type Ahli = { id: string; no_ahli: string | null; nama: string; layak: boolean };
 
-export default function AgmPanel({ agm, hadir, usul, ahli, tahunLalai }: { agm: Agm | null; hadir: Hadir[]; usul: Usul[]; ahli: Ahli[]; tahunLalai: number }) {
+export default function AgmPanel({ agm, hadir, ahli, tahunLalai }: { agm: Agm | null; hadir: Hadir[]; ahli: Ahli[]; tahunLalai: number }) {
   return (
     <div className="space-y-6">
       <MaklumatAgm agm={agm} tahunLalai={tahunLalai} />
       {agm && <DaftarHadir agm={agm} hadir={hadir} ahli={ahli} />}
-      {agm && <UsulUndian agm={agm} usul={usul} />}
+      {/* Usul & Undian dipindahkan ke page berasingan: /admin/agm/usul */}
     </div>
   );
 }
@@ -220,7 +220,7 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
 }
 
 /* ============ 3) USUL & UNDIAN ============ */
-function UsulUndian({ agm, usul }: { agm: Agm; usul: Usul[] }) {
+export function UsulUndian({ agmId, usul }: { agmId: string; usul: Usul[] }) {
   const router = useRouter();
   const [tajuk, setTajuk] = useState("");
   const [ket, setKet] = useState("");
@@ -230,7 +230,7 @@ function UsulUndian({ agm, usul }: { agm: Agm; usul: Usul[] }) {
   async function tambah() {
     if (!tajuk.trim()) { setRalat("Sila isi tajuk usul dahulu."); return; }
     setBusy(true); setRalat("");
-    const r = await tambahUsul(agm.id, tajuk, ket); setBusy(false);
+    const r = await tambahUsul(agmId, tajuk, ket); setBusy(false);
     if (r?.ok) { setTajuk(""); setKet(""); router.refresh(); } else setRalat(r?.msg ?? "Gagal tambah usul.");
   }
 

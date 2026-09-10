@@ -217,6 +217,23 @@ export async function padamBiro(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// ---- Usul / Cadangan Kariah ----
+export async function padamUsulKariah(id: string): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_usul_kariah").delete().eq("id", id);
+  revalidatePath("/admin/agm/usul-kariah");
+  return { ok: true };
+}
+
+export async function tukarStatusUsulKariah(id: string, status: "baru" | "diterima" | "ditolak"): Promise<{ ok: boolean }> {
+  if (!(await boleh())) return { ok: false };
+  const db = createAdminClient();
+  await db.from("agm_usul_kariah").update({ status }).eq("id", id);
+  revalidatePath("/admin/agm/usul-kariah");
+  return { ok: true };
+}
+
 // Buang fail laporan yang dimuat naik (biro kekal, cuma fail dibuang).
 export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
   if (!(await boleh())) return { ok: false };
