@@ -12,9 +12,8 @@ export const SEKSYEN_SU: Bahagian[] = [
   { kunci: "agenda", tajuk: "B3 · Agenda Mesyuarat", desc: "Ganti agenda lalai 1.0–13.0.", contoh: "cth: 1.0 Ucapan Pengerusi · 2.0 Pengesahan minit · 4.0 Laporan SU · 6.0 Penyata Kewangan…" },
   { kunci: "surat_notis", tajuk: "B5 · Surat Notis Mesyuarat", desc: "Ganti badan surat notis lalai.", contoh: "cth: tarikh/masa/tempat, tujuan, hak mengundi, tarikh tutup pencalonan & usul, kuorum…" },
   { kunci: "laporan_setiausaha", tajuk: "B6.1 · Laporan Setiausaha (Pendahuluan & Pentadbiran)", desc: "Pentadbiran, mesyuarat & aktiviti.", contoh: "cth: bilangan mesyuarat AJK, program sepanjang tahun, dasar tadbir urus baharu…" },
-  { kunci: "modul_esurau", tajuk: "B6.4 · Ringkasan Sistem e-Surau", desc: "Ganti ringkasan modul lalai (pilihan).", contoh: "cth: keahlian, khairat, kewangan, program, sewaan, staf, gaji, AGM, penajaan, bayaran…" },
-  { kunci: "su_cabaran", tajuk: "B6.5 · Laporan SU — Cabaran", desc: "Ganti senarai cabaran lalai.", contoh: "cth: pendapatan bermusim, tunggakan khairat, kebergantungan kepada segelintir AJK…" },
-  { kunci: "su_penghargaan", tajuk: "B6.6 · Laporan SU — Penutup & Penghargaan", desc: "Perenggan penutup & penghargaan.", contoh: "cth: penghargaan kepada Nazir, Pengerusi, AJK, biro, staf, penaja, ahli kariah…" },
+  { kunci: "su_cabaran", tajuk: "B6.4 · Laporan SU — Cabaran", desc: "Ganti senarai cabaran lalai.", contoh: "cth: pendapatan bermusim, tunggakan khairat, kebergantungan kepada segelintir AJK…" },
+  { kunci: "su_penghargaan", tajuk: "B6.5 · Laporan SU — Penutup & Penghargaan", desc: "Perenggan penutup & penghargaan.", contoh: "cth: penghargaan kepada Nazir, Pengerusi, AJK, biro, staf, penaja, ahli kariah…" },
   { kunci: "usul_standard", tajuk: "B9 · Usul Standard AGM", desc: "Ganti senarai 9 usul standard lalai.", contoh: "cth: 1. Pengesahan minit · 2. Terima Laporan SU · 5. Luluskan belanjawan · 9. Lantik juruaudit…" },
 ];
 
@@ -31,11 +30,6 @@ type Nilai = Record<string, string>;
 export default function AgmLaporanTeksPanel({ agmId, bahagian, nilaiAwal, lalai }: { agmId: string; bahagian: Bahagian[]; nilaiAwal: Nilai; lalai: Nilai }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-surau/30 bg-surau/5 p-4 text-sm text-slate-700">
-        Setiap kotak dah <b>pra-isi dengan teks lalai</b> yang sama seperti dalam Buku Laporan — kau boleh edit terus.
-        Butang <b className="text-surau">Bantu tulis (AI)</b> boleh draf/perkemas dalam Bahasa Melayu formal.
-        Tekan <b>Simpan</b> supaya versi kau kekal dalam buku (jika tak simpan, buku guna teks lalai).
-      </div>
       {bahagian.map((b) => (
         <SeksyenTeks key={b.kunci} agmId={agmId} b={b} awal={nilaiAwal[b.kunci] ?? ""} lalai={lalai[b.kunci] ?? ""} />
       ))}

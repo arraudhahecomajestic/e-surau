@@ -233,13 +233,10 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
           <Row3 k="JUMLAH" a={lulus.length} b="100%" bold />
         </tbody></table>
 
-        <H2 t="6.4 Sistem e-Surau" />
-        <TeksD k="modul_esurau" />
-
-        <H2 t="6.5 Cabaran" />
+        <H2 t="6.4 Cabaran" />
         <TeksD k="su_cabaran" />
 
-        <H2 t="6.6 Penutup & Penghargaan" />
+        <H2 t="6.5 Penutup & Penghargaan" />
         <TeksD k="su_penghargaan" />
         <div className="mt-4 text-sm text-slate-600">.................................................<br /><b>SYAHMI SELIMAN</b> · Setiausaha</div>
       </Sec>
