@@ -64,7 +64,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
     db.from("agm_jk").select("kumpulan, jawatan, nama, susunan").eq("agm_id", agm.id).order("susunan").order("dicipta"),
     db.from("agm_biro").select("nama, ketua, setiausaha, ahli, laporan, susunan").eq("agm_id", agm.id).order("susunan"),
     db.from("agm_usul").select("no, tajuk, keterangan, keputusan, undi_setuju, undi_tolak, undi_berkecuali").eq("agm_id", agm.id).order("no"),
-    db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar").limit(20000),
+    db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar, maklumat_disahkan, peringkat").limit(20000),
     db.from("tanggungan").select("id", { count: "exact", head: true }),
     db.from("kutipan").select("jumlah, tarikh, kategori:kategori_kutipan(nama, jenis_khairat)").gte("tarikh", dMula).lte("tarikh", dTamat).limit(40000),
     db.from("perbelanjaan").select("jumlah, tarikh, dari_khairat, kategori:kategori_belanja(nama)").eq("status", "dibayar").gte("tarikh", dMula).lte("tarikh", dTamat).limit(40000),
@@ -85,8 +85,10 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
   // Keahlian
   const lulus = ahli.filter((a) => a.status === "lulus");
-  const aktif = lulus.filter((a) => a.aktif).length;
-  const menunggu = ahli.filter((a) => a.status === "menunggu").length;
+  const dahKemas = ahli.filter((a) => a.maklumat_disahkan).length;
+  const belumKemas = ahli.filter((a) => !a.maklumat_disahkan).length;
+  // Menunggu kelulusan sebenar: dah kemas kini, status menunggu, belum ditolak di mana-mana peringkat.
+  const menunggu = ahli.filter((a) => a.maklumat_disahkan && a.status === "menunggu" && a.peringkat !== "ditolak_su" && a.peringkat !== "ditolak_nazir").length;
   const baru = ahli.filter((a) => String(a.tarikh_daftar ?? "").slice(0, 4) === String(thn)).length;
   const ikutFasa = Object.keys(KAWASAN).map((kod) => ({ label: KAWASAN[kod], bil: lulus.filter((a) => (a.kawasan ?? "lain") === kod).length })).filter((x) => x.bil > 0);
   const jkSorted = [...jk].sort((a, b) => n(a.susunan) - n(b.susunan));
@@ -219,8 +221,9 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
         <table className="w-full border-collapse text-sm"><thead><tr><Th>Kategori</Th><Th>Bilangan</Th><Th>Peratus</Th></tr></thead><tbody>
           <Row3 k="Jumlah rekod dalam sistem" a={ahli.length} b="100%" bold />
           <Row3 k="Ahli diluluskan (LULUS)" a={lulus.length} b={pct(lulus.length, ahli.length)} />
-          <Row3 k="Ahli aktif" a={aktif} b={pct(aktif, lulus.length)} />
-          <Row3 k="Permohonan menunggu kelulusan" a={menunggu} b={pct(menunggu, ahli.length)} />
+          <Row3 k="Telah dikemaskini" a={dahKemas} b={pct(dahKemas, ahli.length)} />
+          <Row3 k="Belum dikemaskini" a={belumKemas} b={pct(belumKemas, ahli.length)} />
+          <Row3 k="Menunggu kelulusan" a={menunggu} b={pct(menunggu, ahli.length)} />
           <Row3 k="Tanggungan / isi rumah didaftarkan" a={bilTanggungan ?? BLANK} b="—" />
           <Row3 k={`Pendaftaran baharu ${thn}`} a={baru} b="—" />
         </tbody></table>
