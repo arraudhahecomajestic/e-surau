@@ -22,6 +22,11 @@ async function boleh() {
   return isPentadbir(await getProfil());
 }
 
+// Padam data AGM — SU / Admin / Master sahaja (bukan AJK biasa).
+async function bolehPadam() {
+  return isAdmin(await getProfil());
+}
+
 // Akses Senarai Semak Tugasan — AJK/Admin + Bendahari (& Timbalan Pengerusi jika peranan AJK).
 async function bolehTugasan() {
   const p = await getProfil();
@@ -80,7 +85,7 @@ export async function tandaHadir(agmId: string, ahliId: string | null, nama: str
 }
 
 export async function padamHadir(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_hadir").delete().eq("id", id);
   revalidatePath("/admin/agm");
@@ -138,7 +143,7 @@ export async function kemasUndi(id: string, setuju: number, tolak: number, berke
 }
 
 export async function padamUsul(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_usul").delete().eq("id", id);
   revalidatePath("/admin/agm");
@@ -162,7 +167,7 @@ export async function tambahJk(agmId: string, kumpulan: string, jawatan: string,
 }
 
 export async function padamJk(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_jk").delete().eq("id", id);
   revalidatePath("/admin/agm/jk");
@@ -229,7 +234,7 @@ export async function kemasBiro(id: string, ketua: string, laporan: string, seti
 }
 
 export async function padamBiro(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_biro").delete().eq("id", id);
   revalidatePath("/admin/agm/jk");
@@ -238,7 +243,7 @@ export async function padamBiro(id: string): Promise<{ ok: boolean }> {
 
 // ---- Usul / Cadangan Kariah ----
 export async function padamUsulKariah(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_usul_kariah").delete().eq("id", id);
   revalidatePath("/admin/agm/usul-kariah");
@@ -255,7 +260,7 @@ export async function tukarStatusUsulKariah(id: string, status: "baru" | "diteri
 
 // Buang fail laporan yang dimuat naik (biro kekal, cuma fail dibuang).
 export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   const { data: b } = await db.from("agm_biro").select("fail_url").eq("id", id).maybeSingle();
   const url = (b as any)?.fail_url as string | undefined;
@@ -315,7 +320,7 @@ export async function tambahTugasanGerak(agmId: string, fasa: string, fasaNama: 
 
 // Buang tugasan (asal atau tambahan).
 export async function padamTugasanGerak(id: string): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await bolehTugasan())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehPadam())) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const { error } = await db.from("agm_gerak_kerja").delete().eq("id", id);
@@ -357,7 +362,7 @@ export async function muatnaikGambarJk(jkId: string, formData: FormData): Promis
 }
 
 export async function padamGambarJk(jkId: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   const { data: jk } = await db.from("agm_jk").select("gambar_url").eq("id", jkId).maybeSingle();
   const url = (jk as any)?.gambar_url as string | undefined;
@@ -442,7 +447,7 @@ export async function kemasJawatanBil(id: string, bilDipilih: number): Promise<{
 }
 
 export async function padamJawatan(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_jawatan").delete().eq("id", id);
   revalidatePath(P);
@@ -495,7 +500,7 @@ export async function semakCalon(id: string, status: string, sebabTolak: string)
 }
 
 export async function padamCalon(id: string): Promise<{ ok: boolean }> {
-  if (!(await boleh())) return { ok: false };
+  if (!(await bolehPadam())) return { ok: false };
   const db = createAdminClient();
   await db.from("agm_calon").delete().eq("id", id);
   revalidatePath(P);
