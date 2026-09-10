@@ -44,13 +44,22 @@ export async function tambahProgram(formData: FormData) {
   const p = await getProfil();
   if (!isPentadbir(p)) return;
   const db = createAdminClient();
-  await db.from("program").insert({
+  const tajuk = String(formData.get("tajuk") ?? "").trim();
+  const tarikh = String(formData.get("tarikh") ?? "") || new Date().toISOString().slice(0, 10);
+  if (!tajuk) return;
+
+  // Elak duplikasi: kalau program sama (tajuk + tarikh) baru sahaja dicipta & belum dipadam, jangan tambah lagi.
+  const { data: sedia } = await db.from("program").select("id").eq("tajuk", tajuk).eq("tarikh", tarikh).is("dibuang_pada", null).limit(1);
+  const adaId = (sedia as any[])?.[0]?.id as string | undefined;
+  if (adaId) redirect(`/admin/program/${adaId}`);
+
+  const { data: baru } = await db.from("program").insert({
     dicipta_oleh: p!.id,
     dicipta_oleh_nama: p!.nama ?? p!.emel ?? null,
-    tajuk: String(formData.get("tajuk") ?? ""),
+    tajuk,
     keterangan: String(formData.get("keterangan") ?? "") || null,
     kategori: String(formData.get("kategori") ?? "") || null,
-    tarikh: String(formData.get("tarikh") ?? "") || new Date().toISOString().slice(0, 10),
+    tarikh,
     masa: String(formData.get("masa") ?? "") || null,
     lokasi: String(formData.get("lokasi") ?? "") || null,
     had_peserta: formData.get("had_peserta") ? Number(formData.get("had_peserta")) : null,
@@ -59,10 +68,13 @@ export async function tambahProgram(formData: FormData) {
     ruj_bayar: String(formData.get("ruj_bayar") ?? "").trim() || null,
     rsvp_dibuka: String(formData.get("rsvp_dibuka") ?? "") === "on",
     diterbitkan: String(formData.get("diterbitkan") ?? "") === "on",
-  });
+  }).select("id").single();
   revalidatePath("/admin/program");
   revalidatePath("/program");
   revalidatePath("/");
+  // Alih ke halaman program yang dicipta — beri kepastian berjaya & elak hantar borang berulang.
+  if ((baru as any)?.id) redirect(`/admin/program/${(baru as any).id}`);
+  redirect("/admin/program");
 }
 
 export async function kemasProgram(formData: FormData) {
