@@ -210,12 +210,11 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
         <H2 t="6.2 Pentadbiran & Mesyuarat" />
         <table className="w-full border-collapse text-sm"><tbody>
-          <Row2 k="Bilangan Ahli Jawatankuasa" v={`${jk.filter((j)=>["induk","ketua_biro","ajk_biasa"].includes(j.kumpulan)).length || BLANK} orang`} />
-          <Row2 k="Juruaudit dalaman" v={`${jk.filter((j)=>j.kumpulan==="juruaudit").length || BLANK} orang`} />
-          <Row2 k="Bilangan biro aktif" v={`${biro.length || BLANK} biro`} />
-          <Row2 k="Mesyuarat jawatankuasa diadakan" v={`${BLANK} kali`} />
-          <Row2 k="Purata kehadiran mesyuarat" v={`${BLANK}%`} />
-          <Row2 k="Petugas & staf surau" v={`${jk.filter((j)=>j.kumpulan==="staf").length || BLANK} orang`} />
+          <Row2 k="Bilangan Ahli Jawatankuasa" v="17 orang" />
+          <Row2 k="Juruaudit dalaman" v="2 orang" />
+          <Row2 k="Bilangan biro aktif" v="9 biro" />
+          <Row2 k="Mesyuarat jawatankuasa diadakan" v="2 kali" />
+          <Row2 k="Purata kehadiran mesyuarat" v="90 %" />
         </tbody></table>
 
         <H2 t="6.3 Keahlian Ahli Kariah" />
