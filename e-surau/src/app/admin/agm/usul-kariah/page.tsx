@@ -28,6 +28,14 @@ export default async function AgmUsulPage() {
     usul = (u as any[]) ?? [];
   }
 
+  // Taraf keahlian pengirim (dah kemaskini / belum) — untuk paparan tanda.
+  const disahkan: Record<string, boolean> = {};
+  const ahliIds = Array.from(new Set(kariah.map((k) => k.ahli_id).filter(Boolean)));
+  if (ahliIds.length) {
+    const { data: aRows } = await db.from("ahli_kariah").select("id, maklumat_disahkan").in("id", ahliIds);
+    for (const a of ((aRows as any[]) ?? [])) disahkan[a.id] = !!a.maklumat_disahkan;
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between"><Link href="/admin/agm" className="text-sm text-surau hover:underline">← Kembali ke AGM</Link></div>
@@ -39,7 +47,7 @@ export default async function AgmUsulPage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Sila cipta maklumat AGM dahulu di <Link href="/admin/agm" className="font-semibold underline">halaman AGM</Link>.</div>
       ) : (
         <>
-          <UsulKariahAdmin kod={agm.kod ?? null} senarai={kariah} />
+          <UsulKariahAdmin kod={agm.kod ?? null} senarai={kariah} disahkan={disahkan} />
           <UsulUndian agmId={agm.id} usul={usul} />
         </>
       )}

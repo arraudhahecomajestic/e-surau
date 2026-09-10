@@ -21,7 +21,14 @@ function bila(iso: string) {
   try { return new Date(iso).toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" }); } catch { return ""; }
 }
 
-export default function UsulKariahAdmin({ kod, senarai }: { kod: string | null; senarai: Usul[] }) {
+// Taraf keahlian pengirim: peta ahli_id -> maklumat_disahkan (dari page).
+function taraf(u: Usul, disahkan: Record<string, boolean>) {
+  if (!u.ahli_id) return { label: "Bukan ahli", cls: "bg-amber-50 text-amber-600" };
+  if (disahkan[u.ahli_id]) return { label: "Dah kemaskini", cls: "bg-emerald-50 text-emerald-600" };
+  return { label: "Belum kemaskini", cls: "bg-red-50 text-red-600" };
+}
+
+export default function UsulKariahAdmin({ kod, senarai, disahkan = {} }: { kod: string | null; senarai: Usul[]; disahkan?: Record<string, boolean> }) {
   const router = useRouter();
   const [salin, setSalin] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -59,7 +66,7 @@ export default function UsulKariahAdmin({ kod, senarai }: { kod: string | null; 
                   <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-slate-900">{u.nama}</span>
-                      {u.ahli_id ? <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">Ahli</span> : <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">Bukan rekod</span>}
+                      {(() => { const t = taraf(u, disahkan); return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${t.cls}`}>{t.label}</span>; })()}
                       <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
                     </div>
                     <span className="text-xs text-slate-400">{bila(u.dicipta)}</span>
