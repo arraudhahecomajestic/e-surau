@@ -252,7 +252,7 @@ export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
 // ---- Gerak Kerja AGM (senarai semak persiapan) ----
 export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ ok: boolean; msg?: string }> {
   const p = await getProfil();
-  if (!isPentadbir(p)) return { ok: false, msg: "Tiada akses." };
+  if (!isAdmin(p)) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const oleh = (p?.nama ?? p?.emel ?? "").slice(0, 160) || null;
