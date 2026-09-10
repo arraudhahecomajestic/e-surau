@@ -22,6 +22,12 @@ async function boleh() {
   return isPentadbir(await getProfil());
 }
 
+// Akses Senarai Semak Tugasan — AJK/Admin + Bendahari (& Timbalan Pengerusi jika peranan AJK).
+async function bolehTugasan() {
+  const p = await getProfil();
+  return isPentadbir(p) || isBendahari(p);
+}
+
 // ---- Maklumat AGM (cipta / kemas) ----
 export async function simpanAgm(formData: FormData): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses. Sila log masuk sebagai AJK/Admin." };
@@ -252,7 +258,7 @@ export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
 // ---- Senarai Semak Tugasan AGM (guna jadual agm_gerak_kerja) ----
 export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ ok: boolean; msg?: string }> {
   const p = await getProfil();
-  if (!isPentadbir(p)) return { ok: false, msg: "Tiada akses." };
+  if (!(isPentadbir(p) || isBendahari(p))) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const oleh = (p?.nama ?? p?.emel ?? "").slice(0, 160) || null;
@@ -268,7 +274,7 @@ export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ o
 
 // Simpan catatan / remark (dikongsi — disimpan pada rekod tugasan).
 export async function simpanCatatanGerak(id: string, teks: string): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehTugasan())) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const { error } = await db.from("agm_gerak_kerja").update({ catatan: teks.slice(0, 2000) || null }).eq("id", id);
@@ -279,7 +285,7 @@ export async function simpanCatatanGerak(id: string, teks: string): Promise<{ ok
 
 // Tambah tugasan sendiri dalam sesuatu unit.
 export async function tambahTugasanGerak(agmId: string, fasa: string, fasaNama: string, teks: string): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehTugasan())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !fasa || !teks.trim()) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const { data: maxRow } = await db.from("agm_gerak_kerja").select("susunan").eq("agm_id", agmId).eq("fasa", fasa).order("susunan", { ascending: false }).limit(1);
@@ -296,7 +302,7 @@ export async function tambahTugasanGerak(agmId: string, fasa: string, fasaNama: 
 
 // Buang tugasan (asal atau tambahan).
 export async function padamTugasanGerak(id: string): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehTugasan())) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const { error } = await db.from("agm_gerak_kerja").delete().eq("id", id);
