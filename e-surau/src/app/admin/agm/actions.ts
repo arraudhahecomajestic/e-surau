@@ -249,10 +249,10 @@ export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-// ---- Gerak Kerja AGM (senarai semak persiapan) ----
+// ---- Senarai Semak Tugasan AGM (guna jadual agm_gerak_kerja) ----
 export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ ok: boolean; msg?: string }> {
   const p = await getProfil();
-  if (!isAdmin(p)) return { ok: false, msg: "Tiada akses." };
+  if (!isPentadbir(p)) return { ok: false, msg: "Tiada akses." };
   if (!id) return { ok: false, msg: "Data tidak lengkap." };
   const db = createAdminClient();
   const oleh = (p?.nama ?? p?.emel ?? "").slice(0, 160) || null;
@@ -262,6 +262,45 @@ export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ o
     ({ error } = await db.from("agm_gerak_kerja").update({ selesai }).eq("id", id));
   }
   if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
+  revalidatePath("/admin/agm/gerak-kerja");
+  return { ok: true };
+}
+
+// Simpan catatan / remark (dikongsi — disimpan pada rekod tugasan).
+export async function simpanCatatanGerak(id: string, teks: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "Data tidak lengkap." };
+  const db = createAdminClient();
+  const { error } = await db.from("agm_gerak_kerja").update({ catatan: teks.slice(0, 2000) || null }).eq("id", id);
+  if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
+  revalidatePath("/admin/agm/gerak-kerja");
+  return { ok: true };
+}
+
+// Tambah tugasan sendiri dalam sesuatu unit.
+export async function tambahTugasanGerak(agmId: string, fasa: string, fasaNama: string, teks: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!agmId || !fasa || !teks.trim()) return { ok: false, msg: "Data tidak lengkap." };
+  const db = createAdminClient();
+  const { data: maxRow } = await db.from("agm_gerak_kerja").select("susunan").eq("agm_id", agmId).eq("fasa", fasa).order("susunan", { ascending: false }).limit(1);
+  const susunan = (((maxRow as any[])?.[0]?.susunan) ?? 0) + 1;
+  const kod = "x-" + fasa + "-" + Date.now().toString(36);
+  const { error } = await db.from("agm_gerak_kerja").insert({
+    agm_id: agmId, fasa, fasa_nama: fasaNama.slice(0, 200), kod,
+    tugasan: teks.trim().slice(0, 400), susunan, selesai: false,
+  });
+  if (error) return { ok: false, msg: `Gagal tambah: ${error.message}` };
+  revalidatePath("/admin/agm/gerak-kerja");
+  return { ok: true };
+}
+
+// Buang tugasan (asal atau tambahan).
+export async function padamTugasanGerak(id: string): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "Data tidak lengkap." };
+  const db = createAdminClient();
+  const { error } = await db.from("agm_gerak_kerja").delete().eq("id", id);
+  if (error) return { ok: false, msg: `Gagal buang: ${error.message}` };
   revalidatePath("/admin/agm/gerak-kerja");
   return { ok: true };
 }
