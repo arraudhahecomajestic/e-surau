@@ -249,6 +249,23 @@ export async function padamFailBiro(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// ---- Gerak Kerja AGM (senarai semak persiapan) ----
+export async function tandaGerakKerja(id: string, selesai: boolean): Promise<{ ok: boolean; msg?: string }> {
+  const p = await getProfil();
+  if (!isPentadbir(p)) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "Data tidak lengkap." };
+  const db = createAdminClient();
+  const oleh = (p?.nama ?? p?.emel ?? "").slice(0, 160) || null;
+  // Cuba rekod siapa tanda; jika lajur selesai_oleh tak serasi, ulang tanpa nama.
+  let { error } = await db.from("agm_gerak_kerja").update({ selesai, selesai_oleh: selesai ? oleh : null }).eq("id", id);
+  if (error) {
+    ({ error } = await db.from("agm_gerak_kerja").update({ selesai }).eq("id", id));
+  }
+  if (error) return { ok: false, msg: `Gagal simpan: ${error.message}` };
+  revalidatePath("/admin/agm/gerak-kerja");
+  return { ok: true };
+}
+
 // ---- AI: Bantu tulis laporan biro ----
 export async function bantuTulisBiro(
   nama: string,
