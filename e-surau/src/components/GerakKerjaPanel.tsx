@@ -49,6 +49,8 @@ export default function GerakKerjaPanel({ agmId, senarai }: { agmId: string; sen
   const [openR, setOpenR] = useState<Record<string, boolean>>({});
   const [armed, setArmed] = useState<string | null>(null);
   const [tambahBusy, setTambahBusy] = useState<Record<string, boolean>>({});
+  const [catVal, setCatVal] = useState<Record<string, string>>({});
+  const [catStat, setCatStat] = useState<Record<string, "dirty" | "saving" | "saved">>({});
   const catT = useRef<Record<string, any>>({});
   const addRef = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -83,13 +85,20 @@ export default function GerakKerjaPanel({ agmId, senarai }: { agmId: string; sen
     router.refresh();
   }
 
-  function catatanBerubah(id: string, teks: string) {
+  async function saveCat(id: string, v: string) {
     clearTimeout(catT.current[id]);
-    catT.current[id] = setTimeout(() => { simpanCatatanGerak(id, teks); }, 700);
+    setCatStat((s) => ({ ...s, [id]: "saving" }));
+    const r = await simpanCatatanGerak(id, v);
+    if (r.ok) {
+      setCatStat((s) => ({ ...s, [id]: "saved" }));
+      setTimeout(() => setCatStat((s) => { const n = { ...s }; if (n[id] === "saved") delete n[id]; return n; }), 2000);
+    } else setCatStat((s) => ({ ...s, [id]: "dirty" }));
   }
-  function catatanSimpan(id: string, teks: string) {
+  function onCatChange(id: string, v: string) {
+    setCatVal((m) => ({ ...m, [id]: v }));
+    setCatStat((s) => ({ ...s, [id]: "dirty" }));
     clearTimeout(catT.current[id]);
-    simpanCatatanGerak(id, teks);
+    catT.current[id] = setTimeout(() => saveCat(id, v), 1000);
   }
 
   async function tambah(fasa: string, fasaNama: string) {
@@ -154,6 +163,7 @@ export default function GerakKerjaPanel({ agmId, senarai }: { agmId: string; sen
                     const decide = t.unit === "decide";
                     const mine = t.kod.startsWith("x-");
                     const hasCat = !!(t.catatan && t.catatan.trim());
+                    const curVal = catVal[t.id] !== undefined ? catVal[t.id] : (t.catatan ?? "");
                     const showR = decide || hasCat || openR[t.id];
                     const ph = decide ? "Catat keputusan / remark (cth: Menu 2 dipilih, katerer Kak June)…" : "Catatan…";
                     return (
@@ -168,14 +178,22 @@ export default function GerakKerjaPanel({ agmId, senarai }: { agmId: string; sen
                             {siap && t.selesai_oleh && <span className="text-[11px] text-slate-400">✓ {t.selesai_oleh}</span>}
                           </div>
                           {showR ? (
-                            <textarea
-                              defaultValue={t.catatan ?? ""}
-                              onChange={(e) => catatanBerubah(t.id, e.target.value)}
-                              onBlur={(e) => catatanSimpan(t.id, e.target.value)}
-                              rows={2}
-                              placeholder={ph}
-                              className={`mt-2 w-full rounded-lg border px-2.5 py-1.5 text-[13px] text-slate-800 focus:outline-none ${decide ? "border-surau bg-surau/5 focus:border-surau-dark" : "border-slate-200 bg-slate-50 focus:border-surau"}`}
-                            />
+                            <div className="mt-2">
+                              <textarea
+                                value={curVal}
+                                onChange={(e) => onCatChange(t.id, e.target.value)}
+                                onBlur={(e) => saveCat(t.id, e.target.value)}
+                                rows={2}
+                                placeholder={ph}
+                                className={`w-full rounded-lg border px-2.5 py-1.5 text-[13px] text-slate-800 focus:outline-none ${decide ? "border-surau bg-surau/5 focus:border-surau-dark" : "border-slate-200 bg-slate-50 focus:border-surau"}`}
+                              />
+                              <div className="mt-1 flex items-center gap-2">
+                                <button onClick={() => saveCat(t.id, curVal)} disabled={catStat[t.id] === "saving"} className="rounded-md bg-surau px-3 py-1 text-[11px] font-bold text-white hover:bg-surau-dark disabled:opacity-50">Simpan</button>
+                                {catStat[t.id] === "saving" && <span className="text-[11px] text-slate-400">Menyimpan…</span>}
+                                {catStat[t.id] === "saved" && <span className="text-[11px] font-semibold text-emerald-600">Disimpan ✓</span>}
+                                {catStat[t.id] === "dirty" && <span className="text-[11px] text-amber-600">Belum disimpan</span>}
+                              </div>
+                            </div>
                           ) : (
                             <button onClick={() => setOpenR((o) => ({ ...o, [t.id]: true }))} className="mt-1.5 text-xs font-semibold text-surau-dark hover:underline">＋ Catatan</button>
                           )}
