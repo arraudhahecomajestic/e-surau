@@ -70,9 +70,6 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
       { label: "Keahlian", items: [
         { href: "/admin/kariah-kawasan", label: "Kawasan / Fasa" },
       ] },
-      { label: "Staf", items: [
-        { href: "/admin/staf/penilaian", label: "Penilaian Prestasi" },
-      ] },
     ];
   } else {
     // Admin / Master — penuh. Staf & Gaji hanya untuk SU (master).
