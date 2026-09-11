@@ -6,7 +6,7 @@ export type Profil = {
   emel: string | null;
   ahli_id: string | null;
   pembekal_id: string | null;
-  peranan: "admin" | "bendahari" | "ajk" | "ahli" | "imam" | "kerani";
+  peranan: "admin" | "bendahari" | "ajk" | "ahli" | "imam" | "kerani" | "juruaudit";
   master: boolean;
   jawatan: string | null;
 };
@@ -19,6 +19,7 @@ const JAWATAN_LALAI: Record<Profil["peranan"], string> = {
   ajk: "AJK",
   imam: "Imam",
   kerani: "Staf",
+  juruaudit: "Juruaudit",
   ahli: "Ahli Kariah",
 };
 export function jawatanProfil(p: Profil | null): string {
@@ -73,6 +74,12 @@ export function bolehLulusVendor(p: Profil | null): boolean {
 // Padam data (bolehPadam) & modul terhad SU (isAdmin) kekal TIDAK termasuk bendahari.
 export function isPentadbir(p: Profil | null): boolean {
   return !!p && ["admin", "ajk", "bendahari"].includes(p.peranan);
+}
+
+// Juruaudit / Pemeriksa Kira-kira — akses terhad: Laporan Juruaudit + semak Kewangan (read-only).
+// BUKAN pentadbir am — tak dapat modul lain.
+export function isJuruaudit(p: Profil | null): boolean {
+  return !!p && p.peranan === "juruaudit";
 }
 
 // Pentadbir PENUH — Admin / Master sahaja (TIDAK termasuk AJK).

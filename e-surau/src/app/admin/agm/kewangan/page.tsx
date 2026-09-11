@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isAdmin, isBendahari } from "@/lib/sesi";
+import { getProfil, isAdmin, isBendahari, isJuruaudit } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { bukuDefaults } from "@/lib/bukuTeks";
@@ -19,7 +19,9 @@ export default async function AgmKewanganPage() {
   if (!adminConfigured) return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
-  if (!(isBendahari(profil) || isAdmin(profil))) return <TiadaAkses />; // Bendahari + SU sahaja
+  // Bendahari + SU boleh edit. Juruaudit boleh SEMAK (read-only).
+  if (!(isBendahari(profil) || isAdmin(profil) || isJuruaudit(profil))) return <TiadaAkses />;
+  const bolehEdit = isBendahari(profil) || isAdmin(profil);
 
   const db = createAdminClient();
   const { data: agmRows } = await db.from("agm").select("id, tahun, tarikh, masa, tempat, kuorum").order("tahun", { ascending: false }).order("dicipta", { ascending: false }).limit(1);
@@ -44,15 +46,15 @@ export default async function AgmKewanganPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between"><Link href="/admin/agm" className="text-sm text-surau hover:underline">← Kembali ke AGM</Link></div>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Kewangan Buku Laporan (Bendahari)</h1>
-        <p className="mt-1 text-sm text-slate-600">Muat naik angka kewangan (CSV) &amp; tulis ulasan/perakuan untuk Bahagian 8 Buku Laporan.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Kewangan Buku Laporan {bolehEdit ? "(Bendahari)" : "(Semakan Juruaudit)"}</h1>
+        <p className="mt-1 text-sm text-slate-600">{bolehEdit ? "Muat naik angka kewangan (CSV) & tulis ulasan/perakuan untuk Bahagian 8 Buku Laporan." : "Semak angka kewangan & muat turun penyata kewangan yang dimuat naik Bendahari. Anda tidak boleh mengubah data (baca sahaja)."}</p>
       </div>
       {!agm ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Sila cipta maklumat AGM dahulu.</div>
       ) : (
         <>
-          <MuatnaikKewangan agmId={agm.id} bilSediaAda={rows.length} />
-          <MuatnaikPdfKewangan agmId={agm.id} fail={failPdf} />
+          {bolehEdit && <MuatnaikKewangan agmId={agm.id} bilSediaAda={rows.length} />}
+          <MuatnaikPdfKewangan agmId={agm.id} fail={failPdf} boleh={bolehEdit} />
           {rows.length > 0 && (
             <section className="rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="mb-3 font-semibold text-slate-900">Pratonton Angka Tersimpan</h2>
@@ -77,7 +79,19 @@ export default async function AgmKewanganPage() {
           )}
           <div>
             <h2 className="mb-2 text-lg font-bold text-slate-900">Ulasan &amp; Perakuan Kewangan</h2>
-            <AgmLaporanTeksPanel agmId={agm.id} bahagian={SEKSYEN_KEWANGAN} nilaiAwal={nilaiAwal} lalai={lalai} />
+            {bolehEdit ? (
+              <AgmLaporanTeksPanel agmId={agm.id} bahagian={SEKSYEN_KEWANGAN} nilaiAwal={nilaiAwal} lalai={lalai} />
+            ) : (
+              <div className="space-y-3">
+                {SEKSYEN_KEWANGAN.map((s) => (
+                  <div key={s.kunci} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="mb-1 text-sm font-semibold text-slate-800">{s.tajuk}</div>
+                    <p className="whitespace-pre-wrap text-sm text-slate-600">{nilaiAwal[s.kunci] || lalai[s.kunci] || "— Belum diisi —"}</p>
+                  </div>
+                ))}
+                <p className="text-[11px] text-slate-400">Baca sahaja — ulasan &amp; perakuan ditulis oleh Bendahari.</p>
+              </div>
+            )}
           </div>
         </>
       )}

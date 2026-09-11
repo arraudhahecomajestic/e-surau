@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabaseAdmin";
-import { getProfil, isPentadbir, isBendahari, isAdmin } from "@/lib/sesi";
+import { getProfil, isPentadbir, isBendahari, isAdmin, isJuruaudit } from "@/lib/sesi";
 import { panggilAI } from "@/lib/ai";
 
 // Kunci naratif kewangan — boleh diedit Bendahari (atau SU). Naratif lain: SU sahaja.
@@ -11,7 +11,7 @@ async function bolehTeks(kunci: string) {
   const p = await getProfil();
   // Laporan Juruaudit Dalaman — diisi oleh juruaudit (peranan AJK) atau SU.
   // Tidak perlu akses penuh Kewangan (CSV/angka) — cukup peranan pentadbir (AJK/Admin).
-  if (kunci === "laporan_juruaudit") return isPentadbir(p);
+  if (kunci === "laporan_juruaudit") return isPentadbir(p) || isJuruaudit(p);
   if (KEWANGAN_KEYS.includes(kunci)) return isBendahari(p) || isAdmin(p);
   return isAdmin(p); // naratif SU
 }

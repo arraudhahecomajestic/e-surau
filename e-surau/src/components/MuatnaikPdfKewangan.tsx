@@ -17,7 +17,7 @@ function tarikhMs(d: string) {
   return isNaN(x.getTime()) ? "" : x.toLocaleDateString("ms-MY", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export default function MuatnaikPdfKewangan({ agmId, fail }: { agmId: string; fail: FailKewangan[] }) {
+export default function MuatnaikPdfKewangan({ agmId, fail, boleh = true }: { agmId: string; fail: FailKewangan[]; boleh?: boolean }) {
   const router = useRouter();
   const [tajuk, setTajuk] = useState("Penyata Kewangan");
   const [pilih, setPilih] = useState<File | null>(null);
@@ -45,8 +45,9 @@ export default function MuatnaikPdfKewangan({ agmId, fail }: { agmId: string; fa
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-1 font-semibold text-slate-900">Muat Naik Penyata Kewangan (PDF)</h2>
-      <p className="mb-3 text-sm text-slate-600">Muat naik penyata kewangan atau laporan juruaudit dalam bentuk PDF. Boleh lebih dari satu fail. Fail akan tersedia untuk dimuat turun dalam laporan kewangan.</p>
+      <h2 className="mb-1 font-semibold text-slate-900">{boleh ? "Muat Naik Penyata Kewangan (PDF)" : "Penyata Kewangan (PDF)"}</h2>
+      <p className="mb-3 text-sm text-slate-600">{boleh ? "Muat naik penyata kewangan atau laporan juruaudit dalam bentuk PDF. Boleh lebih dari satu fail. Fail akan tersedia untuk dimuat turun dalam laporan kewangan." : "Penyata kewangan yang dimuat naik Bendahari. Klik untuk semak / muat turun."}</p>
+      {!boleh && fail.length === 0 && <p className="text-sm text-slate-400">Tiada penyata dimuat naik lagi.</p>}
 
       {fail.length > 0 && (
         <ul className="mb-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
@@ -62,13 +63,14 @@ export default function MuatnaikPdfKewangan({ agmId, fail }: { agmId: string; fa
               </div>
               <div className="flex shrink-0 items-center gap-3 text-xs">
                 <a href={f.url} target="_blank" rel="noopener" className="font-semibold text-slate-500 hover:underline">buka</a>
-                <ButangPadam onPadam={() => padam(f.id)} soalan={`Padam "${f.tajuk}"?`} />
+                {boleh && <ButangPadam onPadam={() => padam(f.id)} soalan={`Padam "${f.tajuk}"?`} />}
               </div>
             </li>
           ))}
         </ul>
       )}
 
+      {boleh && (
       <div className="rounded-lg bg-slate-50 p-3">
         <label className="mb-1 block text-xs font-semibold text-slate-500">Tajuk fail</label>
         <input value={tajuk} onChange={(e) => setTajuk(e.target.value)} placeholder="cth: Penyata Kewangan 2025 / Laporan Juruaudit"
@@ -82,7 +84,8 @@ export default function MuatnaikPdfKewangan({ agmId, fail }: { agmId: string; fa
           {ralat && <span className="text-xs font-semibold text-red-600">{ralat}</span>}
         </div>
       </div>
-      <p className="mt-3 text-[11px] text-slate-400">Format: PDF sahaja, maksimum 15MB setiap fail.</p>
+      )}
+      {boleh && <p className="mt-3 text-[11px] text-slate-400">Format: PDF sahaja, maksimum 15MB setiap fail.</p>}
     </section>
   );
 }

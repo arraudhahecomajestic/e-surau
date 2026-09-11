@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isPentadbir } from "@/lib/sesi";
+import { getProfil, isPentadbir, isJuruaudit } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { bukuDefaults } from "@/lib/bukuTeks";
@@ -21,7 +21,7 @@ export default async function AgmJuruauditPage() {
   if (!adminConfigured) return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
-  if (!isPentadbir(profil)) return <TiadaAkses />; // AJK (juruaudit) + SU/Admin
+  if (!isPentadbir(profil) && !isJuruaudit(profil)) return <TiadaAkses />; // AJK + SU/Admin + Juruaudit
 
   const db = createAdminClient();
   const { data: agmRows } = await db.from("agm").select("id, tahun, tarikh, masa, tempat, kuorum").order("tahun", { ascending: false }).order("dicipta", { ascending: false }).limit(1);

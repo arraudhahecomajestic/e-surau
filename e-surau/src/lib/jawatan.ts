@@ -2,7 +2,7 @@
 // Pilih jawatan di /admin/peranan → peranan (akses) & master di-set automatik,
 // dan teks jawatan disimpan untuk dipapar pada baucer/TTD.
 
-export type PerananSistem = "admin" | "bendahari" | "ajk" | "imam" | "kerani" | "ahli";
+export type PerananSistem = "admin" | "bendahari" | "ajk" | "imam" | "kerani" | "juruaudit" | "ahli";
 
 export type JawatanAkses = {
   jawatan: string;                 // gelaran rasmi (dipapar pada baucer)
@@ -22,6 +22,7 @@ export const SENARAI_JAWATAN: JawatanAkses[] = [
   { jawatan: "Timbalan Bendahari", peranan: "bendahari", master: false, nota: "Modul Kewangan & Tuntutan (jana baucer)" },
   { jawatan: "Imam",               peranan: "ajk",       master: false, nota: "Sama akses AJK (program, tahlil, khairat, kandungan)" },
   { jawatan: "AJK",                peranan: "ajk",       master: false, nota: "Program, tahlil, khairat, kandungan (akses terhad)" },
+  { jawatan: "Juruaudit / Pemeriksa Kira-kira", peranan: "juruaudit", master: false, nota: "AGM: Laporan Juruaudit + semak Kewangan (read-only)" },
   { jawatan: "Staf / Penolong Pengurus", peranan: "kerani", master: false, nota: "Portal staf — carian ahli sahaja" },
   { jawatan: "Ahli Kariah",        peranan: "ahli",      master: false, nota: "Ahli biasa (tiada akses admin)" },
 ];
@@ -41,6 +42,7 @@ export function jawatanSemasa(peranan?: string, master?: boolean, jawatan?: stri
     case "bendahari": return "Bendahari";
     case "imam": return "Imam";
     case "ajk": return "AJK";
+    case "juruaudit": return "Juruaudit / Pemeriksa Kira-kira";
     case "kerani": return "Staf / Penolong Pengurus";
     default: return "Ahli Kariah";
   }

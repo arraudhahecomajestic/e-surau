@@ -15,6 +15,7 @@ async function destIkutPeranan(supabase: any): Promise<string> {
   if (prof?.peranan === "kerani") return "/kerani";
   if (prof?.peranan === "bendahari") return "/admin/kewangan";
   if (prof?.peranan === "imam") return "/admin/tahlil";
+  if (prof?.peranan === "juruaudit") return "/admin/agm";
   if (prof?.peranan === "admin") return "/admin";
   if (prof?.peranan === "ajk") return "/admin/program";
   // Auto-sambung ikut e-mel jika belum dipautkan (boleh jadi ahli & pembekal serentak).

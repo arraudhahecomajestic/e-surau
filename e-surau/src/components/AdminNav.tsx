@@ -43,10 +43,12 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
   let atas: Item[] = [];
   let kumpulan: Kump[] = [];
 
-  if (peranan === "bendahari" || peranan === "imam") {
+  if (peranan === "bendahari" || peranan === "imam" || peranan === "juruaudit") {
     // Peranan terhad — kekal ringkas (flat)
     atas = peranan === "bendahari"
       ? [{ href: "/admin/kewangan", label: "Kewangan" }, { href: "/admin/tuntutan", label: "Tuntutan" }, { href: "/admin/agm", label: "Mesyuarat Agung (AGM)" }, { href: "/admin/staf/penilaian", label: "Penilaian Staf" }]
+      : peranan === "juruaudit"
+      ? [{ href: "/admin/agm", label: "Mesyuarat Agung (AGM)" }]
       : [{ href: "/admin/tahlil", label: "Tahlil" }];
   } else if (peranan === "ajk" && !master) {
     // AJK (bukan master) — akses terhad
