@@ -68,9 +68,11 @@ export function bolehLulusVendor(p: Profil | null): boolean {
   return !!p && (["admin", "bendahari"].includes(p.peranan) || p.master === true);
 }
 
-// SU / Pengerusi / AJK — pentadbir am (program, khairat, kandungan, dll).
+// SU / Pengerusi / AJK / Bendahari — pentadbir am (program, khairat, kandungan, dll).
+// Bendahari diberi akses setaraf AJK (+ modul Kewangan yang khas untuknya).
+// Padam data (bolehPadam) & modul terhad SU (isAdmin) kekal TIDAK termasuk bendahari.
 export function isPentadbir(p: Profil | null): boolean {
-  return !!p && ["admin", "ajk"].includes(p.peranan);
+  return !!p && ["admin", "ajk", "bendahari"].includes(p.peranan);
 }
 
 // Pentadbir PENUH — Admin / Master sahaja (TIDAK termasuk AJK).
