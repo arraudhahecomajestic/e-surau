@@ -646,6 +646,54 @@ export async function padamKewangan(agmId: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// ---- Fail Kewangan (PDF) — muat naik oleh Bendahari ----
+const PDF_MAKS = 15 * 1024 * 1024; // 15MB
+async function bolehFailKewangan() {
+  const p = await getProfil();
+  return isBendahari(p) || isAdmin(p);
+}
+
+export async function muatnaikPdfKewangan(agmId: string, formData: FormData): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await bolehFailKewangan())) return { ok: false, msg: "Tiada akses (Bendahari/SU sahaja)." };
+  if (!agmId) return { ok: false, msg: "Sila cipta maklumat AGM dahulu." };
+  const tajuk = ((formData.get("tajuk") as string) ?? "").trim().slice(0, 200) || "Penyata Kewangan";
+  const fail = formData.get("fail");
+  if (!(fail instanceof File) || fail.size === 0) return { ok: false, msg: "Sila pilih fail PDF." };
+  if (fail.type && fail.type !== "application/pdf" && !fail.name.toLowerCase().endsWith(".pdf"))
+    return { ok: false, msg: "Format tidak disokong — fail PDF sahaja." };
+  if (fail.size > PDF_MAKS) return { ok: false, msg: "Fail terlalu besar (maksimum 15MB)." };
+
+  const db = createAdminClient();
+  const path = `kewangan-agm/${agmId}-${Date.now()}.pdf`;
+  const buf = Buffer.from(await fail.arrayBuffer());
+  const { error: eUp } = await db.storage.from("kandungan").upload(path, buf, { contentType: "application/pdf", upsert: true });
+  if (eUp) return { ok: false, msg: "Gagal muat naik. Cuba lagi." };
+  const url = db.storage.from("kandungan").getPublicUrl(path).data.publicUrl;
+
+  const p = await getProfil();
+  const { error } = await db.from("agm_fail_kewangan").insert({
+    agm_id: agmId, tajuk, url, path, saiz: fail.size, dimuat_oleh: p?.nama ?? null,
+  });
+  if (error) { try { await db.storage.from("kandungan").remove([path]); } catch { /* abai */ } return { ok: false, msg: `Gagal simpan: ${error.message}` }; }
+  revalidatePath("/admin/agm/kewangan");
+  revalidatePath("/admin/agm/buku");
+  return { ok: true };
+}
+
+export async function padamPdfKewangan(id: string): Promise<{ ok: boolean }> {
+  if (!(await bolehFailKewangan())) return { ok: false };
+  const db = createAdminClient();
+  const { data: f } = await db.from("agm_fail_kewangan").select("path, url").eq("id", id).maybeSingle();
+  const path = (f as any)?.path as string | undefined;
+  const url = (f as any)?.url as string | undefined;
+  const key = path || (url ? (url.match(/\/kandungan\/(.+)$/)?.[1] ?? "") : "");
+  if (key) { try { await db.storage.from("kandungan").remove([decodeURIComponent(key)]); } catch { /* abai */ } }
+  await db.from("agm_fail_kewangan").delete().eq("id", id);
+  revalidatePath("/admin/agm/kewangan");
+  revalidatePath("/admin/agm/buku");
+  return { ok: true };
+}
+
 // ---- AI: Bantu tulis / perkemas teks laporan ----
 const PANDUAN_BAHAGIAN: Record<string, { tajuk: string; panduan: string }> = {
   kata_aluan_pengerusi: {

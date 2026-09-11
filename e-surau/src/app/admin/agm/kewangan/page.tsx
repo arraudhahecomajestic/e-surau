@@ -4,6 +4,7 @@ import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { bukuDefaults } from "@/lib/bukuTeks";
 import MuatnaikKewangan from "@/components/MuatnaikKewangan";
+import MuatnaikPdfKewangan from "@/components/MuatnaikPdfKewangan";
 import AgmLaporanTeksPanel, { SEKSYEN_KEWANGAN } from "@/components/AgmLaporanTeksPanel";
 
 export const dynamic = "force-dynamic";
@@ -25,13 +26,16 @@ export default async function AgmKewanganPage() {
   const agm = (agmRows as any[])?.[0] ?? null;
 
   let rows: any[] = [];
+  let failPdf: any[] = [];
   const nilaiAwal: Record<string, string> = {};
   if (agm?.id) {
-    const [{ data: k }, { data: t }] = await Promise.all([
+    const [{ data: k }, { data: t }, { data: fp }] = await Promise.all([
       db.from("agm_kewangan").select("*").eq("agm_id", agm.id).order("bahagian").order("susunan"),
       db.from("agm_laporan_teks").select("kunci, nilai").eq("agm_id", agm.id),
+      db.from("agm_fail_kewangan").select("id, tajuk, url, saiz, dimuat_oleh, dicipta").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
     ]);
     rows = (k as any[]) ?? [];
+    failPdf = (fp as any[]) ?? [];
     for (const r of ((t as any[]) ?? [])) nilaiAwal[r.kunci] = r.nilai ?? "";
   }
   const lalai = agm ? bukuDefaults({ tahunAgm: agm.tahun, thn: (agm.tahun ?? new Date().getFullYear()) - 1, tarikh: agm.tarikh, masa: agm.masa, tempat: agm.tempat, kuorum: agm.kuorum }) : {};
@@ -48,6 +52,7 @@ export default async function AgmKewanganPage() {
       ) : (
         <>
           <MuatnaikKewangan agmId={agm.id} bilSediaAda={rows.length} />
+          <MuatnaikPdfKewangan agmId={agm.id} fail={failPdf} />
           {rows.length > 0 && (
             <section className="rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="mb-3 font-semibold text-slate-900">Pratonton Angka Tersimpan</h2>
