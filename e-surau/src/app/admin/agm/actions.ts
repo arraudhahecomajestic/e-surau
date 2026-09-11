@@ -507,6 +507,56 @@ export async function padamCalon(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// ---- Borang Maklumat Diri Calon (BOR-BPM-01) ----
+export type BorangDiri = {
+  nama?: string;
+  no_kp?: string;
+  alamat?: string;
+  telefon?: string;
+  umur?: string;
+  status_kahwin?: string;          // 'berkahwin' | 'bujang' | ''
+  pekerjaan?: string;
+  kelayakan_akademik?: string;
+  ahli_berdaftar?: boolean | null;
+  tinggal_dalam_kariah?: boolean | null;
+  pengalaman_tadbir?: string;      // 'ada' | 'tiada' | ''
+  pengalaman_tempoh?: string;      // 'kurang_3' | 'lebih_3' | ''
+  ada_penyakit?: boolean | null;
+  penyakit_nyatakan?: string;
+  tarikh_borang?: string;          // yyyy-mm-dd | ''
+};
+
+export async function simpanBorangDiri(calonId: string, b: BorangDiri): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!calonId) return { ok: false, msg: "Calon tidak sah." };
+  const t = (v?: string, n = 400) => (v ?? "").toString().trim().slice(0, n) || null;
+  const b3 = (v?: boolean | null) => (v === true ? true : v === false ? false : null);
+  const db = createAdminClient();
+  const patch: Record<string, any> = {
+    alamat: t(b.alamat, 600),
+    telefon: t(b.telefon, 40),
+    umur: t(b.umur, 20),
+    status_kahwin: ["berkahwin", "bujang"].includes(b.status_kahwin ?? "") ? b.status_kahwin : null,
+    pekerjaan: t(b.pekerjaan, 200),
+    kelayakan_akademik: t(b.kelayakan_akademik, 300),
+    ahli_berdaftar: b3(b.ahli_berdaftar),
+    tinggal_dalam_kariah: b3(b.tinggal_dalam_kariah),
+    pengalaman_tadbir: ["ada", "tiada"].includes(b.pengalaman_tadbir ?? "") ? b.pengalaman_tadbir : null,
+    pengalaman_tempoh: ["kurang_3", "lebih_3"].includes(b.pengalaman_tempoh ?? "") ? b.pengalaman_tempoh : null,
+    ada_penyakit: b3(b.ada_penyakit),
+    penyakit_nyatakan: t(b.penyakit_nyatakan, 400),
+    tarikh_borang: (b.tarikh_borang ?? "").trim() || null,
+    borang_diisi: true,
+  };
+  // Nama & IC — kemas kini hanya jika diberi (kekalkan yang sedia ada jika kosong).
+  if (t(b.nama, 160)) patch.nama = t(b.nama, 160);
+  if (t(b.no_kp, 40)) patch.no_kp = t(b.no_kp, 40);
+  const { error } = await db.from("agm_calon").update(patch).eq("id", calonId);
+  if (error) return { ok: false, msg: `Gagal simpan borang: ${error.message}` };
+  revalidatePath(P);
+  return { ok: true };
+}
+
 // Kiraan undi (angkat tangan) — simpan undi calon, salin ke rekod calon
 export async function simpanKiraan(
   agmId: string, jawatanId: string,

@@ -8,9 +8,17 @@ import {
 } from "@/app/admin/agm/actions";
 import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
 import ButangPadam from "@/components/ButangPadam";
+import BorangDiriForm from "@/components/BorangDiriForm";
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
-type Calon = { id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null; pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean };
+type Calon = {
+  id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null;
+  pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean;
+  alamat?: string | null; umur?: string | null; status_kahwin?: string | null; pekerjaan?: string | null;
+  kelayakan_akademik?: string | null; ahli_berdaftar?: boolean | null; tinggal_dalam_kariah?: boolean | null;
+  pengalaman_tadbir?: string | null; pengalaman_tempoh?: string | null; ada_penyakit?: boolean | null;
+  penyakit_nyatakan?: string | null; tarikh_borang?: string | null; borang_diisi?: boolean | null;
+};
 
 const KAT: Record<string, string> = { induk: "Induk", biro: "Biro", ajk: "AJK", audit: "Juruaudit" };
 
@@ -180,6 +188,14 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   <ButangPadam onPadam={() => padam(c.id)} soalan={`Padam calon "${c.nama}"?`} />
                 </div>
               </div>
+              <BorangDiriForm calon={{
+                id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, alamat: c.alamat ?? null, telefon: c.telefon ?? null,
+                umur: c.umur ?? null, status_kahwin: c.status_kahwin ?? null, pekerjaan: c.pekerjaan ?? null,
+                kelayakan_akademik: c.kelayakan_akademik ?? null, ahli_berdaftar: c.ahli_berdaftar ?? null,
+                tinggal_dalam_kariah: c.tinggal_dalam_kariah ?? null, pengalaman_tadbir: c.pengalaman_tadbir ?? null,
+                pengalaman_tempoh: c.pengalaman_tempoh ?? null, ada_penyakit: c.ada_penyakit ?? null,
+                penyakit_nyatakan: c.penyakit_nyatakan ?? null, tarikh_borang: c.tarikh_borang ?? null, borang_diisi: c.borang_diisi ?? false,
+              }} />
             </li>
           ))}
         </ul>
