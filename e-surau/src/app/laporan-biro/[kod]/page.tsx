@@ -17,12 +17,13 @@ export default async function LaporanBiroPage({ params }: { params: { kod: strin
   let tahun = new Date().getFullYear();
   let failNama: string | null = null;
   let failMasa: string | null = null;
+  let gambar: { id: string; url: string }[] = [];
 
   if (adminConfigured) {
     const db = createAdminClient();
     const { data: biro } = await db
       .from("agm_biro")
-      .select("nama, ketua, fail_nama, fail_masa, agm_id")
+      .select("id, nama, ketua, fail_nama, fail_masa, agm_id")
       .eq("kod", kod)
       .maybeSingle();
     if (biro) {
@@ -35,6 +36,8 @@ export default async function LaporanBiroPage({ params }: { params: { kod: strin
         const { data: agm } = await db.from("agm").select("tahun").eq("id", biro.agm_id).maybeSingle();
         if (agm?.tahun) tahun = agm.tahun as number;
       }
+      const { data: g } = await db.from("agm_biro_gambar").select("id, url").eq("biro_id", biro.id).order("susunan", { ascending: true }).order("dicipta", { ascending: true });
+      gambar = ((g as any[]) ?? []).map((x) => ({ id: x.id, url: x.url }));
     }
   }
 
@@ -57,6 +60,7 @@ export default async function LaporanBiroPage({ params }: { params: { kod: strin
           tahun={tahun}
           failNama={failNama}
           failMasa={failMasa}
+          gambarAwal={gambar}
         />
       )}
 
