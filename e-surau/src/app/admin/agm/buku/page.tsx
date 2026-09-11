@@ -62,7 +62,7 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
   const [teksRes, jkRes, biroRes, usulRes, ahliRes, tggRes, kutRes, belRes, khaRes, progRes, kewRes] = await Promise.all([
     db.from("agm_laporan_teks").select("kunci, nilai").eq("agm_id", agm.id),
     db.from("agm_jk").select("kumpulan, jawatan, nama, susunan").eq("agm_id", agm.id).order("susunan").order("dicipta"),
-    db.from("agm_biro").select("nama, ketua, setiausaha, ahli, laporan, susunan").eq("agm_id", agm.id).order("susunan"),
+    db.from("agm_biro").select("id, nama, ketua, setiausaha, ahli, laporan, susunan").eq("agm_id", agm.id).order("susunan"),
     db.from("agm_usul").select("no, tajuk, keterangan, keputusan, undi_setuju, undi_tolak, undi_berkecuali").eq("agm_id", agm.id).order("no"),
     db.from("ahli_kariah").select("status, aktif, kawasan, tarikh_daftar, maklumat_disahkan, peringkat").limit(20000),
     db.from("tanggungan").select("id", { count: "exact", head: true }),
@@ -75,6 +75,13 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
 
   const teks: Record<string, string> = {}; for (const r of ((teksRes.data as any[]) ?? [])) teks[r.kunci] = r.nilai ?? "";
   const jk = (jkRes.data as any[]) ?? [], biro = (biroRes.data as any[]) ?? [], usul = (usulRes.data as any[]) ?? [];
+  // Gambar aktiviti biro — kumpul ikut biro_id.
+  const gambarBiro: Record<string, string[]> = {};
+  const biroIds = biro.map((b) => b.id).filter(Boolean);
+  if (biroIds.length) {
+    const { data: gb } = await db.from("agm_biro_gambar").select("biro_id, url, susunan").in("biro_id", biroIds).order("susunan", { ascending: true }).order("dicipta", { ascending: true });
+    for (const g of ((gb as any[]) ?? [])) { (gambarBiro[g.biro_id] ??= []).push(g.url); }
+  }
   const ahli = (ahliRes.data as any[]) ?? [], kutipan = (kutRes.data as any[]) ?? [], belanja = (belRes.data as any[]) ?? [];
   const khairat = (khaRes.data as any[]) ?? [], program = (progRes.data as any[]) ?? [];
   const bilTanggungan = (tggRes as any)?.count ?? null;
@@ -250,6 +257,14 @@ export default async function BukuLaporanPage({ searchParams }: { searchParams?:
               <div className="mt-0.5 text-xs text-slate-500">{b.ketua ? `Ketua: ${b.ketua}` : ""}{b.setiausaha ? ` · SU: ${b.setiausaha}` : ""}</div>
               {b.ahli?.trim() && <div className="text-xs text-slate-500">Ahli: {b.ahli.split("\n").map((x: string) => x.trim()).filter(Boolean).join(", ")}</div>}
               {b.laporan?.trim() ? <div className="mt-2 whitespace-pre-wrap text-justify text-sm leading-relaxed">{b.laporan}</div> : <div className="mt-2 text-xs text-slate-400 print-hide">(Laporan belum diisi)</div>}
+              {(gambarBiro[b.id]?.length ?? 0) > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {gambarBiro[b.id].map((u, gi) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={gi} src={u} alt={`Gambar ${b.nama} ${gi + 1}`} className="aspect-square w-full break-inside-avoid rounded-md border border-slate-200 object-cover" />
+                  ))}
+                </div>
+              )}
             </div>))}</div>)}
       </Sec>
 

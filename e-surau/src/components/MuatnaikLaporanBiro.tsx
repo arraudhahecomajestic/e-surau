@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { muatnaikLaporanBiro, muatnaikGambarBiro, padamGambarBiro, GAMBAR_BIRO_MAKS } from "@/app/laporan-biro/[kod]/actions";
+import { muatnaikLaporanBiro, muatnaikGambarBiro, padamGambarBiro } from "@/app/laporan-biro/[kod]/actions";
 
 type Gambar = { id: string; url: string };
 const MIN_GAMBAR = 4;
+const GAMBAR_BIRO_MAKS = 10; // selaras dgn had di actions.ts (server)
 
 function bilaTeks(iso: string | null) {
   if (!iso) return "";

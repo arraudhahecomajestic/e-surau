@@ -57,7 +57,9 @@ export async function muatnaikLaporanBiro(kod: string, formData: FormData): Prom
 // ---- Gambar laporan biro (4–10 gambar) ----
 const GAMBAR_JENIS = new Set(["image/jpeg", "image/png", "image/webp"]);
 const GAMBAR_MAKS_BYTE = 8 * 1024 * 1024; // 8MB
-export const GAMBAR_BIRO_MAKS = 10;
+// Nota: fail "use server" hanya boleh export fungsi async — jadi had ini
+// TIDAK di-export. Nilai sepadan ditakrif semula dalam komponen.
+const GAMBAR_BIRO_MAKS = 10;
 
 export async function muatnaikGambarBiro(kod: string, formData: FormData): Promise<{ ok: boolean; msg?: string; url?: string; id?: string }> {
   if (!kod) return { ok: false, msg: "Pautan tidak sah." };
