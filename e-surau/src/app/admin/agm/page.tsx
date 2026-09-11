@@ -51,7 +51,6 @@ export default async function AdminAgmPage() {
           <a href="/admin/agm/juruaudit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan Juruaudit</a>
           <a href="/admin/agm/usul-kariah" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Usul</a>
           <a href="/admin/agm/tugasan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Senarai Semak</a>
-          <a href="/carta" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Carta Organisasi</a>
           <a href="/admin/agm/laporan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan 2026</a>
           <a href="/admin/agm/buku" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">Buku Laporan 2026</a>
         </div>
