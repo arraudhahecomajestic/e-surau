@@ -10,7 +10,10 @@ export default async function AdminAgmPage() {
   if (!adminConfigured) return <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Supabase belum dikonfigurasi.</div>;
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
-  if (!isPentadbir(profil)) return <TiadaAkses />;
+  // Hub AGM dibuka untuk pentadbir (SU/AJK) DAN Bendahari.
+  // Bendahari hanya nampak bahagian yang dibenarkan (Kewangan & Senarai Semak).
+  if (!isPentadbir(profil) && !isBendahari(profil)) return <TiadaAkses />;
+  const pentadbir = isPentadbir(profil);
 
   const db = createAdminClient();
 
@@ -41,21 +44,24 @@ export default async function AdminAgmPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Mesyuarat Agung Kariah (AGM)</h1>
-          <p className="mt-1 text-sm text-slate-600">Maklumat mesyuarat, daftar kehadiran &amp; semakan kuorum — untuk kegunaan AJK. Usul &amp; undian di page berasingan.</p>
+          <p className="mt-1 text-sm text-slate-600">{pentadbir ? "Maklumat mesyuarat, daftar kehadiran & semakan kuorum — untuk kegunaan AJK. Usul & undian di page berasingan." : "Bahagian AGM untuk Bendahari: Kewangan & Senarai Semak Tugasan."}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="/admin/agm/jk" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">AJK 2026</a>
-          <a href="/admin/agm/pemilihan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Pemilihan AJK 2027</a>
+          {pentadbir && <a href="/admin/agm/jk" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">AJK 2026</a>}
+          {pentadbir && <a href="/admin/agm/pemilihan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Pemilihan AJK 2027</a>}
           {isAdmin(profil) && <a href="/admin/agm/laporan-teks" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Setiausaha</a>}
           {(isAdmin(profil) || isBendahari(profil)) && <a href="/admin/agm/kewangan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Kewangan</a>}
-          <a href="/admin/agm/juruaudit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan Juruaudit</a>
-          <a href="/admin/agm/usul-kariah" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Usul</a>
-          <a href="/admin/agm/tugasan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Senarai Semak</a>
-          <a href="/admin/agm/laporan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan 2026</a>
-          <a href="/admin/agm/buku" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">Buku Laporan 2026</a>
+          {pentadbir && <a href="/admin/agm/juruaudit" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan Juruaudit</a>}
+          {pentadbir && <a href="/admin/agm/usul-kariah" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Usul</a>}
+          {(pentadbir || isBendahari(profil)) && <a href="/admin/agm/tugasan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Senarai Semak</a>}
+          <a href="/carta" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Carta Organisasi</a>
+          {pentadbir && <a href="/admin/agm/laporan" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Laporan 2026</a>}
+          {pentadbir && <a href="/admin/agm/buku" className="rounded-lg border border-surau bg-surau/10 px-4 py-2 text-sm font-bold text-surau hover:bg-surau/20">Buku Laporan 2026</a>}
         </div>
       </div>
-      <AgmPanel agm={agm} hadir={hadir} ahli={ahli} tahunLalai={new Date().getFullYear()} />
+      {pentadbir
+        ? <AgmPanel agm={agm} hadir={hadir} ahli={ahli} tahunLalai={new Date().getFullYear()} />
+        : <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Klik <b>Kewangan</b> untuk muat naik angka &amp; penyata kewangan (CSV/PDF), atau <b>Senarai Semak</b> untuk tugasan gerak kerja AGM.</div>}
     </div>
   );
 }
