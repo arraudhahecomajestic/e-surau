@@ -9,11 +9,13 @@ import {
 import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
 import ButangPadam from "@/components/ButangPadam";
 import BorangDiriForm from "@/components/BorangDiriForm";
+import EditCalonForm from "@/components/EditCalonForm";
 
 type Jawatan = { id: string; kod: string; nama: string; kategori: string; bil_dipilih: number; susunan: number };
 type Calon = {
   id: string; jawatan_id: string; nama: string; no_ahli: string | null; no_kp: string | null; telefon: string | null;
   pencadang_nama: string | null; penyokong_nama: string | null; status: string; jumlah_undi: number; menang: boolean;
+  pencadang_no_kp?: string | null; pencadang_telefon?: string | null; penyokong_no_kp?: string | null; penyokong_telefon?: string | null;
   alamat?: string | null; umur?: string | null; status_kahwin?: string | null; pekerjaan?: string | null;
   kelayakan_akademik?: string | null; ahli_berdaftar?: boolean | null; tinggal_dalam_kariah?: boolean | null;
   pengalaman_tadbir?: string | null; pengalaman_tempoh?: string | null; ada_penyakit?: boolean | null;
@@ -118,6 +120,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
   const [cPenyokong, setCPenyokong] = useState<PilihanAhli>(KOSONG);
   const [busy, setBusy] = useState(false);
   const [ralat, setRalat] = useState("");
+  const [editId, setEditId] = useState<string | null>(null); // calon sedang diedit
 
   // kiraan undi (angkat tangan)
   const [undi, setUndi] = useState<Record<string, number>>(() => Object.fromEntries(calon.map((c) => [c.id, c.jumlah_undi])));
@@ -185,9 +188,20 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   </>}
                   {c.status === "sah" && <button onClick={() => semak(c.id, "menunggu")} className="text-slate-400 hover:underline">batal sah</button>}
                   {(c.status === "tolak" || c.status === "tarik_diri") && <button onClick={() => semak(c.id, "menunggu")} className="text-slate-400 hover:underline">buka semula</button>}
+                  <button onClick={() => setEditId(editId === c.id ? null : c.id)} className="font-semibold text-amber-600 hover:underline">{editId === c.id ? "tutup" : "edit"}</button>
                   <ButangPadam onPadam={() => padam(c.id)} soalan={`Padam calon "${c.nama}"?`} />
                 </div>
               </div>
+              {editId === c.id && (
+                <EditCalonForm
+                  calon={{
+                    id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, telefon: c.telefon ?? null,
+                    pencadang_nama: c.pencadang_nama ?? null, pencadang_no_kp: c.pencadang_no_kp ?? null, pencadang_telefon: c.pencadang_telefon ?? null,
+                    penyokong_nama: c.penyokong_nama ?? null, penyokong_no_kp: c.penyokong_no_kp ?? null, penyokong_telefon: c.penyokong_telefon ?? null,
+                  }}
+                  onSiap={() => setEditId(null)}
+                />
+              )}
               <BorangDiriForm calon={{
                 id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, alamat: c.alamat ?? null, telefon: c.telefon ?? null,
                 umur: c.umur ?? null, status_kahwin: c.status_kahwin ?? null, pekerjaan: c.pekerjaan ?? null,

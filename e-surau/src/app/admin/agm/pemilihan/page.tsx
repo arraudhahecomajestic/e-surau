@@ -22,7 +22,7 @@ export default async function AgmPemilihanPage() {
   if (agm?.id) {
     const [{ data: j }, { data: c }, { data: a }] = await Promise.all([
       db.from("agm_jawatan").select("*").eq("agm_id", agm.id).order("susunan", { ascending: true }),
-      db.from("agm_calon").select("id, jawatan_id, nama, no_ahli, no_kp, telefon, pencadang_nama, penyokong_nama, status, jumlah_undi, menang, alamat, umur, status_kahwin, pekerjaan, kelayakan_akademik, ahli_berdaftar, tinggal_dalam_kariah, pengalaman_tadbir, pengalaman_tempoh, ada_penyakit, penyakit_nyatakan, tarikh_borang, borang_diisi").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
+      db.from("agm_calon").select("id, jawatan_id, nama, no_ahli, no_kp, telefon, pencadang_nama, pencadang_no_kp, pencadang_telefon, penyokong_nama, penyokong_no_kp, penyokong_telefon, status, jumlah_undi, menang, alamat, umur, status_kahwin, pekerjaan, kelayakan_akademik, ahli_berdaftar, tinggal_dalam_kariah, pengalaman_tadbir, pengalaman_tempoh, ada_penyakit, penyakit_nyatakan, tarikh_borang, borang_diisi").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
       db.from("ahli_kariah").select("id, no_ahli, nama, no_kp, telefon, alamat, alamat_kp").eq("status", "lulus").order("nama", { ascending: true }).limit(5000),
     ]);
     jawatan = (j as any[]) ?? [];

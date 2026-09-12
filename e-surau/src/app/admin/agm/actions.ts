@@ -507,6 +507,34 @@ export async function padamCalon(id: string): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
+// Edit maklumat calon / pencadang / penyokong secara manual (untuk yang tak scan QR / belum kemas kini).
+export type KemasCalon = {
+  nama?: string; no_kp?: string; telefon?: string;
+  pencadang_nama?: string; pencadang_no_kp?: string; pencadang_telefon?: string;
+  penyokong_nama?: string; penyokong_no_kp?: string; penyokong_telefon?: string;
+};
+export async function kemasCalon(id: string, d: KemasCalon): Promise<{ ok: boolean; msg?: string }> {
+  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!id) return { ok: false, msg: "Calon tidak sah." };
+  if (!(d.nama ?? "").trim()) return { ok: false, msg: "Nama calon wajib." };
+  const t = (v?: string, n = 160) => (v ?? "").toString().trim().slice(0, n);
+  const db = createAdminClient();
+  const { error } = await db.from("agm_calon").update({
+    nama: t(d.nama, 160),
+    no_kp: t(d.no_kp, 40) || null,
+    telefon: t(d.telefon, 40) || null,
+    pencadang_nama: t(d.pencadang_nama, 160) || null,
+    pencadang_no_kp: t(d.pencadang_no_kp, 40) || null,
+    pencadang_telefon: t(d.pencadang_telefon, 40) || null,
+    penyokong_nama: t(d.penyokong_nama, 160) || null,
+    penyokong_no_kp: t(d.penyokong_no_kp, 40) || null,
+    penyokong_telefon: t(d.penyokong_telefon, 40) || null,
+  }).eq("id", id);
+  if (error) return { ok: false, msg: `Gagal kemas kini: ${error.message}` };
+  revalidatePath(P);
+  return { ok: true };
+}
+
 // ---- Borang Maklumat Diri Calon (BOR-BPM-01) ----
 export type BorangDiri = {
   nama?: string;
