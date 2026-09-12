@@ -9,7 +9,7 @@ import { noTelefon, dataURLtoBlob } from "@/lib/format";
 import { KAWASAN_PILIHAN } from "@/lib/kawasan";
 import SignaturePad from "@/components/SignaturePad";
 import KameraKp from "@/components/KameraKp";
-import { semakKpDaftar, sediaEmelAhli } from "./actions";
+import { semakKpDaftar, sediaEmelAhli, sahkanRekodTelefon } from "./actions";
 
 const namaSurau = NAMA_SURAU;
 const configured = Boolean(
@@ -31,13 +31,17 @@ const kosong = (): Tanggungan => ({
 
 export default function DaftarPage() {
   // Gate: semak No. KP dahulu sebelum borang penuh dipaparkan
-  const [peringkat, setPeringkat] = useState<"semak" | "baru" | "akaun" | "sudah">("semak");
+  const [peringkat, setPeringkat] = useState<"semak" | "sahkan" | "baru" | "akaun" | "sudah">("semak");
   const [disahkanRec, setDisahkanRec] = useState(false);
   const [emelRec, setEmelRec] = useState<string | null>(null);
   const [semakNoKp, setSemakNoKp] = useState("");
   const [semakSedang, setSemakSedang] = useState(false);
   const [semakRalat, setSemakRalat] = useState("");
   const [ahliNama, setAhliNama] = useState<string | null>(null);
+  // Pengesahan identiti (4 digit telefon) untuk ahli sedia ada
+  const [tel4, setTel4] = useState("");
+  const [tel4Sedang, setTel4Sedang] = useState(false);
+  const [tel4Ralat, setTel4Ralat] = useState("");
 
   // Bahagian A
   const [gelaran, setGelaran] = useState("");
@@ -157,22 +161,37 @@ export default function DaftarPage() {
     setSemakSedang(false);
     if (!res.ok) { setSemakRalat(res.msg ?? "Ralat semakan."); return; }
     if (res.wujud) {
+      // Rekod dijumpai (cth ahli Google Form) — sahkan identiti dulu (4 digit telefon),
+      // BUKAN terus kata "sudah berdaftar". Elak mesej bercanggah & buntu.
       setAhliNama(res.nama ?? null);
       setNoKp(kp);
       setEmelRec(res.emel ?? null);
       setDisahkanRec(!!res.disahkan);
-      if (res.ada_akaun) {
-        // Sudah ada akaun log masuk → arahkan LOG MASUK, bukan cipta akaun.
-        setPeringkat("sudah");
-      } else {
-        // Ada rekod tapi belum ada akaun log masuk → cipta akaun.
-        setPeringkat("akaun");
-      }
+      setTel4(""); setTel4Ralat("");
+      setPeringkat("sahkan");
     } else {
       // Belum ada → borang penuh, isi dari awal (No. KP dibawa masuk)
       setNoKp(kp);
       setPeringkat("baru");
     }
+  }
+
+  // Sahkan identiti ahli sedia ada guna 4 digit akhir telefon
+  async function sahkanTelefon(e: React.FormEvent) {
+    e.preventDefault();
+    setTel4Ralat("");
+    const t4 = tel4.replace(/\D/g, "");
+    if (t4.length !== 4) { setTel4Ralat("Masukkan tepat 4 digit akhir no. telefon."); return; }
+    setTel4Sedang(true);
+    const res = await sahkanRekodTelefon(noKp, t4);
+    setTel4Sedang(false);
+    if (!res.ok) { setTel4Ralat(res.msg ?? "Ralat pengesahan."); return; }
+    setAhliNama(res.nama ?? ahliNama);
+    setEmelRec(res.emel ?? null);
+    setDisahkanRec(!!res.disahkan);
+    setEmel(res.emel ?? "");
+    // Identiti disahkan → kalau dah ada akaun, arah log masuk; jika tidak, cipta akaun.
+    setPeringkat(res.ada_akaun ? "sudah" : "akaun");
   }
 
   // Ahli sedia ada: cipta akaun portal (emel + kata laluan) & paut ikut emel
@@ -181,19 +200,21 @@ export default function DaftarPage() {
     setSelesai(null);
     if (!configured) { setSelesai({ ok: false, msg: "Sistem belum disambung ke pangkalan data." }); return; }
     const e2 = emel.trim();
-    if (!e2) { setSelesai({ ok: false, msg: "Sila isi e-mel." }); return; }
-    // Kata laluan = No. Kad Pengenalan yang dikey-in di gate tadi.
+    if (!e2 || !e2.includes("@")) { setSelesai({ ok: false, msg: "Sila isi e-mel yang sah." }); return; }
     const kp = noKp.replace(/\D/g, "");
     if (kp.length < 6) { setSelesai({ ok: false, msg: "No. KP tidak sah. Sila semak semula." }); return; }
+    // Kata laluan dicipta sendiri oleh ahli (lebih selamat).
+    if (kataLaluan.length < 6) { setSelesai({ ok: false, msg: "Sila cipta kata laluan (sekurang-kurangnya 6 aksara)." }); return; }
+    if (kataLaluan !== kataLaluan2) { setSelesai({ ok: false, msg: "Kata laluan tidak sepadan." }); return; }
     setHantar(true);
     // 1) Tetapkan emel pada rekod ahli supaya trigger paut ikut emel
     const paut = await sediaEmelAhli(kp, e2);
     if (!paut.ok) { setHantar(false); setSelesai({ ok: false, msg: paut.msg ?? "Ralat." }); return; }
-    // 2) Cipta akaun auth (kata laluan = No. KP)
+    // 2) Cipta akaun auth (kata laluan sendiri)
     const supabase = createClient();
     const { error } = await supabase.auth.signUp({
       email: e2,
-      password: kp,
+      password: kataLaluan,
       options: {
         data: { nama: ahliNama ?? undefined },
         emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/selamat-datang` : undefined,
@@ -205,12 +226,12 @@ export default function DaftarPage() {
       setSelesai({
         ok: false,
         msg: dah
-          ? "Akaun dengan e-mel ini sudah wujud. Sila log masuk guna e-mel + No. KP sebagai kata laluan, atau guna 'Lupa kata laluan'."
+          ? "E-mel ini sudah mempunyai akaun. Sila log masuk guna e-mel ini, atau guna 'Lupa kata laluan' untuk set semula."
           : "Ralat cipta akaun: " + error.message,
       });
       return;
     }
-    setSelesai({ ok: true, msg: "Akaun anda berjaya dicipta! Sila semak e-mel untuk pengesahan, kemudian log masuk guna e-mel anda dengan No. Kad Pengenalan sebagai kata laluan." });
+    setSelesai({ ok: true, msg: "Akaun anda berjaya dicipta! Sila semak e-mel untuk pengesahan, kemudian log masuk & lengkapkan butiran anda (alamat, gambar IC, e-tandatangan) dalam Portal Ahli." });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -356,6 +377,48 @@ export default function DaftarPage() {
     );
   }
 
+  // ---------- PERINGKAT 1b: Rekod dijumpai → sahkan identiti (4 digit telefon) ----------
+  if (peringkat === "sahkan") {
+    return (
+      <div className="mx-auto max-w-lg space-y-6">
+        <div className="text-center">
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl text-amber-700">!</div>
+          <h1 className="text-2xl font-bold text-slate-900">Pendaftaran Anda Belum Selesai</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            {ahliNama ? <><b>{ahliNama}</b>, anda dah isi borang awal — </> : null}
+            <b>tapi keahlian belum disahkan.</b> Tinggal 2 langkah je: sahkan identiti, kemudian lengkapkan butiran (alamat, gambar IC, e-tandatangan). Ambil masa lebih kurang 3 minit.
+          </p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800">
+          <b>Langkah 1 dari 2</b> · Sahkan identiti anda
+        </div>
+        <form onSubmit={sahkanTelefon} className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">4 Digit Akhir No. Telefon</label>
+            <input
+              className="inp tracking-widest"
+              value={tel4}
+              onChange={(e) => setTel4(e.target.value.replace(/\D/g, ""))}
+              placeholder="cth: 5495"
+              inputMode="numeric"
+              maxLength={4}
+              autoFocus
+            />
+            <p className="mt-1 text-xs text-slate-500">Masukkan 4 digit akhir no. telefon yang anda beri semasa pendaftaran / borang dahulu.</p>
+          </div>
+          {tel4Ralat && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{tel4Ralat}</div>}
+          <button disabled={tel4Sedang} className="w-full rounded-lg bg-surau px-6 py-3 font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
+            {tel4Sedang ? "Menyemak…" : "Sahkan & Teruskan"}
+          </button>
+          <p className="text-center text-sm">
+            <button type="button" onClick={() => { setPeringkat("semak"); setTel4(""); setTel4Ralat(""); }} className="text-slate-500 hover:underline">← Semak No. KP lain</button>
+          </p>
+        </form>
+        <style jsx global>{`.inp{width:100%;border-radius:.5rem;border:1px solid #cbd5e1;padding:.5rem .75rem;font-size:.875rem;outline:none}.inp:focus{border-color:#b8860b;box-shadow:0 0 0 2px rgba(184,134,11,.2)}`}</style>
+      </div>
+    );
+  }
+
   // ---------- PERINGKAT 2c: Sudah ada akaun log masuk → arahkan LOG MASUK ----------
   if (peringkat === "sudah") {
     return (
@@ -388,21 +451,17 @@ export default function DaftarPage() {
     return (
       <div className="mx-auto max-w-lg space-y-6">
         <div className="text-center">
-          <h1 className={`text-2xl font-bold ${disahkanRec ? "text-slate-900" : "text-red-700"}`}>
-            {disahkanRec ? "Cipta Akaun Log Masuk" : "Permohonan Anda Belum Lengkap"}
-          </h1>
+          <div className="mx-auto mb-2 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">✓ Identiti disahkan</div>
+          <h1 className="text-2xl font-bold text-slate-900">Cipta Akaun Log Masuk</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {ahliNama ? <>Salam, <b>{ahliNama}</b>. </> : null}
-            {disahkanRec
-              ? <>No. KP anda sudah dalam rekod ahli kariah, cuma <b>belum ada akaun log masuk</b>. Cipta akaun sekarang untuk akses Portal Ahli.</>
-              : <>No. KP anda ada dalam rekod, tetapi maklumat anda <b>belum lengkap &amp; belum disahkan</b>. Cipta akaun sekarang untuk melengkapkannya.</>}
+            {ahliNama ? <><b>{ahliNama}</b> — </> : null}
+            cipta akaun untuk akses Portal Ahli
+            {disahkanRec ? "." : <> &amp; lengkapkan butiran anda.</>}
           </p>
         </div>
-        {!disahkanRec && (
-          <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4 text-center">
-            <div className="text-lg font-bold text-red-700">PERMOHONAN ANDA BELUM LENGKAP</div>
-          </div>
-        )}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800">
+          <b>Langkah 2 dari 2</b>{!disahkanRec && <> · Selepas log masuk, <b>lengkapkan butiran</b> (alamat, gambar IC, e-tandatangan) untuk sahkan keahlian.</>}
+        </div>
         {selesai && !selesai.ok && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{selesai.msg}</div>
         )}
@@ -411,8 +470,13 @@ export default function DaftarPage() {
             <label className="mb-1 block text-sm font-medium text-slate-700">E-mel *</label>
             <input className="inp" type="email" value={emel} onChange={(e) => setEmel(e.target.value)} placeholder="emel@contoh.com" autoFocus />
           </div>
-          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            Kata laluan anda ialah <b>No. Kad Pengenalan</b> anda ({noKp}). Log masuk nanti guna e-mel + No. KP ini.
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Kata Laluan *</label>
+            <input className="inp" type="password" value={kataLaluan} onChange={(e) => setKataLaluan(e.target.value)} placeholder="Sekurang-kurangnya 6 aksara" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Ulang Kata Laluan *</label>
+            <input className="inp" type="password" value={kataLaluan2} onChange={(e) => setKataLaluan2(e.target.value)} placeholder="Taip semula kata laluan" />
           </div>
           <button disabled={hantar} className="w-full rounded-lg bg-surau px-6 py-3 font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
             {hantar ? "Menyimpan…" : "Cipta Akaun"}

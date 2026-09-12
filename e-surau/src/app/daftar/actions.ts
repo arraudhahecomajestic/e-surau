@@ -61,6 +61,27 @@ export async function semakKpDaftar(noKp: string): Promise<{
   return { ok: true, wujud: false };
 }
 
+// Sahkan identiti ahli sedia ada: No. KP + 4 digit akhir telefon (data dari
+// pendaftaran awal / Google Form). Dipakai SEBELUM log masuk supaya ahli
+// Google Form boleh masuk & lengkapkan butiran dalam portal.
+export async function sahkanRekodTelefon(noKp: string, tel4: string): Promise<{
+  ok: boolean; msg?: string;
+  nama?: string | null; ada_akaun?: boolean; disahkan?: boolean; emel?: string | null;
+}> {
+  const kp = (noKp || "").replace(/\D/g, "");
+  const t4 = (tel4 || "").replace(/\D/g, "");
+  if (kp.length < 6) return { ok: false, msg: "No. KP tidak sah." };
+  if (t4.length !== 4) return { ok: false, msg: "Masukkan tepat 4 digit akhir no. telefon." };
+  const db = createAdminClient();
+  const { data } = await db.from("ahli_kariah").select("id, nama, telefon, emel, maklumat_disahkan").eq("no_kp", kp).maybeSingle();
+  if (!data) return { ok: false, msg: "Tiada rekod dengan No. KP ini." };
+  const a: any = data;
+  const padan = (a.telefon || "").replace(/\D/g, "").endsWith(t4);
+  if (!padan) return { ok: false, msg: "4 digit telefon tidak padan dengan rekod kami. Cuba lagi, atau hubungi admin surau." };
+  const { data: prof } = await db.from("profil").select("id").eq("ahli_id", a.id).limit(1).maybeSingle();
+  return { ok: true, nama: a.nama ?? null, ada_akaun: !!prof, disahkan: !!a.maklumat_disahkan, emel: a.emel ?? null };
+}
+
 // Ahli sedia ada: tetapkan emel pada rekod supaya akaun baharu (signUp)
 // automatik terpaut ikut emel melalui trigger handle_new_user.
 export async function sediaEmelAhli(noKp: string, emel: string): Promise<{ ok: boolean; msg?: string }> {

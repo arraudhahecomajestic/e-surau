@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getProfil, isPentadbir } from "@/lib/sesi";
 import { PerluMasuk } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
@@ -65,6 +66,9 @@ export default async function AhliPage() {
   ]);
 
   const a: any = ahliRes.data;
+  // PAKSA isi semula: ahli Google Form / hardcopy (rekod belum disahkan) mesti
+  // lengkapkan borang dalam sistem dahulu sebelum guna portal.
+  if (a && !a.maklumat_disahkan) redirect("/ahli/kemaskini");
   const kh: any = khairatRes.data;
   const kutipan = (kutipanRes.data as any[]) ?? [];
   const invois = (invoisRes.data as any[]) ?? [];
