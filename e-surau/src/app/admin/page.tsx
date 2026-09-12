@@ -4,6 +4,7 @@ import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AdminNav from "@/components/AdminNav";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import PengurusanAhli from "@/components/PengurusanAhli";
+import ButangMuatTurunAhli from "@/components/ButangMuatTurunAhli";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +51,12 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <AdminNav aktif="/admin" nama={profil.nama ?? profil.emel ?? undefined} peranan={profil.peranan} master={profil.master} />
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Pengurusan Ahli Kariah</h1>
-        <p className="mt-1 text-sm text-slate-600">Luluskan permohonan, jejak kemas kini data &amp; hantar peringatan — semua di satu tempat.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Pengurusan Ahli Kariah</h1>
+          <p className="mt-1 text-sm text-slate-600">Luluskan permohonan, jejak kemas kini data &amp; hantar peringatan — semua di satu tempat.</p>
+        </div>
+        <ButangMuatTurunAhli />
       </div>
 
       {error ? (
