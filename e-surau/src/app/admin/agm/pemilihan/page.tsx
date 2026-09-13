@@ -22,12 +22,47 @@ export default async function AgmPemilihanPage() {
   if (agm?.id) {
     const [{ data: j }, { data: c }, { data: a }] = await Promise.all([
       db.from("agm_jawatan").select("*").eq("agm_id", agm.id).order("susunan", { ascending: true }),
-      db.from("agm_calon").select("id, jawatan_id, nama, no_ahli, no_kp, telefon, pencadang_nama, pencadang_no_kp, pencadang_telefon, penyokong_nama, penyokong_no_kp, penyokong_telefon, status, jumlah_undi, menang, alamat, umur, status_kahwin, pekerjaan, kelayakan_akademik, ahli_berdaftar, tinggal_dalam_kariah, pengalaman_tadbir, pengalaman_tempoh, ada_penyakit, penyakit_nyatakan, tarikh_borang, borang_diisi").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
+      db.from("agm_calon").select("id, jawatan_id, ahli_id, nama, no_ahli, no_kp, telefon, pencadang_nama, pencadang_no_kp, pencadang_telefon, penyokong_nama, penyokong_no_kp, penyokong_telefon, status, jumlah_undi, menang, alamat, umur, status_kahwin, pekerjaan, kelayakan_akademik, ahli_berdaftar, tinggal_dalam_kariah, pengalaman_tadbir, pengalaman_tempoh, ada_penyakit, penyakit_nyatakan, tarikh_borang, borang_diisi").eq("agm_id", agm.id).order("dicipta", { ascending: true }),
       db.from("ahli_kariah").select("id, no_ahli, nama, no_kp, telefon, alamat, alamat_kp").eq("status", "lulus").order("nama", { ascending: true }).limit(5000),
     ]);
     jawatan = (j as any[]) ?? [];
     calon = (c as any[]) ?? [];
     ahli = ((a as any[]) ?? []).map((x) => ({ id: x.id, no_ahli: x.no_ahli, nama: x.nama, no_kp: x.no_kp, telefon: x.telefon, alamat: x.alamat || x.alamat_kp || null }));
+
+    // Auto-lengkap calon dari rekod ahli (sama macam paparan cetak) supaya
+    // borang edit & PDF tally — isi medan yang kosong sahaja.
+    const idAhli = [...new Set(calon.map((x) => x.ahli_id).filter(Boolean))];
+    if (idAhli.length) {
+      const { data: ar } = await db.from("ahli_kariah").select("id, alamat, alamat_kp, telefon, no_kp, status_perkahwinan").in("id", idAhli);
+      const peta = new Map<string, any>(((ar as any[]) ?? []).map((r) => [r.id, r]));
+      const umurDariKp = (kp: string) => {
+        const d = (kp || "").replace(/\D/g, "");
+        if (d.length < 6) return null;
+        const yy = +d.slice(0, 2), mm = +d.slice(2, 4), dd = +d.slice(4, 6);
+        if (!(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)) return null;
+        const now = new Date(), c2 = now.getFullYear() % 100;
+        const thn = yy <= c2 ? 2000 + yy : 1900 + yy;
+        let u = now.getFullYear() - thn;
+        if (now.getMonth() + 1 < mm || (now.getMonth() + 1 === mm && now.getDate() < dd)) u -= 1;
+        return u >= 0 && u < 130 ? String(u) : null;
+      };
+      calon = calon.map((x) => {
+        if (!x.ahli_id) return x;
+        const a2 = peta.get(x.ahli_id);
+        if (!a2) return x;
+        const sp = (a2.status_perkahwinan ? String(a2.status_perkahwinan).toLowerCase() : "");
+        return {
+          ...x,
+          alamat: x.alamat || a2.alamat || a2.alamat_kp || null,
+          telefon: x.telefon || a2.telefon || null,
+          no_kp: x.no_kp || a2.no_kp || null,
+          status_kahwin: x.status_kahwin || (sp.includes("kahwin") ? "berkahwin" : sp.includes("bujang") ? "bujang" : null),
+          umur: x.umur || umurDariKp(x.no_kp || a2.no_kp || ""),
+          ahli_berdaftar: x.ahli_berdaftar === null || x.ahli_berdaftar === undefined ? true : x.ahli_berdaftar,
+          tinggal_dalam_kariah: x.tinggal_dalam_kariah === null || x.tinggal_dalam_kariah === undefined ? true : x.tinggal_dalam_kariah,
+        };
+      });
+    }
   }
 
   return (
