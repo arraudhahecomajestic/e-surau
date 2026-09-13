@@ -515,7 +515,7 @@ export type KemasCalon = {
   penyokong_nama?: string; penyokong_no_kp?: string; penyokong_telefon?: string;
 };
 export async function kemasCalon(id: string, d: KemasCalon): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  if (!(await bolehPadam())) return { ok: false, msg: "Tiada akses (SU/Admin sahaja)." }; // edit calon — SU/Admin sahaja
   if (!id) return { ok: false, msg: "Calon tidak sah." };
   if (!(d.nama ?? "").trim()) return { ok: false, msg: "Nama calon wajib." };
   const t = (v?: string, n = 160) => (v ?? "").toString().trim().slice(0, n);
@@ -557,11 +557,17 @@ export type BorangDiri = {
 };
 
 export async function simpanBorangDiri(calonId: string, b: BorangDiri): Promise<{ ok: boolean; msg?: string }> {
-  if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
+  const p = await getProfil();
+  if (!isPentadbir(p)) return { ok: false, msg: "Tiada akses." };
   if (!calonId) return { ok: false, msg: "Calon tidak sah." };
   const t = (v?: string, n = 400) => (v ?? "").toString().trim().slice(0, n) || null;
   const b3 = (v?: boolean | null) => (v === true ? true : v === false ? false : null);
   const db = createAdminClient();
+  // Bukan admin — hanya boleh simpan borang pencalonan SENDIRI.
+  if (!isAdmin(p)) {
+    const { data: milik } = await db.from("agm_calon").select("ahli_id").eq("id", calonId).maybeSingle();
+    if (!p?.ahli_id || (milik as any)?.ahli_id !== p.ahli_id) return { ok: false, msg: "Anda hanya boleh mengisi borang pencalonan sendiri." };
+  }
   const patch: Record<string, any> = {
     alamat: t(b.alamat, 600),
     telefon: t(b.telefon, 40),

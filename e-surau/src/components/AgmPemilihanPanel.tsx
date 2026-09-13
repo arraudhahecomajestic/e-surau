@@ -38,12 +38,17 @@ function StatusBadge({ s }: { s: string }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${map[s] ?? "bg-slate-100 text-slate-500"}`}>{label[s] ?? s}</span>;
 }
 
-export default function AgmPemilihanPanel({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; ahli: AhliRingkas[] }) {
+export default function AgmPemilihanPanel({ agmId, jawatan, calon, ahli, bolehUrus = false }: { agmId: string; jawatan: Jawatan[]; calon: Calon[]; ahli: AhliRingkas[]; bolehUrus?: boolean }) {
   return (
     <div className="space-y-6">
-      <UrusJawatan agmId={agmId} jawatan={jawatan} />
+      {!bolehUrus && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-500">
+          Paparan sahaja — anda boleh lihat calon &amp; keputusan. Urusan pencalonan &amp; undian oleh Setiausaha.
+        </div>
+      )}
+      {bolehUrus && <UrusJawatan agmId={agmId} jawatan={jawatan} />}
       {jawatan.map((j) => (
-        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} ahli={ahli} />
+        <JawatanBlok key={j.id} agmId={agmId} jawatan={j} calon={calon.filter((c) => c.jawatan_id === j.id)} ahli={ahli} bolehUrus={bolehUrus} />
       ))}
     </div>
   );
@@ -108,7 +113,7 @@ function UrusJawatan({ agmId, jawatan }: { agmId: string; jawatan: Jawatan[] }) 
 }
 
 /* ---- Satu jawatan: calon + kiraan undi ---- */
-function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: Jawatan; calon: Calon[]; ahli: AhliRingkas[] }) {
+function JawatanBlok({ agmId, jawatan, calon, ahli, bolehUrus }: { agmId: string; jawatan: Jawatan; calon: Calon[]; ahli: AhliRingkas[]; bolehUrus: boolean }) {
   const router = useRouter();
   const sah = calon.filter((c) => c.status === "sah" || c.status === "menang_tanpa_bertanding");
   const pemenangNama = calon.find((c) => c.menang)?.nama ?? null;
@@ -181,6 +186,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   <div className="mt-0.5 text-xs text-slate-500">IC: {c.no_kp ?? "—"} · Tel: {c.telefon ?? "—"}</div>
                   <div className="mt-0.5 text-xs text-slate-500">Cadang: {c.pencadang_nama ?? "—"} · Sokong: {c.penyokong_nama ?? "—"}</div>
                 </div>
+                {bolehUrus && (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
                   {c.status === "menunggu" && <>
                     <button onClick={() => semak(c.id, "sah")} className="font-semibold text-blue-600 hover:underline">sah</button>
@@ -191,6 +197,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   <button onClick={() => setEditId(editId === c.id ? null : c.id)} className="font-semibold text-amber-600 hover:underline">{editId === c.id ? "tutup" : "edit"}</button>
                   <ButangPadam onPadam={() => padam(c.id)} soalan={`Padam calon "${c.nama}"?`} />
                 </div>
+                )}
               </div>
               {editId === c.id && (
                 <EditCalonForm
@@ -203,7 +210,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   onSiap={() => setEditId(null)}
                 />
               )}
-              {c.menang && (
+              {c.menang && bolehUrus && (
                 <div className="mt-2 rounded-lg border border-green-200 bg-green-50/60 p-2.5">
                   <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-green-700">Borang Pelantikan Pemenang</div>
                   <BorangDiriForm calon={{
@@ -232,6 +239,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
       )}
 
       {/* Tambah calon — cari nama dari database ahli kariah */}
+      {bolehUrus && (
       <details className="mb-3 rounded-lg bg-slate-50 p-3">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden">Tambah calon</summary>
         <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -245,6 +253,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
         </div>
         <p className="mt-1 text-[11px] text-slate-400">Taip nama, pilih dari senarai ahli berdaftar. Maklumat ahli terus dipaparkan menegak.</p>
       </details>
+      )}
 
       {/* Kiraan undi */}
       {sah.length > 0 && (
@@ -254,18 +263,22 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
             {sah.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-sm text-slate-700">{c.nama}</span>
-                <input type="number" min={0} value={undi[c.id] ?? 0} onChange={(e) => setUndi((p) => ({ ...p, [c.id]: Number(e.target.value) }))} className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm" />
+                {bolehUrus
+                  ? <input type="number" min={0} value={undi[c.id] ?? 0} onChange={(e) => setUndi((p) => ({ ...p, [c.id]: Number(e.target.value) }))} className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm" />
+                  : <span className="shrink-0 text-sm font-semibold text-slate-700">{undi[c.id] ?? 0} undi</span>}
               </div>
             ))}
           </div>
           <div className="mt-2 text-xs font-semibold text-slate-600">Jumlah undi diterima: {jumlahUndi}</div>
+          {bolehUrus && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button disabled={busy} onClick={simpanKira} className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-900 disabled:opacity-50">Simpan Kiraan</button>
             <button disabled={busy} onClick={pemenang} className="rounded-lg border border-surau bg-surau/10 px-4 py-1.5 text-xs font-bold text-surau hover:bg-surau/20 disabled:opacity-50">Tentukan Pemenang</button>
             {msgKira && <span className="text-xs font-semibold text-slate-600">{msgKira}</span>}
             {keputusan && <span className="text-xs font-bold text-green-700">Keputusan: {keputusan}</span>}
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">Masukkan bilangan tangan diangkat bagi setiap calon. “Tentukan Pemenang” pilih ikut undi tertinggi. Jika bilangan calon ≤ jumlah dipilih, dikira menang tanpa bertanding. Jika seri di kedudukan potong, sistem minta undi ulang.</p>
+          )}
+          {bolehUrus && <p className="mt-2 text-[11px] text-slate-400">Masukkan bilangan tangan diangkat bagi setiap calon. “Tentukan Pemenang” pilih ikut undi tertinggi. Jika bilangan calon ≤ jumlah dipilih, dikira menang tanpa bertanding. Jika seri di kedudukan potong, sistem minta undi ulang.</p>}
         </div>
       )}
       </div>

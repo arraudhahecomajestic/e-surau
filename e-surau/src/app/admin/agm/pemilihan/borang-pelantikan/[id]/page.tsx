@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isPentadbir } from "@/lib/sesi";
+import { getProfil, isPentadbir, isAdmin } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import BorangPengisytiharan, { GayaPengisytiharan } from "@/components/BorangPengisytiharan";
@@ -14,8 +14,9 @@ export default async function BorangPelantikanPage({ params }: { params: { id: s
   if (!isPentadbir(profil)) return <TiadaAkses />;
 
   const db = createAdminClient();
-  const { data } = await db.from("agm_calon").select("id, nama, no_kp, jawatan_id").eq("id", params.id).maybeSingle();
+  const { data } = await db.from("agm_calon").select("id, nama, no_kp, jawatan_id, ahli_id").eq("id", params.id).maybeSingle();
   const c: any = data;
+  if (c && !isAdmin(profil) && (!profil.ahli_id || c.ahli_id !== profil.ahli_id)) return <TiadaAkses />;
   if (!c)
     return (
       <div className="space-y-4">

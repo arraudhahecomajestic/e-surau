@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isPentadbir } from "@/lib/sesi";
+import { getProfil, isPentadbir, isAdmin } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import BorangMaklumatDiri, { GayaBorangDiri, type CalonDiri } from "@/components/BorangMaklumatDiri";
@@ -20,6 +20,8 @@ export default async function BorangDiriCalonPage({ params }: { params: { id: st
     .eq("id", params.id)
     .maybeSingle();
   const c: any = data;
+  // Bukan admin — hanya boleh lihat borang pencalonan SENDIRI.
+  if (c && !isAdmin(profil) && (!profil.ahli_id || c.ahli_id !== profil.ahli_id)) return <TiadaAkses />;
 
   if (!c)
     return (

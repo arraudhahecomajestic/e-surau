@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProfil, isPentadbir } from "@/lib/sesi";
+import { getProfil, isPentadbir, isAdmin } from "@/lib/sesi";
 import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AgmPemilihanPanel from "@/components/AgmPemilihanPanel";
@@ -65,6 +65,8 @@ export default async function AgmPemilihanPage() {
     }
   }
 
+  const admin = isAdmin(profil);
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
@@ -83,7 +85,7 @@ export default async function AgmPemilihanPage() {
           Belum ada jawatan. Sila jalankan <b>agm_pemilihan_fasa73.sql</b> di Supabase (ia menyemai senarai jawatan), kemudian muat semula halaman ini.
         </div>
       ) : (
-        <AgmPemilihanPanel agmId={agm.id} jawatan={jawatan} calon={calon} ahli={ahli} />
+        <AgmPemilihanPanel agmId={agm.id} jawatan={jawatan} calon={calon} ahli={ahli} bolehUrus={admin} />
       )}
     </div>
   );
