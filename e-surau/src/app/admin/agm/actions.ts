@@ -455,7 +455,7 @@ export async function padamJawatan(id: string): Promise<{ ok: boolean }> {
 }
 
 // Pencalonan — nama datang dari database ahli kariah (search & pilih)
-type PilihAhli = { nama: string; ahliId: string | null; noAhli: string | null; noKp?: string | null; telefon?: string | null };
+type PilihAhli = { nama: string; ahliId: string | null; noAhli: string | null; noKp?: string | null; telefon?: string | null; alamat?: string | null };
 export async function tambahCalon(agmId: string, jawatanId: string, calon: PilihAhli, pencadang: PilihAhli, penyokong: PilihAhli): Promise<{ ok: boolean; msg?: string }> {
   if (!(await boleh())) return { ok: false, msg: "Tiada akses." };
   if (!agmId || !jawatanId || !calon?.nama?.trim()) return { ok: false, msg: "Jawatan & nama calon diperlukan." };
@@ -468,6 +468,7 @@ export async function tambahCalon(agmId: string, jawatanId: string, calon: Pilih
     no_ahli: (calon.noAhli ?? "").slice(0, 40) || null,
     no_kp: (calon.noKp ?? "").slice(0, 40) || null,
     telefon: (calon.telefon ?? "").slice(0, 40) || null,
+    alamat: (calon.alamat ?? "").slice(0, 600) || null,
     pencadang_nama: pencadang.nama.trim().slice(0, 160),
     pencadang_ahli_id: pencadang.ahliId || null,
     pencadang_no_ahli: (pencadang.noAhli ?? "").slice(0, 40) || null,
@@ -509,7 +510,7 @@ export async function padamCalon(id: string): Promise<{ ok: boolean }> {
 
 // Edit maklumat calon / pencadang / penyokong secara manual (untuk yang tak scan QR / belum kemas kini).
 export type KemasCalon = {
-  nama?: string; no_kp?: string; telefon?: string;
+  nama?: string; no_kp?: string; telefon?: string; alamat?: string;
   pencadang_nama?: string; pencadang_no_kp?: string; pencadang_telefon?: string;
   penyokong_nama?: string; penyokong_no_kp?: string; penyokong_telefon?: string;
 };
@@ -523,6 +524,7 @@ export async function kemasCalon(id: string, d: KemasCalon): Promise<{ ok: boole
     nama: t(d.nama, 160),
     no_kp: t(d.no_kp, 40) || null,
     telefon: t(d.telefon, 40) || null,
+    alamat: t(d.alamat, 600) || null,
     pencadang_nama: t(d.pencadang_nama, 160) || null,
     pencadang_no_kp: t(d.pencadang_no_kp, 40) || null,
     pencadang_telefon: t(d.pencadang_telefon, 40) || null,

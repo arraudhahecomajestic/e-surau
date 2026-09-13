@@ -10,6 +10,7 @@ export type CalonEdit = {
   nama: string;
   no_kp: string | null;
   telefon: string | null;
+  alamat?: string | null;
   pencadang_nama: string | null;
   pencadang_no_kp?: string | null;
   pencadang_telefon?: string | null;
@@ -24,7 +25,7 @@ function awal(nama: string | null, noKp?: string | null, tel?: string | null): P
 
 export default function EditCalonForm({ calon, ahli, onSiap }: { calon: CalonEdit; ahli: AhliRingkas[]; onSiap?: () => void }) {
   const router = useRouter();
-  const [cCalon, setCCalon] = useState<PilihanAhli>(awal(calon.nama, calon.no_kp, calon.telefon));
+  const [cCalon, setCCalon] = useState<PilihanAhli>({ ...awal(calon.nama, calon.no_kp, calon.telefon), alamat: calon.alamat ?? null });
   const [cPencadang, setCPencadang] = useState<PilihanAhli>(awal(calon.pencadang_nama, calon.pencadang_no_kp, calon.pencadang_telefon));
   const [cPenyokong, setCPenyokong] = useState<PilihanAhli>(awal(calon.penyokong_nama, calon.penyokong_no_kp, calon.penyokong_telefon));
   const [busy, setBusy] = useState(false);
@@ -34,7 +35,7 @@ export default function EditCalonForm({ calon, ahli, onSiap }: { calon: CalonEdi
     if (!cCalon.nama.trim()) { setMsg("Nama calon wajib."); return; }
     setBusy(true); setMsg("");
     const r = await kemasCalon(calon.id, {
-      nama: cCalon.nama, no_kp: cCalon.noKp ?? "", telefon: cCalon.telefon ?? "",
+      nama: cCalon.nama, no_kp: cCalon.noKp ?? "", telefon: cCalon.telefon ?? "", alamat: cCalon.alamat ?? "",
       pencadang_nama: cPencadang.nama, pencadang_no_kp: cPencadang.noKp ?? "", pencadang_telefon: cPencadang.telefon ?? "",
       penyokong_nama: cPenyokong.nama, penyokong_no_kp: cPenyokong.noKp ?? "", penyokong_telefon: cPenyokong.telefon ?? "",
     });
