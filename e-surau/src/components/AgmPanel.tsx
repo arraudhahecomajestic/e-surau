@@ -7,7 +7,20 @@ import QrDaftar from "@/components/QrDaftar";
 import ButangPadam from "@/components/ButangPadam";
 
 type Agm = { id: string; tajuk: string; tahun: number; tarikh: string | null; masa: string | null; tempat: string | null; kuorum: number; atur_cara: string | null; status: string; kod?: string | null; daftar_buka?: boolean };
-type Hadir = { id: string; ahli_id: string | null; nama: string; no_ahli: string | null; no_kp?: string | null; kaedah?: string | null; perlu_semak?: boolean; masa_daftar: string };
+type Hadir = { id: string; ahli_id: string | null; nama: string; no_ahli: string | null; no_kp?: string | null; telefon?: string | null; kaedah?: string | null; perlu_semak?: boolean; masa_daftar: string };
+
+// Pautan WhatsApp — normalize no. MY & isi mesej minta kemas kini maklumat.
+function pautWA(tel: string | null | undefined, nama: string, layak: boolean): string {
+  let d = (tel || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("0")) d = "60" + d.slice(1);
+  else if (!d.startsWith("60")) d = "60" + d;
+  const panggil = (nama || "").split(/\s+/)[0] || "tuan/puan";
+  const mesej = layak
+    ? `Assalamualaikum ${panggil}, terima kasih hadir Mesyuarat Agung Surau Ar-Raudhah, Eco Majestic. Sekiranya maklumat anda perlu dikemas kini, sila log masuk di https://arraudhahecomajestic.com/masuk. Terima kasih.`
+    : `Assalamualaikum ${panggil}, anda hadir Mesyuarat Agung Surau Ar-Raudhah tetapi rekod keahlian anda *belum lengkap/disahkan* — jadi belum layak mengundi. Sila kemas kini maklumat anda di https://arraudhahecomajestic.com/masuk (log masuk → lengkapkan borang). Terima kasih.`;
+  return `https://wa.me/${d}?text=${encodeURIComponent(mesej)}`;
+}
 export type Usul = { id: string; no: number; tajuk: string; keterangan: string | null; undi_setuju: number; undi_tolak: number; undi_berkecuali: number; keputusan: string | null; catatan: string | null };
 type Ahli = { id: string; no_ahli: string | null; nama: string; layak: boolean };
 
@@ -207,6 +220,11 @@ function DaftarHadir({ agm, hadir, ahli }: { agm: Agm; hadir: Hadir[]; ahli: Ahl
                     : <span className="rounded bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-500">Pemerhati</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
+                  {h.telefon
+                    ? <a href={pautWA(h.telefon, h.nama, layak)} target="_blank" rel="noopener"
+                         className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${layak ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-green-600 text-white hover:bg-green-700"}`}
+                         title="Hantar WhatsApp minta kemas kini maklumat">WhatsApp</a>
+                    : <span className="text-[10px] text-slate-300" title="Tiada no. telefon dalam rekod">—</span>}
                   <ButangPadam onPadam={() => buang(h.id)} soalan="Padam nama ni?" />
                 </span>
               </li>

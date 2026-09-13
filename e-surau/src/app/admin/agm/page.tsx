@@ -25,6 +25,13 @@ export default async function AdminAgmPage() {
   if (agm?.id) {
     const { data: h } = await db.from("agm_hadir").select("id, ahli_id, nama, no_ahli, no_kp, kaedah, perlu_semak, masa_daftar").eq("agm_id", agm.id).order("masa_daftar", { ascending: true });
     hadir = (h as any[]) ?? [];
+    // Ambil no. telefon dari rekod ahli (untuk butang WhatsApp).
+    const idH = [...new Set(hadir.map((x) => x.ahli_id).filter(Boolean))];
+    if (idH.length) {
+      const { data: tr } = await db.from("ahli_kariah").select("id, telefon").in("id", idH);
+      const petaTel = new Map<string, string | null>(((tr as any[]) ?? []).map((r) => [r.id, r.telefon]));
+      hadir = hadir.map((x) => ({ ...x, telefon: x.ahli_id ? petaTel.get(x.ahli_id) ?? null : null }));
+    }
   }
 
   // Semua ahli boleh hadir; "layak undi" = diluluskan + dah kemaskini.
