@@ -16,7 +16,8 @@ export function GayaPengisytiharan() {
       .pf-wrap { background:#fff; color:#000; }
       .pf-sheet { max-width: 820px; margin: 0 auto 24px; padding: 44px 48px; font-family: Arial, Helvetica, sans-serif; font-size: 12.5px; line-height: 1.55; background:#fff; }
       .pf-sulit { display:flex; justify-content:space-between; font-weight:800; font-size:12px; }
-      .pf-tajuk { text-align:center; font-weight:800; font-size:13px; margin:14px 0 4px; text-transform:uppercase; }
+      .pf-logo { display:block; margin:8px auto 2px; width:62px; height:auto; }
+      .pf-tajuk { text-align:center; font-weight:800; font-size:13px; margin:6px 0 4px; text-transform:uppercase; }
       .pf-sub { text-align:center; font-size:12px; margin-bottom:16px; font-style:italic; }
       .pf-p { text-align:justify; margin:10px 0; }
       .pf-klausa { display:flex; gap:8px; margin:8px 0; text-align:justify; }
@@ -86,6 +87,8 @@ export default function BorangPengisytiharan({ c }: { c: PengisytiharanData }) {
       {/* ---------- BOR-BPM-05: BEBAS POLITIK ---------- */}
       <article className="pf-sheet">
         <div className="pf-sulit"><span>SULIT</span><span>(BOR-BPM-05)</span></div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-mais.png" alt="Majlis Agama Islam Selangor" className="pf-logo" />
         <div className="pf-tajuk">Borang Pengisytiharan Parti Politik</div>
         <div className="pf-sub">(Bagi Calon Jawatankuasa Surau)</div>
         <Intro c={c} />
@@ -100,6 +103,8 @@ export default function BorangPengisytiharan({ c }: { c: PengisytiharanData }) {
       {/* ---------- BOR-BPM-06: BEBAS REKOD JENAYAH ---------- */}
       <article className="pf-sheet">
         <div className="pf-sulit"><span>SULIT</span><span>(BOR-BPM-06)</span></div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-mais.png" alt="Majlis Agama Islam Selangor" className="pf-logo" />
         <div className="pf-tajuk">Borang Pengisytiharan Bebas Rekod Jenayah dan Tindakan Undang-Undang</div>
         <div className="pf-sub">(Bagi Calon Jawatankuasa Surau)</div>
         <Intro c={c} />
@@ -114,6 +119,8 @@ export default function BorangPengisytiharan({ c }: { c: PengisytiharanData }) {
       {/* ---------- BOR-BPM-07: BEBAS KEBANKRAPAN ---------- */}
       <article className="pf-sheet">
         <div className="pf-sulit"><span>SULIT</span><span>(BOR-BPM-07)</span></div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-mais.png" alt="Majlis Agama Islam Selangor" className="pf-logo" />
         <div className="pf-tajuk">Borang Pengisytiharan Kebankrapan dan Keberhutangan Melampau</div>
         <div className="pf-sub">(Bagi Calon Jawatankuasa Surau)</div>
         <Intro c={c} />
