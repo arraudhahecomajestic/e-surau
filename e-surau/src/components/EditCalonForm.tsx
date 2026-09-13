@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { kemasCalon, type KemasCalon } from "@/app/admin/agm/actions";
+import { kemasCalon } from "@/app/admin/agm/actions";
+import AhliPicker, { KOSONG, type AhliRingkas, type PilihanAhli } from "@/components/AhliPicker";
 
 export type CalonEdit = {
   id: string;
@@ -17,70 +18,44 @@ export type CalonEdit = {
   penyokong_telefon?: string | null;
 };
 
-export default function EditCalonForm({ calon, onSiap }: { calon: CalonEdit; onSiap?: () => void }) {
+function awal(nama: string | null, noKp?: string | null, tel?: string | null): PilihanAhli {
+  return { ...KOSONG, nama: nama ?? "", noKp: noKp ?? null, telefon: tel ?? null };
+}
+
+export default function EditCalonForm({ calon, ahli, onSiap }: { calon: CalonEdit; ahli: AhliRingkas[]; onSiap?: () => void }) {
   const router = useRouter();
-  const [f, setF] = useState<KemasCalon>({
-    nama: calon.nama ?? "",
-    no_kp: calon.no_kp ?? "",
-    telefon: calon.telefon ?? "",
-    pencadang_nama: calon.pencadang_nama ?? "",
-    pencadang_no_kp: calon.pencadang_no_kp ?? "",
-    pencadang_telefon: calon.pencadang_telefon ?? "",
-    penyokong_nama: calon.penyokong_nama ?? "",
-    penyokong_no_kp: calon.penyokong_no_kp ?? "",
-    penyokong_telefon: calon.penyokong_telefon ?? "",
-  });
+  const [cCalon, setCCalon] = useState<PilihanAhli>(awal(calon.nama, calon.no_kp, calon.telefon));
+  const [cPencadang, setCPencadang] = useState<PilihanAhli>(awal(calon.pencadang_nama, calon.pencadang_no_kp, calon.pencadang_telefon));
+  const [cPenyokong, setCPenyokong] = useState<PilihanAhli>(awal(calon.penyokong_nama, calon.penyokong_no_kp, calon.penyokong_telefon));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const up = (k: keyof KemasCalon, v: string) => setF((p) => ({ ...p, [k]: v }));
-  const inp = "w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm";
-  const lbl = "mb-1 block text-[11px] font-semibold text-slate-500";
-
   async function simpan() {
-    if (!(f.nama ?? "").trim()) { setMsg("Nama calon wajib."); return; }
+    if (!cCalon.nama.trim()) { setMsg("Nama calon wajib."); return; }
     setBusy(true); setMsg("");
-    const r = await kemasCalon(calon.id, f); setBusy(false);
+    const r = await kemasCalon(calon.id, {
+      nama: cCalon.nama, no_kp: cCalon.noKp ?? "", telefon: cCalon.telefon ?? "",
+      pencadang_nama: cPencadang.nama, pencadang_no_kp: cPencadang.noKp ?? "", pencadang_telefon: cPencadang.telefon ?? "",
+      penyokong_nama: cPenyokong.nama, penyokong_no_kp: cPenyokong.noKp ?? "", penyokong_telefon: cPenyokong.telefon ?? "",
+    });
+    setBusy(false);
     if (r?.ok) { setMsg("Disimpan ✓"); router.refresh(); onSiap?.(); } else setMsg(r?.msg ?? "Gagal.");
   }
 
   return (
     <div className="mt-2 space-y-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
       <div className="text-xs font-bold uppercase tracking-wide text-amber-700">Edit Maklumat Calon</div>
-
-      <div>
-        <div className="mb-1 text-xs font-bold text-slate-700">Calon</div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div><label className={lbl}>Nama</label><input className={inp} value={f.nama ?? ""} onChange={(e) => up("nama", e.target.value)} /></div>
-          <div><label className={lbl}>No. KP</label><input className={inp} value={f.no_kp ?? ""} onChange={(e) => up("no_kp", e.target.value)} /></div>
-          <div><label className={lbl}>Telefon</label><input className={inp} value={f.telefon ?? ""} onChange={(e) => up("telefon", e.target.value)} /></div>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <AhliPicker label="Calon" ahli={ahli} nilai={cCalon} onChange={setCCalon} placeholder="Cari / taip nama calon…" />
+        <AhliPicker label="Pencadang" ahli={ahli} nilai={cPencadang} onChange={setCPencadang} placeholder="Cari / taip nama pencadang…" />
+        <AhliPicker label="Penyokong" ahli={ahli} nilai={cPenyokong} onChange={setCPenyokong} placeholder="Cari / taip nama penyokong…" />
       </div>
-
-      <div>
-        <div className="mb-1 text-xs font-bold text-slate-700">Pencadang</div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div><label className={lbl}>Nama</label><input className={inp} value={f.pencadang_nama ?? ""} onChange={(e) => up("pencadang_nama", e.target.value)} placeholder="Nama pencadang" /></div>
-          <div><label className={lbl}>No. KP</label><input className={inp} value={f.pencadang_no_kp ?? ""} onChange={(e) => up("pencadang_no_kp", e.target.value)} /></div>
-          <div><label className={lbl}>Telefon</label><input className={inp} value={f.pencadang_telefon ?? ""} onChange={(e) => up("pencadang_telefon", e.target.value)} /></div>
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-1 text-xs font-bold text-slate-700">Penyokong</div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div><label className={lbl}>Nama</label><input className={inp} value={f.penyokong_nama ?? ""} onChange={(e) => up("penyokong_nama", e.target.value)} placeholder="Nama penyokong" /></div>
-          <div><label className={lbl}>No. KP</label><input className={inp} value={f.penyokong_no_kp ?? ""} onChange={(e) => up("penyokong_no_kp", e.target.value)} /></div>
-          <div><label className={lbl}>Telefon</label><input className={inp} value={f.penyokong_telefon ?? ""} onChange={(e) => up("penyokong_telefon", e.target.value)} /></div>
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={busy} onClick={simpan} className="rounded-lg bg-surau px-4 py-1.5 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-50">Simpan</button>
         {onSiap && <button onClick={onSiap} className="text-xs font-semibold text-slate-500 hover:underline">tutup</button>}
         {msg && <span className="text-xs font-semibold text-slate-600">{msg}</span>}
       </div>
-      <p className="text-[11px] text-slate-400">Guna ruang ni untuk isi/betulkan maklumat calon, pencadang &amp; penyokong yang tak lengkap (tak scan QR / belum kemas kini portal).</p>
+      <p className="text-[11px] text-slate-400">Taip untuk cari nama dari senarai ahli berdaftar &amp; pilih (IC/telefon auto-isi). Kalau nama tiada dalam senarai (tak scan QR / belum kemas kini), taip terus je — ia tetap tersimpan.</p>
     </div>
   );
 }

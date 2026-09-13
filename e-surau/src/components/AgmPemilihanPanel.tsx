@@ -199,6 +199,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                     pencadang_nama: c.pencadang_nama ?? null, pencadang_no_kp: c.pencadang_no_kp ?? null, pencadang_telefon: c.pencadang_telefon ?? null,
                     penyokong_nama: c.penyokong_nama ?? null, penyokong_no_kp: c.penyokong_no_kp ?? null, penyokong_telefon: c.penyokong_telefon ?? null,
                   }}
+                  ahli={ahli}
                   onSiap={() => setEditId(null)}
                 />
               )}
