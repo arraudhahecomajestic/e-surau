@@ -195,7 +195,7 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
               {editId === c.id && (
                 <EditCalonForm
                   calon={{
-                    id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, telefon: c.telefon ?? null,
+                    id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, telefon: c.telefon ?? null, alamat: c.alamat ?? null,
                     pencadang_nama: c.pencadang_nama ?? null, pencadang_no_kp: c.pencadang_no_kp ?? null, pencadang_telefon: c.pencadang_telefon ?? null,
                     penyokong_nama: c.penyokong_nama ?? null, penyokong_no_kp: c.penyokong_no_kp ?? null, penyokong_telefon: c.penyokong_telefon ?? null,
                   }}
@@ -203,14 +203,29 @@ function JawatanBlok({ agmId, jawatan, calon, ahli }: { agmId: string; jawatan: 
                   onSiap={() => setEditId(null)}
                 />
               )}
-              <BorangDiriForm calon={{
-                id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, alamat: c.alamat ?? null, telefon: c.telefon ?? null,
-                umur: c.umur ?? null, status_kahwin: c.status_kahwin ?? null, pekerjaan: c.pekerjaan ?? null,
-                kelayakan_akademik: c.kelayakan_akademik ?? null, ahli_berdaftar: c.ahli_berdaftar ?? null,
-                tinggal_dalam_kariah: c.tinggal_dalam_kariah ?? null, pengalaman_tadbir: c.pengalaman_tadbir ?? null,
-                pengalaman_tempoh: c.pengalaman_tempoh ?? null, ada_penyakit: c.ada_penyakit ?? null,
-                penyakit_nyatakan: c.penyakit_nyatakan ?? null, tarikh_borang: c.tarikh_borang ?? null, borang_diisi: c.borang_diisi ?? false,
-              }} />
+              {c.menang && (
+                <div className="mt-2 rounded-lg border border-green-200 bg-green-50/60 p-2.5">
+                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-green-700">Borang Pelantikan Pemenang</div>
+                  <BorangDiriForm calon={{
+                    id: c.id, nama: c.nama, no_kp: c.no_kp ?? null, alamat: c.alamat ?? null, telefon: c.telefon ?? null,
+                    umur: c.umur ?? null, status_kahwin: c.status_kahwin ?? null, pekerjaan: c.pekerjaan ?? null,
+                    kelayakan_akademik: c.kelayakan_akademik ?? null, ahli_berdaftar: c.ahli_berdaftar ?? null,
+                    tinggal_dalam_kariah: c.tinggal_dalam_kariah ?? null, pengalaman_tadbir: c.pengalaman_tadbir ?? null,
+                    pengalaman_tempoh: c.pengalaman_tempoh ?? null, ada_penyakit: c.ada_penyakit ?? null,
+                    penyakit_nyatakan: c.penyakit_nyatakan ?? null, tarikh_borang: c.tarikh_borang ?? null, borang_diisi: c.borang_diisi ?? false,
+                  }} />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <a href={`/admin/agm/pemilihan/borang/${c.id}`} target="_blank" rel="noopener"
+                       className="inline-block rounded-md border border-surau bg-surau/10 px-2.5 py-1 text-[11px] font-bold text-surau hover:bg-surau/20">
+                      🖨 Borang Maklumat Diri (BOR-BPM-01)
+                    </a>
+                    <a href={`/admin/agm/pemilihan/borang-pelantikan/${c.id}`} target="_blank" rel="noopener"
+                       className="inline-block rounded-md border border-green-600 bg-green-600/10 px-2.5 py-1 text-[11px] font-bold text-green-700 hover:bg-green-600/20">
+                      🖨 Borang Pelantikan (BPM 05 · 06 · 07)
+                    </a>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
