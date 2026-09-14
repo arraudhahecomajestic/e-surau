@@ -9,7 +9,7 @@ import { noTelefon, dataURLtoBlob } from "@/lib/format";
 import { KAWASAN_PILIHAN } from "@/lib/kawasan";
 import SignaturePad from "@/components/SignaturePad";
 import KameraKp from "@/components/KameraKp";
-import { semakKpDaftar, sediaEmelAhli, sahkanRekodTelefon } from "./actions";
+import { semakKpDaftar, sediaEmelAhli, sahkanRekodTelefon, simpanTelefonBaru } from "./actions";
 
 const namaSurau = NAMA_SURAU;
 const configured = Boolean(
@@ -42,6 +42,9 @@ export default function DaftarPage() {
   const [tel4, setTel4] = useState("");
   const [tel4Sedang, setTel4Sedang] = useState(false);
   const [tel4Ralat, setTel4Ralat] = useState("");
+  // Fallback: rekod ahli lama yang TIADA no. telefon → isi telefon penuh
+  const [adaTelefonRec, setAdaTelefonRec] = useState(true);
+  const [telPenuh, setTelPenuh] = useState("");
 
   // Bahagian A
   const [gelaran, setGelaran] = useState("");
@@ -167,7 +170,8 @@ export default function DaftarPage() {
       setNoKp(kp);
       setEmelRec(res.emel ?? null);
       setDisahkanRec(!!res.disahkan);
-      setTel4(""); setTel4Ralat("");
+      setAdaTelefonRec(res.ada_telefon !== false);
+      setTel4(""); setTel4Ralat(""); setTelPenuh("");
       setPeringkat("sahkan");
     } else {
       // Belum ada → borang penuh, isi dari awal (No. KP dibawa masuk)
@@ -191,6 +195,23 @@ export default function DaftarPage() {
     setDisahkanRec(!!res.disahkan);
     setEmel(res.emel ?? "");
     // Identiti disahkan → kalau dah ada akaun, arah log masuk; jika tidak, cipta akaun.
+    setPeringkat(res.ada_akaun ? "sudah" : "akaun");
+  }
+
+  // Fallback: rekod TIADA telefon → ahli isi no. telefon penuh, kita simpan & teruskan
+  async function simpanTelefon(e: React.FormEvent) {
+    e.preventDefault();
+    setTel4Ralat("");
+    const digit = telPenuh.replace(/\D/g, "");
+    if (digit.length < 9) { setTel4Ralat("Sila masukkan no. telefon yang lengkap (cth: 0124030663)."); return; }
+    setTel4Sedang(true);
+    const res = await simpanTelefonBaru(noKp, telPenuh);
+    setTel4Sedang(false);
+    if (!res.ok) { setTel4Ralat(res.msg ?? "Ralat menyimpan no. telefon."); return; }
+    setAhliNama(res.nama ?? ahliNama);
+    setEmelRec(res.emel ?? null);
+    setDisahkanRec(!!res.disahkan);
+    setEmel(res.emel ?? "");
     setPeringkat(res.ada_akaun ? "sudah" : "akaun");
   }
 
@@ -390,30 +411,57 @@ export default function DaftarPage() {
           </p>
         </div>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800">
-          <b>Langkah 1 dari 2</b> · Sahkan identiti anda
+          <b>Langkah 1 dari 2</b> · {adaTelefonRec ? "Sahkan identiti anda" : "Kemas kini no. telefon anda"}
         </div>
-        <form onSubmit={sahkanTelefon} className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">4 Digit Akhir No. Telefon</label>
-            <input
-              className="inp tracking-widest"
-              value={tel4}
-              onChange={(e) => setTel4(e.target.value.replace(/\D/g, ""))}
-              placeholder="cth: 5495"
-              inputMode="numeric"
-              maxLength={4}
-              autoFocus
-            />
-            <p className="mt-1 text-xs text-slate-500">Masukkan 4 digit akhir no. telefon yang anda beri semasa pendaftaran / borang dahulu.</p>
-          </div>
-          {tel4Ralat && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{tel4Ralat}</div>}
-          <button disabled={tel4Sedang} className="w-full rounded-lg bg-surau px-6 py-3 font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
-            {tel4Sedang ? "Menyemak…" : "Sahkan & Teruskan"}
-          </button>
-          <p className="text-center text-sm">
-            <button type="button" onClick={() => { setPeringkat("semak"); setTel4(""); setTel4Ralat(""); }} className="text-slate-500 hover:underline">← Semak No. KP lain</button>
-          </p>
-        </form>
+        {adaTelefonRec ? (
+          <form onSubmit={sahkanTelefon} className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">4 Digit Akhir No. Telefon</label>
+              <input
+                className="inp tracking-widest"
+                value={tel4}
+                onChange={(e) => setTel4(e.target.value.replace(/\D/g, ""))}
+                placeholder="cth: 5495"
+                inputMode="numeric"
+                maxLength={4}
+                autoFocus
+              />
+              <p className="mt-1 text-xs text-slate-500">Masukkan 4 digit akhir no. telefon yang anda beri semasa pendaftaran / borang dahulu.</p>
+            </div>
+            {tel4Ralat && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{tel4Ralat}</div>}
+            <button disabled={tel4Sedang} className="w-full rounded-lg bg-surau px-6 py-3 font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
+              {tel4Sedang ? "Menyemak…" : "Sahkan & Teruskan"}
+            </button>
+            <p className="text-center text-sm">
+              <button type="button" onClick={() => { setPeringkat("semak"); setTel4(""); setTel4Ralat(""); }} className="text-slate-500 hover:underline">← Semak No. KP lain</button>
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={simpanTelefon} className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              Rekod anda <b>belum ada no. telefon</b>. Sila masukkan no. telefon anda untuk teruskan — ia akan disimpan pada rekod keahlian anda.
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">No. Telefon (H/P)</label>
+              <input
+                className="inp"
+                value={telPenuh}
+                onChange={(e) => setTelPenuh(e.target.value)}
+                placeholder="cth: 012-4030663"
+                inputMode="tel"
+                autoFocus
+              />
+              <p className="mt-1 text-xs text-slate-500">Masukkan no. telefon bimbit anda yang aktif (untuk makluman & pengesahan surau).</p>
+            </div>
+            {tel4Ralat && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{tel4Ralat}</div>}
+            <button disabled={tel4Sedang} className="w-full rounded-lg bg-surau px-6 py-3 font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
+              {tel4Sedang ? "Menyimpan…" : "Simpan & Teruskan"}
+            </button>
+            <p className="text-center text-sm">
+              <button type="button" onClick={() => { setPeringkat("semak"); setTelPenuh(""); setTel4Ralat(""); }} className="text-slate-500 hover:underline">← Semak No. KP lain</button>
+            </p>
+          </form>
+        )}
         <style jsx global>{`.inp{width:100%;border-radius:.5rem;border:1px solid #cbd5e1;padding:.5rem .75rem;font-size:.875rem;outline:none}.inp:focus{border-color:#b8860b;box-shadow:0 0 0 2px rgba(184,134,11,.2)}`}</style>
       </div>
     );

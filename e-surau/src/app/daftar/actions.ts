@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { getProfil } from "@/lib/sesi";
+import { noTelefon } from "@/lib/format";
 
 // Auto-sambung akaun login → rekod ahli kariah ikut e-mel yang sama.
 // Membolehkan seseorang (cth pembekal sedia ada) menjadi ahli kariah tanpa
@@ -29,6 +30,7 @@ export async function semakKpDaftar(noKp: string): Promise<{
   nama?: string | null;
   ada_emel?: boolean;
   ada_akaun?: boolean;   // sudah ada akaun log masuk (profil terpaut)
+  ada_telefon?: boolean; // rekod ada no. telefon (untuk kaedah sahkan identiti)
   disahkan?: boolean;    // maklumat sudah disahkan
   status?: string | null;
   emel?: string | null;
@@ -39,7 +41,7 @@ export async function semakKpDaftar(noKp: string): Promise<{
   const db = createAdminClient();
   const { data, error } = await db
     .from("ahli_kariah")
-    .select("id, nama, emel, maklumat_disahkan, status")
+    .select("id, nama, emel, telefon, maklumat_disahkan, status")
     .eq("no_kp", kp)
     .maybeSingle();
   if (error) return { ok: false, msg: error.message };
@@ -53,6 +55,7 @@ export async function semakKpDaftar(noKp: string): Promise<{
       nama: a.nama,
       ada_emel: !!a.emel,
       ada_akaun: !!prof,
+      ada_telefon: (a.telefon || "").replace(/\D/g, "").length >= 4,
       disahkan: !!a.maklumat_disahkan,
       status: a.status ?? null,
       emel: a.emel ?? null,
@@ -78,6 +81,34 @@ export async function sahkanRekodTelefon(noKp: string, tel4: string): Promise<{
   const a: any = data;
   const padan = (a.telefon || "").replace(/\D/g, "").endsWith(t4);
   if (!padan) return { ok: false, msg: "4 digit telefon tidak padan dengan rekod kami. Cuba lagi, atau hubungi admin surau." };
+  const { data: prof } = await db.from("profil").select("id").eq("ahli_id", a.id).limit(1).maybeSingle();
+  return { ok: true, nama: a.nama ?? null, ada_akaun: !!prof, disahkan: !!a.maklumat_disahkan, emel: a.emel ?? null };
+}
+
+// Fallback untuk ahli lama yang rekodnya TIADA no. telefon (cth import Google
+// Form yang tak isi telefon). Ahli isi no. telefon penuh — kita simpan pada
+// rekod & benarkan teruskan. Pengesahan identiti sebenar tetap di peringkat
+// admin (gambar IC + swafoto + e-tandatangan) semasa lengkapkan butiran.
+export async function simpanTelefonBaru(noKp: string, telefonPenuh: string): Promise<{
+  ok: boolean; msg?: string;
+  nama?: string | null; ada_akaun?: boolean; disahkan?: boolean; emel?: string | null;
+}> {
+  const kp = (noKp || "").replace(/\D/g, "");
+  if (kp.length < 6) return { ok: false, msg: "No. KP tidak sah." };
+  const digit = (telefonPenuh || "").replace(/\D/g, "");
+  if (digit.length < 9) return { ok: false, msg: "Sila masukkan no. telefon yang lengkap (cth: 0124030663)." };
+  const tel = noTelefon(telefonPenuh);
+  const db = createAdminClient();
+  const { data } = await db.from("ahli_kariah").select("id, nama, telefon, emel, maklumat_disahkan").eq("no_kp", kp).maybeSingle();
+  if (!data) return { ok: false, msg: "Tiada rekod dengan No. KP ini." };
+  const a: any = data;
+  // Keselamatan: laluan ini hanya untuk rekod yang BELUM ada telefon. Kalau
+  // rekod sudah ada telefon, jangan benarkan tulis-ganti — guna 4 digit.
+  if ((a.telefon || "").replace(/\D/g, "").length >= 4) {
+    return { ok: false, msg: "Rekod anda sudah ada no. telefon. Sila sahkan guna 4 digit akhir telefon." };
+  }
+  const { error } = await db.from("ahli_kariah").update({ telefon: tel }).eq("id", a.id);
+  if (error) return { ok: false, msg: error.message };
   const { data: prof } = await db.from("profil").select("id").eq("ahli_id", a.id).limit(1).maybeSingle();
   return { ok: true, nama: a.nama ?? null, ada_akaun: !!prof, disahkan: !!a.maklumat_disahkan, emel: a.emel ?? null };
 }
