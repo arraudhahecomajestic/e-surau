@@ -23,6 +23,7 @@ export default function NavUtama({ lang, paparKhairat, stafPreview, paparInfaq, 
 
   const perkhidmatan = [
     paparKhairat && { href: "/khairat", label: `${t("Khairat", "Death Benefit")}${stafPreview ? " ·pratonton" : ""}` },
+    { href: "/bantuan", label: t("Bantuan / Tabung Ihsan", "Aid / Ihsan Fund") },
     paparInfaq && { href: "/infaq", label: `${t("Infaq", "Infaq")}${infaqPratonton ? " ·pratonton" : ""}` },
     { href: "/sewaan", label: t("Sewaan", "Rental") },
     { href: "/pembekal/daftar", label: t("Vendor", "Vendors") },

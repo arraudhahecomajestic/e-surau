@@ -73,7 +73,7 @@ export default async function BantuanAwamPage() {
         <p className="mt-1 text-sm text-slate-600">Sumbangan anda ke Tabung Ihsan membantu jiran kariah yang memerlukan. Hubungi pejabat surau atau salurkan melalui tabung surau.</p>
         <div className="mt-3 flex flex-wrap justify-center gap-3">
           <Link href="/infaq" className="rounded-lg bg-surau px-5 py-2.5 text-sm font-semibold text-white hover:bg-surau-dark">Infaq / Sumbangan</Link>
-          <Link href="/ahli/bantuan" className="rounded-lg border border-surau/40 px-5 py-2.5 text-sm font-semibold text-surau hover:bg-surau/10">Mohon Bantuan (Ahli)</Link>
+          <Link href="/ahli/bantuan" className="rounded-lg border border-surau/40 px-5 py-2.5 text-sm font-semibold text-surau hover:bg-surau/10">Mohon Bantuan</Link>
         </div>
       </div>
 
