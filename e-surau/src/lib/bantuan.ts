@@ -1,0 +1,53 @@
+// Modul Bantuan Kecemasan / Tabung Ihsan — tetapan & label kongsi.
+// Sumber dana: Infaq + Sedekah/Tabung Ihsan (bukan zakat).
+
+export type JenisBantuan = {
+  kod: string;
+  label: string;
+  emoji: string;
+};
+
+export const JENIS_BANTUAN: JenisBantuan[] = [
+  { kod: "tunai",     label: "Wang Tunai / Sara Hidup", emoji: "💵" },
+  { kod: "minyak",    label: "Minyak / Pengangkutan",   emoji: "⛽" },
+  { kod: "sewa",      label: "Bayaran Sewa Rumah",      emoji: "🏠" },
+  { kod: "makanan",   label: "Makanan / Dapur",         emoji: "🍚" },
+  { kod: "perubatan", label: "Perubatan / Kesihatan",   emoji: "🩺" },
+  { kod: "bil",       label: "Bil Utiliti (air/elektrik)", emoji: "💡" },
+  { kod: "lain",      label: "Lain-lain",               emoji: "🤲" },
+];
+
+export function labelJenis(kod: string | null | undefined): string {
+  const j = JENIS_BANTUAN.find((x) => x.kod === kod);
+  return j ? j.label : (kod || "—");
+}
+export function emojiJenis(kod: string | null | undefined): string {
+  return JENIS_BANTUAN.find((x) => x.kod === kod)?.emoji ?? "🤲";
+}
+
+// Status kes: baru → semakan → lulus/tolak → bayar → selesai
+export const STATUS_BANTUAN: Record<string, { label: string; warna: string }> = {
+  baru:    { label: "Baru — menunggu semakan", warna: "bg-amber-100 text-amber-700" },
+  semakan: { label: "Dalam semakan",           warna: "bg-blue-100 text-blue-700" },
+  lulus:   { label: "Diluluskan — menunggu bayaran", warna: "bg-indigo-100 text-indigo-700" },
+  bayar:   { label: "Telah dibayar",           warna: "bg-green-100 text-green-700" },
+  selesai: { label: "Selesai",                 warna: "bg-green-100 text-green-700" },
+  tolak:   { label: "Tidak diluluskan",        warna: "bg-red-100 text-red-700" },
+};
+export function statusBantuan(kod: string | null | undefined) {
+  return STATUS_BANTUAN[kod ?? "baru"] ?? STATUS_BANTUAN.baru;
+}
+
+// Sumber dana yang dibenarkan (bukan zakat).
+export const SUMBER_DANA: { kod: string; label: string }[] = [
+  { kod: "tabung_ihsan", label: "Sedekah / Tabung Ihsan" },
+  { kod: "infaq",        label: "Infaq" },
+];
+export function labelSumber(kod: string | null | undefined): string {
+  return SUMBER_DANA.find((x) => x.kod === kod)?.label ?? (kod || "—");
+}
+
+export const KEUTAMAAN = [
+  { kod: "biasa", label: "Biasa" },
+  { kod: "segera", label: "Segera / Kecemasan" },
+];

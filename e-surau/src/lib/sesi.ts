@@ -6,7 +6,7 @@ export type Profil = {
   emel: string | null;
   ahli_id: string | null;
   pembekal_id: string | null;
-  peranan: "admin" | "bendahari" | "ajk" | "ahli" | "imam" | "kerani" | "juruaudit";
+  peranan: "admin" | "bendahari" | "ajk" | "ahli" | "imam" | "kerani" | "juruaudit" | "biro_kebajikan";
   master: boolean;
   jawatan: string | null;
 };
@@ -20,6 +20,7 @@ const JAWATAN_LALAI: Record<Profil["peranan"], string> = {
   imam: "Imam",
   kerani: "Staf",
   juruaudit: "Juruaudit",
+  biro_kebajikan: "Biro Kebajikan",
   ahli: "Ahli Kariah",
 };
 export function jawatanProfil(p: Profil | null): string {
@@ -80,6 +81,23 @@ export function isPentadbir(p: Profil | null): boolean {
 // BUKAN pentadbir am — tak dapat modul lain.
 export function isJuruaudit(p: Profil | null): boolean {
   return !!p && p.peranan === "juruaudit";
+}
+
+// Biro Kebajikan — urus Modul Bantuan Kecemasan / Tabung Ihsan.
+// Akses TERHAD: hanya modul Bantuan (semak, lulus, tolak, urus tabung).
+// BUKAN pentadbir am — tak dapat modul lain.
+export function isBiroKebajikan(p: Profil | null): boolean {
+  return !!p && p.peranan === "biro_kebajikan";
+}
+
+// Boleh urus Modul Bantuan Kecemasan — Biro Kebajikan + Admin/Master (override).
+export function bolehUrusBantuan(p: Profil | null): boolean {
+  return !!p && (p.peranan === "biro_kebajikan" || p.peranan === "admin" || p.master === true);
+}
+
+// Boleh rekod bayaran bantuan — Bendahari + Admin/Master (Biro semak, Bendahari bayar).
+export function bolehBayarBantuan(p: Profil | null): boolean {
+  return !!p && (["admin", "bendahari"].includes(p.peranan) || p.master === true);
 }
 
 // Pentadbir PENUH — Admin / Master sahaja (TIDAK termasuk AJK).
