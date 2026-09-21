@@ -4,25 +4,21 @@
 export type JenisBantuan = {
   kod: string;
   label: string;
-  emoji: string;
 };
 
 export const JENIS_BANTUAN: JenisBantuan[] = [
-  { kod: "tunai",     label: "Wang Tunai / Sara Hidup", emoji: "💵" },
-  { kod: "minyak",    label: "Minyak / Pengangkutan",   emoji: "⛽" },
-  { kod: "sewa",      label: "Bayaran Sewa Rumah",      emoji: "🏠" },
-  { kod: "makanan",   label: "Makanan / Dapur",         emoji: "🍚" },
-  { kod: "perubatan", label: "Perubatan / Kesihatan",   emoji: "🩺" },
-  { kod: "bil",       label: "Bil Utiliti (air/elektrik)", emoji: "💡" },
-  { kod: "lain",      label: "Lain-lain",               emoji: "🤲" },
+  { kod: "tunai",     label: "Wang Tunai / Sara Hidup" },
+  { kod: "minyak",    label: "Minyak / Pengangkutan" },
+  { kod: "sewa",      label: "Bayaran Sewa Rumah" },
+  { kod: "makanan",   label: "Makanan / Dapur" },
+  { kod: "perubatan", label: "Perubatan / Kesihatan" },
+  { kod: "bil",       label: "Bil Utiliti (air/elektrik)" },
+  { kod: "lain",      label: "Lain-lain" },
 ];
 
 export function labelJenis(kod: string | null | undefined): string {
   const j = JENIS_BANTUAN.find((x) => x.kod === kod);
   return j ? j.label : (kod || "—");
-}
-export function emojiJenis(kod: string | null | undefined): string {
-  return JENIS_BANTUAN.find((x) => x.kod === kod)?.emoji ?? "🤲";
 }
 
 // Status kes: baru → semakan → lulus/tolak → bayar → selesai

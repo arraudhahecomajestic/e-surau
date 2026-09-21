@@ -165,7 +165,7 @@ export default async function AhliPage() {
       {/* Bantuan Kecemasan / Tabung Ihsan */}
       <Link href="/ahli/bantuan" className="flex items-center justify-between rounded-xl border border-surau/30 bg-surau/5 p-4 hover:bg-surau/10">
         <div>
-          <div className="font-semibold text-slate-900">🤲 Bantuan Kecemasan</div>
+          <div className="font-semibold text-slate-900">Bantuan Kecemasan</div>
           <p className="mt-0.5 text-sm text-slate-600">Perlukan bantuan segera (tunai, minyak, sewa, makanan, perubatan, bil)? Mohon di sini — sulit &amp; disemak oleh Biro Kebajikan.</p>
         </div>
         <span className="text-surau">→</span>

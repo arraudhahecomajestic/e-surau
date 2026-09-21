@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { rm } from "@/lib/format";
-import { JENIS_BANTUAN, labelJenis, emojiJenis } from "@/lib/bantuan";
+import { JENIS_BANTUAN, labelJenis } from "@/lib/bantuan";
 import { NAMA_SURAU } from "@/lib/tetapan";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ export default async function BantuanAwamPage() {
           <div className="space-y-2">
             {senaraiJenis.map((j) => (
               <div key={j.kod} className="flex items-center justify-between border-b border-slate-100 py-2 last:border-0">
-                <span className="text-sm text-slate-700">{emojiJenis(j.kod)} {labelJenis(j.kod)}</span>
+                <span className="text-sm text-slate-700">{labelJenis(j.kod)}</span>
                 <span className="text-sm text-slate-600">{j.bil} kes · <b className="text-slate-800">{rm(j.jumlah)}</b></span>
               </div>
             ))}

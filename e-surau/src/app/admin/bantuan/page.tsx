@@ -4,7 +4,7 @@ import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AdminNav from "@/components/AdminNav";
 import ButangHantar from "@/components/ButangHantar";
 import { rm, tarikhMs } from "@/lib/format";
-import { labelJenis, emojiJenis, statusBantuan, labelSumber, SUMBER_DANA } from "@/lib/bantuan";
+import { labelJenis, statusBantuan, labelSumber, SUMBER_DANA } from "@/lib/bantuan";
 import { tandaSemakan, luluskanBantuan, tolakBantuan, rekodBayaranBantuan, tambahDanaTabung } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -111,7 +111,7 @@ export default async function AdminBantuanPage() {
                     <span className={`rounded px-2 py-0.5 text-xs font-semibold ${st.warna}`}>{st.label}</span>
                     {b.keutamaan === "segera" && <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">Segera</span>}
                   </div>
-                  <div className="mt-1 font-semibold text-slate-900">{emojiJenis(b.jenis)} {b.jenis === "lain" ? (b.jenis_lain || "Lain-lain") : labelJenis(b.jenis)}</div>
+                  <div className="mt-1 font-semibold text-slate-900">{b.jenis === "lain" ? (b.jenis_lain || "Lain-lain") : labelJenis(b.jenis)}</div>
                   <div className="text-sm text-slate-600">{b.nama}{b.no_kp ? ` · ${String(b.no_kp).slice(0, 6)}****` : ""}{b.telefon ? ` · ${b.telefon}` : ""}</div>
                   <div className="text-xs text-slate-500">Dihantar: {tarikhMs(b.dicipta)}</div>
                   {(b.nama_bank || b.no_akaun_bank) && <div className="text-xs text-slate-500">Akaun: {b.nama_bank || "-"} {b.no_akaun_bank || ""}</div>}

@@ -4,8 +4,7 @@ import { getProfil } from "@/lib/sesi";
 import { PerluMasuk } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { rm, tarikhMs } from "@/lib/format";
-import { labelJenis, emojiJenis, statusBantuan, labelSumber } from "@/lib/bantuan";
-import { pautkanAhli } from "@/app/daftar/actions";
+import { labelJenis, statusBantuan, labelSumber } from "@/lib/bantuan";
 import BorangBantuanForm from "@/components/BorangBantuanForm";
 import ButangHantar from "@/components/ButangHantar";
 import { sahTerimaBantuan } from "./actions";
@@ -18,25 +17,11 @@ export default async function AhliBantuanPage() {
   const profil = await getProfil();
   if (!profil) return <PerluMasuk />;
 
-  if (!profil.ahli_id) {
-    const aid = await pautkanAhli();
-    if (aid) profil.ahli_id = aid;
-  }
-  if (!profil.ahli_id) {
-    return (
-      <div className="mx-auto max-w-md rounded-xl bg-white p-6 text-center shadow-sm">
-        <h1 className="text-lg font-bold text-slate-900">Akaun belum dipautkan</h1>
-        <p className="mt-2 text-sm text-slate-600">Sila lengkapkan/pautkan rekod ahli anda dahulu sebelum memohon bantuan.</p>
-        <Link href="/ahli" className="mt-4 inline-block rounded-lg bg-surau px-5 py-2.5 text-sm font-semibold text-white">Ke Portal Ahli</Link>
-      </div>
-    );
-  }
-
   const db = createAdminClient();
   const { data } = await db
     .from("bantuan_permohonan")
     .select("id, no_rujukan, jenis, jenis_lain, jumlah_dimohon, jumlah_lulus, sumber_dana, sebab, status, keutamaan, catatan_biro, kaedah_bayar, tarikh_bayar, pengesahan_terima, dicipta")
-    .eq("ahli_id", profil.ahli_id)
+    .eq("profil_id", profil.id)
     .order("dicipta", { ascending: false });
   const senarai = (data as any[]) ?? [];
 
@@ -72,7 +57,7 @@ export default async function AhliBantuanPage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="font-mono text-xs text-slate-400">{b.no_rujukan}</div>
-                  <div className="font-semibold text-slate-900">{emojiJenis(b.jenis)} {b.jenis === "lain" ? (b.jenis_lain || "Lain-lain") : labelJenis(b.jenis)}</div>
+                  <div className="font-semibold text-slate-900">{b.jenis === "lain" ? (b.jenis_lain || "Lain-lain") : labelJenis(b.jenis)}</div>
                   <div className="text-xs text-slate-500">Dihantar: {tarikhMs(b.dicipta)}{b.keutamaan === "segera" ? " · Segera" : ""}</div>
                 </div>
                 <div className="text-right">
