@@ -1,5 +1,6 @@
 // Modul Bantuan Kecemasan / Tabung Ihsan — tetapan & label kongsi.
 // Sumber dana: Infaq + Sedekah/Tabung Ihsan (bukan zakat).
+// Jenis bantuan mengikut Borang Permohonan Bantuan Khas SAR.
 
 export type JenisBantuan = {
   kod: string;
@@ -7,13 +8,12 @@ export type JenisBantuan = {
 };
 
 export const JENIS_BANTUAN: JenisBantuan[] = [
-  { kod: "tunai",     label: "Wang Tunai / Sara Hidup" },
-  { kod: "minyak",    label: "Minyak / Pengangkutan" },
-  { kod: "sewa",      label: "Bayaran Sewa Rumah" },
-  { kod: "makanan",   label: "Makanan / Dapur" },
-  { kod: "perubatan", label: "Perubatan / Kesihatan" },
-  { kod: "bil",       label: "Bil Utiliti (air/elektrik)" },
-  { kod: "lain",      label: "Lain-lain" },
+  { kod: "sara_hidup",    label: "Bantuan Sara Hidup" },
+  { kod: "perubatan",     label: "Bantuan Perubatan" },
+  { kod: "pendidikan",    label: "Bantuan Pendidikan" },
+  { kod: "tempat_tinggal",label: "Bantuan Tempat Tinggal" },
+  { kod: "modal",         label: "Bantuan Modal" },
+  { kod: "lain",          label: "Lain-lain" },
 ];
 
 export function labelJenis(kod: string | null | undefined): string {
@@ -47,3 +47,16 @@ export const KEUTAMAAN = [
   { kod: "biasa", label: "Biasa" },
   { kod: "segera", label: "Segera / Kecemasan" },
 ];
+
+// Penilaian kewangan asas
+export const PEKERJAAN = [
+  { kod: "bekerja", label: "Bekerja" },
+  { kod: "tidak_bekerja", label: "Tidak Bekerja" },
+];
+export const KESIHATAN = [
+  { kod: "sihat", label: "Sihat" },
+  { kod: "sakit", label: "Sakit / Cacat" },
+];
+export function labelPekerjaan(kod: string | null | undefined): string {
+  return PEKERJAAN.find((x) => x.kod === kod)?.label ?? (kod || "—");
+}

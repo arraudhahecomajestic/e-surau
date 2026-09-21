@@ -14,14 +14,25 @@ export type HantarBantuanInput = {
   keutamaan?: string;
   nama_bank?: string;
   no_akaun_bank?: string;
-  dokumen?: string[]; // path dalam bucket 'salinan-kp'
+  // Penilaian kewangan asas
+  pekerjaan?: string;              // bekerja|tidak_bekerja
+  jawatan?: string;
+  pendapatan_bulanan?: string;
+  perbelanjaan_bulanan?: string;
+  kesihatan?: string;             // sihat|sakit
+  kesihatan_nyatakan?: string;
+  dokumen?: string[];             // path dalam bucket 'salinan-kp'
+};
+
+const num = (v?: string) => {
+  if (v == null || v === "") return null;
+  const n = Number(String(v).replace(/[^\d.]/g, ""));
+  return isNaN(n) ? null : n;
 };
 
 // Gate: semak No. KP — adakah pemohon ahli kariah berdaftar?
-// Jika ya, pulangkan data (nama, telefon) untuk auto-isi borang bantuan.
-// Jika tidak, borang akan minta pemohon daftar kariah dahulu.
 export async function semakIcBantuan(noKp: string): Promise<{
-  ok: boolean; wujud?: boolean; nama?: string | null; no_kp?: string | null; telefon?: string | null; msg?: string;
+  ok: boolean; wujud?: boolean; nama?: string | null; no_kp?: string | null; telefon?: string | null; bil_tanggungan?: number; msg?: string;
 }> {
   const p = await getProfil();
   if (!p) return { ok: false, msg: "Sila log masuk dahulu." };
@@ -35,10 +46,13 @@ export async function semakIcBantuan(noKp: string): Promise<{
     .maybeSingle();
   if (!data) return { ok: true, wujud: false };
   const a: any = data;
-  return { ok: true, wujud: true, nama: a.nama ?? null, no_kp: a.no_kp ?? null, telefon: a.telefon ?? null };
+  let bil = 0;
+  const { count } = await db.from("tanggungan").select("id", { count: "exact", head: true }).eq("ahli_id", a.id);
+  bil = count ?? 0;
+  return { ok: true, wujud: true, nama: a.nama ?? null, no_kp: a.no_kp ?? null, telefon: a.telefon ?? null, bil_tanggungan: bil };
 }
 
-// Ahli kariah berdaftar hantar permohonan bantuan kecemasan.
+// Ahli kariah berdaftar hantar permohonan bantuan.
 export async function hantarPermohonanBantuan(
   input: HantarBantuanInput
 ): Promise<{ ok: boolean; msg?: string; no_rujukan?: string }> {
@@ -55,8 +69,6 @@ export async function hantarPermohonanBantuan(
   const sebab = (input.sebab || "").trim();
   if (sebab.length < 5) return { ok: false, msg: "Sila terangkan sebab / keperluan anda." };
 
-  const jumlah = input.jumlah_dimohon ? Number(String(input.jumlah_dimohon).replace(/[^\d.]/g, "")) : null;
-
   const db = createAdminClient();
 
   // Sahkan pemohon ialah ahli kariah berdaftar (padan No. KP) & ambil snapshot.
@@ -68,6 +80,8 @@ export async function hantarPermohonanBantuan(
   const a: any = ahli;
   if (!a) return { ok: false, msg: "Rekod ahli kariah tidak dijumpai. Sila daftar kariah dahulu." };
 
+  const { count: bilTgg } = await db.from("tanggungan").select("id", { count: "exact", head: true }).eq("ahli_id", a.id);
+
   const { data: baru, error } = await db
     .from("bantuan_permohonan")
     .insert({
@@ -78,11 +92,18 @@ export async function hantarPermohonanBantuan(
       telefon: a.telefon ?? null,
       jenis,
       jenis_lain: jenis === "lain" ? (input.jenis_lain || "").trim() : null,
-      jumlah_dimohon: jumlah && jumlah > 0 ? jumlah : null,
+      jumlah_dimohon: num(input.jumlah_dimohon),
       sebab,
       keutamaan: input.keutamaan === "segera" ? "segera" : "biasa",
       nama_bank: (input.nama_bank || "").trim() || null,
       no_akaun_bank: (input.no_akaun_bank || "").replace(/\s/g, "") || null,
+      pekerjaan: input.pekerjaan === "bekerja" || input.pekerjaan === "tidak_bekerja" ? input.pekerjaan : null,
+      jawatan: (input.jawatan || "").trim() || null,
+      pendapatan_bulanan: num(input.pendapatan_bulanan),
+      perbelanjaan_bulanan: num(input.perbelanjaan_bulanan),
+      kesihatan: input.kesihatan === "sihat" || input.kesihatan === "sakit" ? input.kesihatan : null,
+      kesihatan_nyatakan: (input.kesihatan_nyatakan || "").trim() || null,
+      bil_tanggungan: bilTgg ?? 0,
       status: "baru",
     })
     .select("id, no_rujukan")
@@ -109,7 +130,6 @@ export async function sahTerimaBantuan(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const db = createAdminClient();
-  // Hanya boleh sahkan permohonan sendiri yang sudah dibayar.
   await db
     .from("bantuan_permohonan")
     .update({ pengesahan_terima: true, status: "selesai" })

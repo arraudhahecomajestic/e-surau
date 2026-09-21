@@ -4,7 +4,7 @@ import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AdminNav from "@/components/AdminNav";
 import ButangHantar from "@/components/ButangHantar";
 import { rm, tarikhMs } from "@/lib/format";
-import { labelJenis, statusBantuan, labelSumber, SUMBER_DANA } from "@/lib/bantuan";
+import { labelJenis, statusBantuan, labelSumber, labelPekerjaan, SUMBER_DANA } from "@/lib/bantuan";
 import { tandaSemakan, luluskanBantuan, tolakBantuan, rekodBayaranBantuan, tambahDanaTabung } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -102,6 +102,10 @@ export default async function AdminBantuanPage() {
         {senarai.map((b) => {
           const st = statusBantuan(b.status);
           const dok = dokMap[b.id] ?? [];
+          const pend = b.pendapatan_bulanan != null ? Number(b.pendapatan_bulanan) : null;
+          const belanja = b.perbelanjaan_bulanan != null ? Number(b.perbelanjaan_bulanan) : null;
+          const net = pend != null && belanja != null ? pend - belanja : null;
+          const adaKewangan = b.pekerjaan || pend != null || belanja != null || b.kesihatan || b.bil_tanggungan != null;
           return (
             <div key={b.id} className="rounded-xl bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -124,6 +128,18 @@ export default async function AdminBantuanPage() {
               </div>
 
               <p className="mt-2 rounded-lg bg-slate-50 p-2 text-sm text-slate-700">{b.sebab}</p>
+
+              {/* Penilaian kewangan untuk semakan Biro */}
+              {adaKewangan && (
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600">
+                  {b.pekerjaan && <span>Pekerjaan: <b>{labelPekerjaan(b.pekerjaan)}{b.jawatan ? ` (${b.jawatan})` : ""}</b></span>}
+                  {pend != null && <span>Pendapatan: <b>{rm(pend)}</b>/bln</span>}
+                  {belanja != null && <span>Perbelanjaan: <b>{rm(belanja)}</b>/bln</span>}
+                  {net != null && <span className={net < 0 ? "text-red-600" : "text-green-700"}>{net < 0 ? "Defisit" : "Lebihan"}: <b>{rm(Math.abs(net))}</b></span>}
+                  {b.bil_tanggungan != null && <span>Tanggungan: <b>{b.bil_tanggungan}</b></span>}
+                  {b.kesihatan && <span>Kesihatan: <b>{b.kesihatan === "sakit" ? `Sakit/Cacat${b.kesihatan_nyatakan ? ` (${b.kesihatan_nyatakan})` : ""}` : "Sihat"}</b></span>}
+                </div>
+              )}
 
               {dok.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
@@ -161,7 +177,7 @@ export default async function AdminBantuanPage() {
                       <label className="mb-1 block text-[11px] text-slate-500">Catatan (pilihan)</label>
                       <input name="catatan" className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
                     </div>
-                    <ButangHantar className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" pendingText="…">✓ Luluskan</ButangHantar>
+                    <ButangHantar className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50" pendingText="…">Luluskan</ButangHantar>
                   </form>
                   <form action={tolakBantuan} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="id" value={b.id} />
@@ -191,7 +207,7 @@ export default async function AdminBantuanPage() {
               )}
 
               {b.status === "bayar" && <div className="mt-2 text-xs text-green-700">Telah dibayar{b.dibayar_nama ? ` oleh ${b.dibayar_nama}` : ""}{b.tarikh_bayar ? ` · ${tarikhMs(b.tarikh_bayar)}` : ""} — menunggu pengesahan penerimaan ahli.</div>}
-              {b.status === "selesai" && <div className="mt-2 text-xs font-semibold text-green-700">✓ Selesai — penerimaan disahkan oleh ahli.</div>}
+              {b.status === "selesai" && <div className="mt-2 text-xs font-semibold text-green-700">Selesai — penerimaan disahkan oleh ahli.</div>}
             </div>
           );
         })}

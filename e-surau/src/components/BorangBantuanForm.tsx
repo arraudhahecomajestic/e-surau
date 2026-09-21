@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { JENIS_BANTUAN, KEUTAMAAN } from "@/lib/bantuan";
+import { JENIS_BANTUAN, KEUTAMAAN, PEKERJAAN, KESIHATAN } from "@/lib/bantuan";
 import { SENARAI_BANK } from "@/lib/tetapan";
 import { semakIcBantuan, hantarPermohonanBantuan } from "@/app/ahli/bantuan/actions";
 
@@ -20,6 +20,7 @@ export default function BorangBantuanForm() {
   const [semakRalat, setSemakRalat] = useState("");
   const [nama, setNama] = useState<string | null>(null);
   const [telefon, setTelefon] = useState<string | null>(null);
+  const [bilTanggungan, setBilTanggungan] = useState<number>(0);
 
   // Borang
   const [jenis, setJenis] = useState("");
@@ -29,6 +30,15 @@ export default function BorangBantuanForm() {
   const [sebab, setSebab] = useState("");
   const [namaBank, setNamaBank] = useState("");
   const [noAkaun, setNoAkaun] = useState("");
+
+  // Penilaian kewangan asas
+  const [pekerjaan, setPekerjaan] = useState("");
+  const [jawatan, setJawatan] = useState("");
+  const [pendapatan, setPendapatan] = useState("");
+  const [perbelanjaan, setPerbelanjaan] = useState("");
+  const [kesihatan, setKesihatan] = useState("");
+  const [kesihatanLain, setKesihatanLain] = useState("");
+
   const [dokumen, setDokumen] = useState<string[]>([]);
   const [muat, setMuat] = useState(false);
   const [hantar, setHantar] = useState(false);
@@ -47,6 +57,7 @@ export default function BorangBantuanForm() {
     if (res.wujud) {
       setNama(res.nama ?? null);
       setTelefon(res.telefon ?? null);
+      setBilTanggungan(res.bil_tanggungan ?? 0);
       setPeringkat("borang");
     } else {
       setPeringkat("daftar");
@@ -83,7 +94,9 @@ export default function BorangBantuanForm() {
     setHantar(true);
     const res = await hantarPermohonanBantuan({
       no_kp: noKp, jenis, jenis_lain: jenisLain, jumlah_dimohon: jumlah, sebab,
-      keutamaan, nama_bank: namaBank, no_akaun_bank: noAkaun, dokumen,
+      keutamaan, nama_bank: namaBank, no_akaun_bank: noAkaun,
+      pekerjaan, jawatan, pendapatan_bulanan: pendapatan, perbelanjaan_bulanan: perbelanjaan,
+      kesihatan, kesihatan_nyatakan: kesihatanLain, dokumen,
     });
     setHantar(false);
     if (!res.ok) { setRalat(res.msg ?? "Ralat menghantar."); return; }
@@ -98,10 +111,9 @@ export default function BorangBantuanForm() {
       <div className="rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center">
         <h2 className="text-lg font-bold text-green-800">Permohonan Dihantar</h2>
         <p className="mt-1 text-sm text-green-700">
-          No. Rujukan: <b>{noRujukan}</b>. Biro Kebajikan akan menyemak permohonan anda.
-          Anda boleh jejak status di bawah.
+          No. Rujukan: <b>{noRujukan}</b>. Biro Kebajikan akan menyemak permohonan anda. Anda boleh jejak status di bawah.
         </p>
-        <button onClick={() => { setPeringkat("semak"); setNoKp(""); setNama(null); setTelefon(null); setJenis(""); setJenisLain(""); setJumlah(""); setSebab(""); setNamaBank(""); setNoAkaun(""); setDokumen([]); }}
+        <button onClick={() => { setPeringkat("semak"); setNoKp(""); setNama(null); setTelefon(null); setJenis(""); setJenisLain(""); setJumlah(""); setSebab(""); setNamaBank(""); setNoAkaun(""); setPekerjaan(""); setJawatan(""); setPendapatan(""); setPerbelanjaan(""); setKesihatan(""); setKesihatanLain(""); setDokumen([]); }}
           className="mt-4 rounded-lg border border-green-400 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">
           Hantar permohonan lain
         </button>
@@ -153,10 +165,12 @@ export default function BorangBantuanForm() {
           <div>Nama: <b className="text-slate-800">{nama || "—"}</b></div>
           <div>No. KP: <b className="text-slate-800">{noKp}</b></div>
           {telefon && <div>Telefon: <b className="text-slate-800">{telefon}</b></div>}
+          <div>Tanggungan direkod: <b className="text-slate-800">{bilTanggungan}</b></div>
         </div>
         <button type="button" onClick={() => { setPeringkat("semak"); setNoKp(""); }} className="mt-1 text-xs text-slate-500 underline">Bukan anda? Semak No. KP lain</button>
       </div>
 
+      {/* Bahagian 1 — Jenis & keperluan */}
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Jenis Bantuan *</label>
         <select className="inp" value={jenis} onChange={(e) => setJenis(e.target.value)}>
@@ -192,6 +206,49 @@ export default function BorangBantuanForm() {
           placeholder="Terangkan keadaan & keperluan anda secara ringkas." />
       </div>
 
+      {/* Bahagian 2 — Penilaian kewangan asas */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-2 text-sm font-semibold text-slate-700">Penilaian Kewangan (asas)</div>
+        <p className="mb-3 text-xs text-slate-500">Maklumat ini membantu Biro menilai keperluan anda. Anggaran sebulan memadai.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Pekerjaan</label>
+            <select className="inp" value={pekerjaan} onChange={(e) => setPekerjaan(e.target.value)}>
+              <option value="">— Pilih —</option>
+              {PEKERJAAN.map((k) => <option key={k.kod} value={k.kod}>{k.label}</option>)}
+            </select>
+          </div>
+          {pekerjaan === "bekerja" && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Pekerjaan / Jawatan</label>
+              <input className="inp" value={jawatan} onChange={(e) => setJawatan(e.target.value)} placeholder="cth: Pemandu" />
+            </div>
+          )}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Jumlah Pendapatan Sebulan (RM)</label>
+            <input className="inp" inputMode="decimal" value={pendapatan} onChange={(e) => setPendapatan(e.target.value)} placeholder="cth: 1500" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Jumlah Perbelanjaan Sebulan (RM)</label>
+            <input className="inp" inputMode="decimal" value={perbelanjaan} onChange={(e) => setPerbelanjaan(e.target.value)} placeholder="cth: 1800" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Kesihatan</label>
+            <select className="inp" value={kesihatan} onChange={(e) => setKesihatan(e.target.value)}>
+              <option value="">— Pilih —</option>
+              {KESIHATAN.map((k) => <option key={k.kod} value={k.kod}>{k.label}</option>)}
+            </select>
+          </div>
+          {kesihatan === "sakit" && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Nyatakan (sakit/cacat)</label>
+              <input className="inp" value={kesihatanLain} onChange={(e) => setKesihatanLain(e.target.value)} placeholder="cth: kencing manis" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bahagian 3 — Bayaran & dokumen */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Bank (untuk bayaran)</label>
