@@ -3,6 +3,7 @@ import { PerluMasuk, TiadaAkses } from "@/components/PerluMasuk";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import AdminNav from "@/components/AdminNav";
 import ButangHantar from "@/components/ButangHantar";
+import BorangBantuanForm from "@/components/BorangBantuanForm";
 import { rm, tarikhMs } from "@/lib/format";
 import { labelJenis, statusBantuan, labelSumber, labelPekerjaan, SUMBER_DANA } from "@/lib/bantuan";
 import { tandaSemakan, luluskanBantuan, tolakBantuan, rekodBayaranBantuan, tambahDanaTabung } from "./actions";
@@ -29,7 +30,6 @@ export default async function AdminBantuanPage() {
   const keluar = tabung.filter((t) => t.arah === "keluar").reduce((s, t) => s + Number(t.jumlah || 0), 0);
   const baki = masuk - keluar;
 
-  // Dokumen sokongan (signed URL).
   const ids = senarai.map((b) => b.id);
   const dokMap: Record<string, { url: string }[]> = {};
   if (ids.length) {
@@ -55,10 +55,9 @@ export default async function AdminBantuanPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Bantuan Kecemasan · Tabung Ihsan</h1>
-        <p className="mt-1 text-sm text-slate-600">Semak permohonan ahli, luluskan bantuan, dan urus baki Tabung Ihsan. Maklumat pemohon SULIT — hanya paparan agregat tanpa nama dikongsi kepada umum.</p>
+        <p className="mt-1 text-sm text-slate-600">Permohonan diuruskan oleh Biro Kebajikan melalui temu bual. Maklumat pemohon SULIT — hanya paparan agregat tanpa nama dikongsi kepada umum.</p>
       </div>
 
-      {/* Ringkasan tabung */}
       <div className="grid gap-4 sm:grid-cols-4">
         <KadStat label="Baki Tabung" nilai={rm(baki)} warna="text-surau" />
         <KadStat label="Jumlah Masuk" nilai={rm(masuk)} warna="text-green-600" />
@@ -66,7 +65,6 @@ export default async function AdminBantuanPage() {
         <KadStat label="Perlu Tindakan" nilai={`${perluTindakan}`} warna="text-amber-600" />
       </div>
 
-      {/* Tambah dana masuk */}
       <section className="rounded-xl bg-white p-4 shadow-sm">
         <h2 className="mb-2 font-semibold text-slate-900">Tambah Dana Masuk (Tabung Ihsan)</h2>
         <form action={tambahDanaTabung} className="flex flex-wrap items-end gap-2">
@@ -90,13 +88,20 @@ export default async function AdminBantuanPage() {
         </form>
       </section>
 
+      {bolehUrus && (
+        <details className="rounded-xl bg-white p-4 shadow-sm">
+          <summary className="cursor-pointer font-semibold text-slate-900">+ Tambah Permohonan Baharu (isi selepas temu duga pemohon)</summary>
+          <p className="mt-2 mb-3 text-xs text-slate-500">Masukkan No. KP pemohon — maklumat kariah akan diambil automatik. Lengkapkan butiran mengikut hasil temu bual.</p>
+          <BorangBantuanForm />
+        </details>
+      )}
+
       {menungguBayar > 0 && (
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800">
           {menungguBayar} permohonan diluluskan — menunggu bayaran{bolehBayar ? " oleh Bendahari" : ""}.
         </div>
       )}
 
-      {/* Senarai permohonan */}
       <section className="space-y-4">
         {senarai.length === 0 && <p className="rounded-xl bg-white p-6 text-center text-slate-400 shadow-sm">Tiada permohonan lagi.</p>}
         {senarai.map((b) => {
@@ -129,7 +134,6 @@ export default async function AdminBantuanPage() {
 
               <p className="mt-2 rounded-lg bg-slate-50 p-2 text-sm text-slate-700">{b.sebab}</p>
 
-              {/* Penilaian kewangan untuk semakan Biro */}
               {adaKewangan && (
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600">
                   {b.pekerjaan && <span>Pekerjaan: <b>{labelPekerjaan(b.pekerjaan)}{b.jawatan ? ` (${b.jawatan})` : ""}</b></span>}
@@ -152,7 +156,6 @@ export default async function AdminBantuanPage() {
                 <div className="text-[11px] text-slate-400">Diproses: {b.diproses_nama}{b.tarikh_tindakan ? ` · ${tarikhMs(b.tarikh_tindakan)}` : ""}</div>
               )}
 
-              {/* Tindakan Biro: semak / lulus / tolak */}
               {bolehUrus && ["baru", "semakan"].includes(b.status) && (
                 <div className="mt-3 space-y-2 border-t pt-3">
                   {b.status === "baru" && (
@@ -187,7 +190,6 @@ export default async function AdminBantuanPage() {
                 </div>
               )}
 
-              {/* Tindakan Bendahari: rekod bayaran */}
               {bolehBayar && b.status === "lulus" && (
                 <form action={rekodBayaranBantuan} className="mt-3 flex flex-wrap items-end gap-2 border-t pt-3">
                   <input type="hidden" name="id" value={b.id} />

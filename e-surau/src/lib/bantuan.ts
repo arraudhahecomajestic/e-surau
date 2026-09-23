@@ -60,3 +60,11 @@ export const KESIHATAN = [
 export function labelPekerjaan(kod: string | null | undefined): string {
   return PEKERJAAN.find((x) => x.kod === kod)?.label ?? (kod || "—");
 }
+
+// Hubungan bantuan — permohonan melalui temu bual (bukan self-serve).
+export const WA_BIRO = "60127329885";            // Imam Hafiz — Biro Kebajikan
+export const WA_BIRO_NAMA = "Imam Hafiz";
+export const WA_BIRO_TEKS = "Assalamualaikum, saya ingin bertanya berkenaan Bantuan Kecemasan Surau Ar-Raudhah.";
+export function pautWaBiro(teks: string = WA_BIRO_TEKS): string {
+  return `https://wa.me/${WA_BIRO}?text=${encodeURIComponent(teks)}`;
+}
