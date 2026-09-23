@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { rm } from "@/lib/format";
-import { JENIS_BANTUAN, labelJenis } from "@/lib/bantuan";
+import { JENIS_BANTUAN, labelJenis, pautWaBiro } from "@/lib/bantuan";
 import { NAMA_SURAU } from "@/lib/tetapan";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +41,7 @@ export default async function BantuanAwamPage() {
         <h1 className="text-2xl font-bold text-slate-900">Tabung Ihsan · Bantuan Kecemasan</h1>
         <p className="mt-1 text-sm text-slate-600">{NAMA_SURAU}</p>
         <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600">
-          Tabung ihsan membantu ahli kariah yang memerlukan — wang tunai, minyak, sewa, makanan, perubatan & bil.
+          Tabung ihsan membantu ahli kariah yang memerlukan — wang tunai, perubatan, pendidikan, sewa & keperluan asas.
           Demi menjaga maruah penerima, kami kongsi angka keseluruhan sahaja tanpa mendedahkan sebarang nama.
         </p>
       </div>
@@ -52,11 +52,18 @@ export default async function BantuanAwamPage() {
         <Kad label="Keluarga Dibantu" nilai={`${kesDibantu}`} warna="text-slate-800" />
       </div>
 
-      <section className="rounded-xl bg-white p-5 shadow-sm">
-        <h2 className="mb-3 font-semibold text-slate-900">Bantuan Mengikut Kategori</h2>
-        {senaraiJenis.length === 0 ? (
-          <p className="text-sm text-slate-400">Belum ada bantuan direkodkan lagi.</p>
-        ) : (
+      {/* Sumbangan — fokus utama halaman awam */}
+      <div className="rounded-xl border border-surau/20 bg-surau/5 p-5 text-center">
+        <h2 className="font-semibold text-slate-900">Ingin Menyumbang?</h2>
+        <p className="mt-1 text-sm text-slate-600">Sumbangan anda ke Tabung Ihsan membantu jiran kariah yang memerlukan. Setiap ringgit disalurkan dengan amanah &amp; telus.</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-3">
+          <Link href="/infaq" className="rounded-lg bg-surau px-6 py-2.5 text-sm font-semibold text-white hover:bg-surau-dark">Infaq / Sumbangan</Link>
+        </div>
+      </div>
+
+      {senaraiJenis.length > 0 && (
+        <section className="rounded-xl bg-white p-5 shadow-sm">
+          <h2 className="mb-3 font-semibold text-slate-900">Bantuan Mengikut Kategori</h2>
           <div className="space-y-2">
             {senaraiJenis.map((j) => (
               <div key={j.kod} className="flex items-center justify-between border-b border-slate-100 py-2 last:border-0">
@@ -65,20 +72,21 @@ export default async function BantuanAwamPage() {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <div className="rounded-xl border border-surau/20 bg-surau/5 p-5 text-center">
-        <h2 className="font-semibold text-slate-900">Ingin menyumbang?</h2>
-        <p className="mt-1 text-sm text-slate-600">Sumbangan anda ke Tabung Ihsan membantu jiran kariah yang memerlukan. Hubungi pejabat surau atau salurkan melalui tabung surau.</p>
-        <div className="mt-3 flex flex-wrap justify-center gap-3">
-          <Link href="/infaq" className="rounded-lg bg-surau px-5 py-2.5 text-sm font-semibold text-white hover:bg-surau-dark">Infaq / Sumbangan</Link>
-          <Link href="/ahli/bantuan" className="rounded-lg border border-surau/40 px-5 py-2.5 text-sm font-semibold text-surau hover:bg-surau/10">Mohon Bantuan</Link>
-        </div>
+      {/* Perlukan bantuan — terus WhatsApp Biro Kebajikan */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 text-center shadow-sm">
+        <h2 className="font-semibold text-slate-900">Perlukan Bantuan?</h2>
+        <p className="mt-1 text-sm text-slate-600">Hubungi kami:</p>
+        <a href={pautWaBiro()} target="_blank" rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+          Hubungi Kami (WhatsApp)
+        </a>
       </div>
 
       <p className="text-center text-xs text-slate-400">
-        Permohonan bantuan hanya untuk ahli kariah berdaftar. Setiap kes disemak oleh Biro Kebajikan surau.
+        Permohonan bantuan diuruskan oleh Biro Kebajikan surau melalui temu bual. Setiap kes disemak &amp; diluluskan mengikut garis panduan.
       </p>
     </div>
   );
