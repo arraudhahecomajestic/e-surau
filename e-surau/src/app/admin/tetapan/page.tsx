@@ -22,6 +22,7 @@ export default async function TetapanPage() {
   const bayaranOnlineOn = t.bayaran_online === "true";
   const kewanganAwamOn = t.kewangan_awam === "true";
   const infaqOn = t.infaq_dipapar === "true";
+  const ayaanNota = t.ayaan_pengetahuan || "";
 
   return (
     <div className="space-y-6">
@@ -173,6 +174,36 @@ export default async function TetapanPage() {
             pendingText="Menukar…"
           >
             {bayaranOnlineOn ? "Kunci SEMUA Bayaran Online" : "Buka SEMUA Bayaran Online"}
+          </ButangHantar>
+        </form>
+      </section>
+
+      {/* Pengetahuan Ayaan (Pembantu Maya) */}
+      <section className="rounded-xl border-2 border-surau/40 bg-white p-5 shadow-sm">
+        <h2 className="font-semibold text-slate-900">Pengetahuan Ayaan (Pembantu Maya)</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Tulis apa-apa maklumat terkini yang anda mahu <b>Ayaan</b> tahu &amp; sampaikan kepada ahli kariah —
+          contoh keputusan mesyuarat, program khas, perubahan urusan, atau apa-apa hebahan. Ayaan akan
+          <b> terus guna maklumat ini secara langsung</b> tanpa perlu kemas kini sistem. Kemas kini bila-bila masa.
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Nota: Pengumuman rasmi yang anda terbitkan di <b>Pengumuman</b> juga dibaca Ayaan secara automatik.
+          Kotak ini untuk maklumat tambahan / dalaman yang tidak sesuai jadi pengumuman awam.
+        </p>
+        <form action={setTetapan} className="mt-3 space-y-3">
+          <input type="hidden" name="kunci" value="ayaan_pengetahuan" />
+          <textarea
+            name="nilai"
+            defaultValue={ayaanNota}
+            rows={8}
+            placeholder="Contoh:&#10;- Kutipan khas untuk naik taraf bumbung surau sedang dijalankan sehingga akhir bulan.&#10;- Kelas mengaji dewasa bermula setiap Isnin 8:30 malam mulai minggu depan.&#10;- Surau sedang mencari sukarelawan pengurusan jenazah — hubungi Setiausaha."
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-surau"
+          />
+          <ButangHantar
+            className="rounded-lg bg-surau px-5 py-2.5 text-sm font-semibold text-white hover:bg-surau-dark disabled:opacity-60"
+            pendingText="Menyimpan…"
+          >
+            Simpan Pengetahuan Ayaan
           </ButangHantar>
         </form>
       </section>

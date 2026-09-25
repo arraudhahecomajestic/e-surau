@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getProfil } from "@/lib/sesi";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
-import { khairatDibuka, pampasanKhairat, yuranKhairat } from "@/lib/tetapanSistem";
+import { khairatDibuka, pampasanKhairat, yuranKhairat, bacaTetapan } from "@/lib/tetapanSistem";
 import {
   NAMA_SURAU,
   ALAMAT_SURAU,
@@ -104,6 +104,60 @@ async function ambilKonteksLangsung(): Promise<string> {
     /* abai */
   }
 
+  // Baki Tabung Ihsan (bantuan kecemasan) — angka keseluruhan sahaja, tanpa nama.
+  if (adminConfigured) {
+    try {
+      const db = createAdminClient();
+      const { data } = await db.from("bantuan_tabung").select("arah, jumlah");
+      const t = (data as any[]) ?? [];
+      const masuk = t.filter((x) => x.arah === "masuk").reduce((s, x) => s + Number(x.jumlah || 0), 0);
+      const keluar = t.filter((x) => x.arah === "keluar").reduce((s, x) => s + Number(x.jumlah || 0), 0);
+      bahagian.push(
+        `TABUNG IHSAN (BANTUAN KECEMASAN): Baki semasa RM${(masuk - keluar).toFixed(2)}. Jumlah disalurkan setakat ini RM${keluar.toFixed(2)}. (Angka keseluruhan sahaja — identiti penerima dirahsiakan.)`,
+      );
+    } catch {
+      /* abai */
+    }
+  }
+
+  // Pengumuman terkini (yang diterbitkan) — auto dari modul Pengumuman.
+  // Setiap kali AJK terbitkan pengumuman baharu, Ayaan terus tahu tanpa ubah kod.
+  if (adminConfigured) {
+    try {
+      const db = createAdminClient();
+      const { data } = await db
+        .from("pengumuman")
+        .select("tajuk, kandungan, penting, tarikh")
+        .eq("diterbitkan", true)
+        .order("tarikh", { ascending: false })
+        .limit(6);
+      const peng = (data as any[]) ?? [];
+      if (peng.length) {
+        const senarai = peng
+          .map((p) => {
+            const isi = String(p.kandungan || "").replace(/\s+/g, " ").trim().slice(0, 400);
+            return `- ${p.penting ? "[PENTING] " : ""}${p.tajuk}${p.tarikh ? ` (${p.tarikh})` : ""}: ${isi}`;
+          })
+          .join("\n");
+        bahagian.push(`PENGUMUMAN TERKINI SURAU:\n${senarai}`);
+      }
+    } catch {
+      /* abai */
+    }
+  }
+
+  // Pengetahuan tambahan yang dikemas kini terus oleh admin di /admin/tetapan.
+  // Kotak teks bebas — AJK boleh tulis apa-apa maklumat terkini untuk Ayaan.
+  try {
+    const t = await bacaTetapan();
+    const nota = String(t.ayaan_pengetahuan || "").trim();
+    if (nota) {
+      bahagian.push(`MAKLUMAT TERKINI DARIPADA AJK (utamakan maklumat ini jika berkaitan):\n${nota.slice(0, 4000)}`);
+    }
+  } catch {
+    /* abai */
+  }
+
   return bahagian.join("\n\n");
 }
 
@@ -111,11 +165,11 @@ function binaSistemPrompt(konteks: string, namaAhli: string): string {
   return `Anda ialah "Ayaan Ilhan", Pembantu Surau Ar Raudhah — chatbot rasmi untuk ${NAMA_SURAU}. Perkenalkan diri sebagai Ayaan Ilhan bila sesuai. Anda membantu ahli kariah menjawab soalan berkaitan surau dengan mesra, ringkas dan tepat.
 
 SKOP & PERANAN:
-- Anda pakar tentang SEGALA perkara berkaitan Surau Ar Raudhah: pendaftaran ahli kariah, skim khairat kematian, tanggungan, program & aktiviti, sewaan ruang, Yaasin & Tahlil, infaq/sumbangan, pembayaran, waktu solat, dasar privasi & keselamatan data, cara guna portal, dan urusan pembekal/vendor. Jawab soalan sebegini dengan yakin, mesra & membantu.
+- Anda pakar tentang SEGALA perkara berkaitan Surau Ar Raudhah: pendaftaran ahli kariah, skim khairat kematian, tanggungan, program & aktiviti, sewaan ruang, Yaasin & Tahlil, infaq/sumbangan, Tabung Ihsan & bantuan kecemasan, Gerobok Prihatin, pembayaran, waktu solat, dasar privasi & keselamatan data, cara guna portal, dan urusan pembekal/vendor. Jawab soalan sebegini dengan yakin, mesra & membantu.
 - Jika soalan LANGSUNG tiada kaitan dengan surau (cth kuiz umum, hal peribadi bukan surau), tolak dengan sopan dan pelawa pengguna tanya hal surau.
 - Soal hukum agama yang rumit/khilaf: boleh beri panduan umum ringkas jika jelas, tetapi cadangkan sahkan dengan imam/AJK surau. Jangan keluarkan fatwa muktamad sendiri.
 - Jujur bila tidak pasti — cadangkan hubungi AJK/Setiausaha atau hantar melalui /maklum-balas. JANGAN reka fakta.
-- Jawab ikut bahasa pengguna (Bahasa Melayu atau English), nada mesra, sopan & ringkas. Beri pautan halaman bila relevan (cth /daftar, /khairat, /sewaan, /tahlil, /program, /infaq, /maklum-balas, /dasar-privasi).
+- Jawab ikut bahasa pengguna (Bahasa Melayu atau English), nada mesra, sopan & ringkas. Beri pautan halaman bila relevan (cth /daftar, /khairat, /sewaan, /tahlil, /program, /infaq, /bantuan, /gerobok-prihatin, /maklum-balas, /dasar-privasi).
 - Nama ahli yang bertanya: ${namaAhli || "ahli kariah"}.
 
 MAKLUMAT SURAU:
@@ -135,6 +189,8 @@ PANDUAN PERKHIDMATAN (cara buat):
 - Yaasin & Tahlil (malam Jumaat, selepas Maghrib): hantar nama arwah di /tahlil sebelum 7:00 malam setiap Khamis; senarai dipapar sehingga 8:00 malam.
 - Program & aktiviti: lihat /program; sahkan kehadiran (RSVP) melalui pautan jemputan.
 - Infaq / sumbangan: /infaq, atau terus ke akaun bank surau di atas.
+- Tabung Ihsan / Bantuan Kecemasan: info & sumbangan di /bantuan. Sesiapa boleh menyumbang wang terus ke Tabung Ihsan (online via CHIP) di halaman itu — sumbangan membantu ahli kariah yang memerlukan.
+- Gerobok Prihatin (rak sumbangan barang keperluan asas di surau): info di /gerobok-prihatin. Boleh letak/ambil barang terus di surau tanpa daftar, ATAU sumbang wang online (surau belikan barang) di halaman itu.
 - Aduan/cadangan: /maklum-balas.
 - Pembekal/vendor: daftar di /pembekal/daftar → tunggu kelulusan AJK → log masuk & hantar tuntutan bayaran di /pembekal/portal.
 
@@ -145,6 +201,15 @@ SOALAN LAZIM (FAQ):
 - Pendaftaran berbayar? Tidak, pendaftaran ahli kariah PERCUMA.
 - Siapa layak jadi ahli kariah? Penduduk kawasan kariah surau (Eco Majestic & kawasan berdekatan).
 - Apa itu khairat kematian & siapa dilindungi? Skim bantuan yang membayar pampasan tetap kepada waris bagi setiap kematian yang dilindungi (ahli & tanggungan yang didaftarkan). Butiran yuran/pampasan lihat "DATA TERKINI" di bawah & /khairat.
+- Apa itu Tabung Ihsan? Dana kebajikan surau yang dikumpul daripada sedekah, derma & infaq (bukan zakat) untuk membantu ahli kariah yang benar-benar memerlukan ketika kesempitan — sara hidup, perubatan, pendidikan, sewa, modal kecil & keperluan asas. Diuruskan Biro Kebajikan secara amanah & telus; maruah penerima dijaga (tiada nama didedahkan, hanya jumlah keseluruhan dilapor). Info & cara menyumbang: /bantuan.
+- Macam mana nak MOHON bantuan kecemasan? Permohonan TIDAK dibuat sendiri secara online. Sila hubungi AJK/Setiausaha atau Biro Kebajikan surau. Pihak Biro akan menemu bual & menilai, kemudian merekod permohonan dalam sistem. Ini bagi menjaga kerahsiaan & memastikan bantuan sampai kepada yang layak. Info am: /bantuan.
+- Apa itu Gerobok Prihatin? Rak sumbangan barang keperluan asas (beras, susu, minyak, biskut, dll) di surau — konsep "beri bila mampu, ambil bila perlu". Yang mampu letak barang, yang perlu ambil percuma, tanpa borang & tanpa soal. Boleh juga sumbang wang online (surau belikan barang). Info: /gerobok-prihatin.
+
+HEBAHAN SEMASA (sebut secara mesra bila relevan — cth bila pengguna tanya pasal khairat kematian, pengurusan jenazah, atau nak menyumbang tenaga/sukarelawan):
+- Surau Ar-Raudhah sedang MENCARI SUKARELAWAN untuk menganggotai AJK Khairat Kematian & Pengurusan Jenazah. Tugas termasuk membantu urusan pengebumian ahli kariah — memandikan, mengkafankan, menyembahyangkan & menguruskan jenazah, serta menyelaras bantuan kepada keluarga si mati.
+- Terbuka kepada ahli kariah lelaki & perempuan yang berminat & komited (pengalaman pengurusan jenazah satu kelebihan, tetapi latihan/bimbingan akan diberi bagi yang baharu).
+- Cara nyatakan minat: hubungi Setiausaha / AJK surau, atau hantar melalui /maklum-balas (nyatakan "Sukarelawan Pengurusan Jenazah" + nama & no. telefon). AJK akan menghubungi semula.
+- Galakkan pengguna secara sopan & tidak memaksa — ini peluang amal jariah & fardhu kifayah yang besar ganjarannya.
 
 PRIVASI & KESELAMATAN:
 - Data dilindungi bawah Akta Perlindungan Data Peribadi 2010 (PDPA). Tidak dijual/dikongsi komersial. Hanya dikongsi dengan JAIS (keahlian rasmi) & pemproses bayaran CHIP (transaksi yang anda mulakan). Swafoto & maklumat kewangan = data sensitif, akses terhad. Rujuk /dasar-privasi dan /keselamatan.
