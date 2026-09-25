@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { rm } from "@/lib/format";
-import { JENIS_BANTUAN, labelJenis, pautWaBiro } from "@/lib/bantuan";
+import { JENIS_BANTUAN, labelJenis } from "@/lib/bantuan";
 import { NAMA_SURAU } from "@/lib/tetapan";
+import TabungIhsanDermaForm from "@/components/TabungIhsanDermaForm";
 
 export const dynamic = "force-dynamic";
 
@@ -52,12 +52,17 @@ export default async function BantuanAwamPage() {
         <Kad label="Keluarga Dibantu" nilai={`${kesDibantu}`} warna="text-slate-800" />
       </div>
 
-      {/* Sumbangan — fokus utama halaman awam */}
-      <div className="rounded-xl border border-surau/20 bg-surau/5 p-5 text-center">
-        <h2 className="font-semibold text-slate-900">Ingin Menyumbang?</h2>
-        <p className="mt-1 text-sm text-slate-600">Sumbangan anda ke Tabung Ihsan membantu jiran kariah yang memerlukan. Setiap ringgit disalurkan dengan amanah &amp; telus.</p>
-        <div className="mt-3 flex flex-wrap justify-center gap-3">
-          <Link href="/infaq" className="rounded-lg bg-surau px-6 py-2.5 text-sm font-semibold text-white hover:bg-surau-dark">Infaq / Sumbangan</Link>
+      {/* Sumbang ke Tabung Ihsan — terus via CHIP (kredit ke baki tabung) */}
+      <div className="rounded-xl border-2 border-surau/30 bg-surau/5 p-5">
+        <div className="text-center">
+          <h2 className="font-semibold text-slate-900">Sumbang ke Tabung Ihsan</h2>
+          <p className="mx-auto mt-1 max-w-lg text-sm text-slate-600">
+            Sumbangan anda terus masuk ke Tabung Ihsan untuk membantu jiran kariah yang memerlukan.
+            Setiap ringgit disalurkan dengan amanah &amp; telus.
+          </p>
+        </div>
+        <div className="mt-4">
+          <TabungIhsanDermaForm />
         </div>
       </div>
 
@@ -75,18 +80,30 @@ export default async function BantuanAwamPage() {
         </section>
       )}
 
-      {/* Perlukan bantuan — terus WhatsApp Biro Kebajikan */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-        <h2 className="font-semibold text-slate-900">Perlukan Bantuan?</h2>
-        <p className="mt-1 text-sm text-slate-600">Hubungi kami:</p>
-        <a href={pautWaBiro()} target="_blank" rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90">
-          Hubungi Kami (WhatsApp)
-        </a>
+      {/* Apa itu Tabung Ihsan — penerangan */}
+      <div className="rounded-xl bg-white p-5 shadow-sm">
+        <h2 className="font-semibold text-slate-900">Apa itu Tabung Ihsan?</h2>
+        <div className="mt-2 space-y-2 text-sm text-slate-600">
+          <p>
+            Tabung Ihsan ialah dana kebajikan Surau Ar-Raudhah yang dikumpul daripada <b>sedekah, derma &amp; infaq</b>
+            ahli kariah dan orang ramai — bukan dana zakat. Ia lahir daripada semangat <b>ihsan &amp; ta&rsquo;awun</b>
+            (tolong-menolong) sesama jiran kariah: yang berkemampuan menghulur, yang memerlukan dibantu.
+          </p>
+          <p>
+            Tujuannya membantu <b>ahli kariah yang benar-benar memerlukan</b> ketika kesempitan — meringankan beban
+            sara hidup, perubatan, pendidikan, sewa tempat tinggal, modal kecil dan keperluan asas.
+          </p>
+          <p>
+            Dana ini diuruskan dengan <b>amanah &amp; telus</b> oleh Biro Kebajikan surau. Setiap kes disemak dan
+            diluluskan mengikut garis panduan, sambil menjaga <b>maruah penerima</b> — tiada nama didedahkan, hanya
+            jumlah keseluruhan dilaporkan kepada ahli kariah. Setiap sumbangan anda menghidupkan tabung ini,
+            insya-Allah menjadi amal jariah yang berterusan.
+          </p>
+        </div>
       </div>
 
       <p className="text-center text-xs text-slate-400">
-        Permohonan bantuan diuruskan oleh Biro Kebajikan surau melalui temu bual. Setiap kes disemak &amp; diluluskan mengikut garis panduan.
+        Setiap kes disemak &amp; diluluskan oleh Biro Kebajikan mengikut garis panduan. Maklumat pemohon dirahsiakan.
       </p>
     </div>
   );

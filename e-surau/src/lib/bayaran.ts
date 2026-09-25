@@ -106,6 +106,41 @@ export async function laksanakanBayaran(chipId: string): Promise<{ dibayar: bool
         direkod_oleh: "CHIP",
       });
     }
+  } else if (b.jenis === "tabung_ihsan") {
+    // Sumbangan wang Tabung Ihsan (Bantuan Kecemasan).
+    // 1) Rekod income dalam Kewangan (kategori "Dana Tabung Ihsan").
+    const katId = await pastiKategori(db, "Dana Tabung Ihsan", false);
+    if (katId) {
+      await db.from("kutipan").insert({
+        kategori_id: katId,
+        jumlah: Number(b.jumlah || 0),
+        kaedah: "online",
+        catatan: `Sumbangan Tabung Ihsan${b.nama ? " — " + b.nama : ""} (CHIP)`,
+        tarikh: new Date().toISOString().slice(0, 10),
+        direkod_oleh: "CHIP",
+      });
+    }
+    // 2) Kredit ke baki Tabung Ihsan (untuk paparan awam & panel Biro).
+    await db.from("bantuan_tabung").insert({
+      arah: "masuk",
+      jumlah: Number(b.jumlah || 0),
+      sumber: "derma",
+      keterangan: `Sumbangan online${b.nama ? " — " + b.nama : ""} (CHIP)`,
+      dicipta_nama: "CHIP",
+    });
+  } else if (b.jenis === "gerobok") {
+    // Sumbangan wang Gerobok Prihatin → rekod income "Dana Gerobok Prihatin".
+    const katId = await pastiKategori(db, "Dana Gerobok Prihatin", false);
+    if (katId) {
+      await db.from("kutipan").insert({
+        kategori_id: katId,
+        jumlah: Number(b.jumlah || 0),
+        kaedah: "online",
+        catatan: `Sumbangan Gerobok Prihatin${b.nama ? " — " + b.nama : ""} (CHIP)`,
+        tarikh: new Date().toISOString().slice(0, 10),
+        direkod_oleh: "CHIP",
+      });
+    }
   } else if (b.jenis === "program" && b.rujukan_id) {
     // Pendaftaran program berbayar (kem/kelas) — tandakan dibayar + rekod income
     await db.from("program_pendaftaran").update({ status_bayar: "dibayar" }).eq("id", b.rujukan_id);
