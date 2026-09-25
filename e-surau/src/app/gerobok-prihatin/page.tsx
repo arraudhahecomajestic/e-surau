@@ -24,10 +24,17 @@ export default function GerobokPrihatinPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
       {/* Hero */}
-      <div className="rounded-2xl border border-surau/20 bg-surau/5 p-6 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Gerobok Prihatin</h1>
-        <p className="mt-2 text-lg font-semibold text-surau">“Beri bila mampu, ambil bila perlu.”</p>
-        <p className="mt-1 text-sm text-slate-600">{NAMA_SURAU}</p>
+      <div className="overflow-hidden rounded-2xl border border-surau/20 bg-surau/5 text-center shadow-sm">
+        <img
+          src="/gerobok-prihatin.jpg"
+          alt="Gerobok Prihatin Surau Ar-Raudhah — rak sumbangan barang keperluan asas"
+          className="h-56 w-full object-cover sm:h-72"
+        />
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-slate-900">Gerobok Prihatin</h1>
+          <p className="mt-2 text-lg font-semibold text-surau">“Beri bila mampu, ambil bila perlu.”</p>
+          <p className="mt-1 text-sm text-slate-600">{NAMA_SURAU}</p>
+        </div>
       </div>
 
       {/* Apa itu */}
