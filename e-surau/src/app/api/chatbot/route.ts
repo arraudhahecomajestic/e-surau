@@ -14,9 +14,11 @@ export const dynamic = "force-dynamic";
 
 const ENDPOINT = "https://api.anthropic.com/v1/messages";
 const MODEL_ENDPOINT = "https://api.anthropic.com/v1/models?limit=100";
-// Model lalai (ID bertarikh — lebih stabil dari alias "-latest").
-// Boleh ganti dengan env ANTHROPIC_MODEL. Jika tak sah, sistem cari sendiri.
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
+// Model lalai. Claude Sonnet 4 (claude-sonnet-4-20250514) telah bersara pada
+// 15 Jun 2026 — jangan guna lagi. Alias "claude-sonnet-5" sentiasa tunjuk ke
+// versi Sonnet terkini yang disokong. Boleh ganti dengan env ANTHROPIC_MODEL.
+// Jika model tak sah (404), sistem auto-cari model sah dari akaun.
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const MAX_SEJARAH = 12; // had mesej dihantar (jimat kos)
 
 type Msg = { role: "user" | "assistant"; content: string };
