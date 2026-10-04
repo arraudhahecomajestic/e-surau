@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Item = { href: string; label: string };
 type Kump = { label: string; items: Item[] };
@@ -40,7 +40,19 @@ const SISTEM: Item[] = [
   { href: "/admin/tetapan", label: "Tetapan" },
 ];
 
-export default function AdminNav({ aktif, nama, peranan, master }: { aktif: string; nama?: string; peranan?: string; master?: boolean }) {
+export default function AdminNav({ aktif, nama, peranan, master, perananTambahan }: { aktif: string; nama?: string; peranan?: string; master?: boolean; perananTambahan?: string[] }) {
+  // Dwi-peranan: ambil peranan tambahan secara langsung (jika caller tak hantar).
+  const [extra, setExtra] = useState<string[]>(perananTambahan ?? []);
+  useEffect(() => {
+    if (perananTambahan && perananTambahan.length) return;
+    let hidup = true;
+    fetch("/api/saya-akses")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (hidup && Array.isArray(d?.peranan_tambahan)) setExtra(d.peranan_tambahan); })
+      .catch(() => {});
+    return () => { hidup = false; };
+  }, [perananTambahan]);
+
   let atas: Item[] = [];
   let kumpulan: Kump[] = [];
 
@@ -87,6 +99,36 @@ export default function AdminNav({ aktif, nama, peranan, master }: { aktif: stri
       { label: "Setiausaha", items: SETIAUSAHA },
     ];
     if (master) kumpulan.push({ label: "Sistem", items: SISTEM });
+  }
+
+  // Dwi-peranan: tambah pautan untuk peranan tambahan yang belum ada dalam menu.
+  const extraSet = new Set((extra ?? []).filter((r) => r && r !== peranan));
+  if (extraSet.size) {
+    const sedia = new Set<string>();
+    atas.forEach((i) => sedia.add(i.href));
+    kumpulan.forEach((k) => k.items.forEach((i) => sedia.add(i.href)));
+    const tambahan: Item[] = [];
+    const tambah = (href: string, label: string) => {
+      if (!sedia.has(href)) { sedia.add(href); tambahan.push({ href, label }); }
+    };
+    if (extraSet.has("biro_kebajikan")) tambah("/admin/bantuan", "Bantuan Kecemasan");
+    if (extraSet.has("ajk")) {
+      tambah("/admin/program", "Program");
+      tambah("/admin/paparan", "Paparan TV");
+      tambah("/admin/tahlil", "Tahlil");
+      tambah("/admin/khairat", "Khairat");
+      tambah("/admin/tuntutan", "Tuntutan (sah)");
+      tambah("/admin/agm", "Mesyuarat Agung (AGM)");
+      tambah("/admin/kandungan", "Kandungan Surau");
+      tambah("/admin/vendor", "Vendor");
+    }
+    if (extraSet.has("bendahari")) {
+      tambah("/admin/kewangan", "Kewangan");
+      tambah("/admin/tuntutan", "Tuntutan");
+      tambah("/admin/bantuan", "Bantuan Kecemasan");
+    }
+    if (extraSet.has("imam")) tambah("/admin/tahlil", "Tahlil");
+    if (tambahan.length) kumpulan = [...kumpulan, { label: "Akses Tambahan", items: tambahan }];
   }
 
   return <Sidebar aktif={aktif} nama={nama} atas={atas} kumpulan={kumpulan} />;

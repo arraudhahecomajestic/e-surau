@@ -23,3 +23,19 @@ export async function tetapkanPeranan(formData: FormData) {
   }).eq("id", id);
   revalidatePath("/admin/peranan");
 }
+
+// Peranan tambahan (dwi-peranan) — seorang boleh pegang lebih satu akses,
+// cth AJK + Biro Kebajikan. Hanya peranan "tambahan" terhad dibenarkan di sini
+// (bukan admin/master — itu ikut jawatan utama sahaja).
+const PERANAN_TAMBAHAN_DIBENAR = ["biro_kebajikan", "ajk", "bendahari", "imam"];
+
+export async function tetapkanPerananTambahan(formData: FormData) {
+  const saya = await getProfil();
+  if (!isMaster(saya)) return;
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const dipilih = PERANAN_TAMBAHAN_DIBENAR.filter((r) => formData.get(`r_${r}`) === "on");
+  const db = createAdminClient();
+  await db.from("profil").update({ peranan_tambahan: dipilih }).eq("id", id);
+  revalidatePath("/admin/peranan");
+}
