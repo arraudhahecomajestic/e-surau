@@ -10,6 +10,7 @@ import { buatT } from "@/lib/i18n";
 import { createAdminClient, adminConfigured } from "@/lib/supabaseAdmin";
 import { KAWASAN, kenalKawasan } from "@/lib/kawasan";
 import StatFasaChart from "@/components/StatFasaChart";
+import PelawatKaunter from "@/components/PelawatKaunter";
 import KewanganRingkasHome from "@/components/KewanganRingkasHome";
 
 export const dynamic = "force-dynamic";
@@ -327,6 +328,8 @@ export default async function Home() {
           </div>
         )}
       </section>
+
+      <PelawatKaunter />
 
     </div>
   );
