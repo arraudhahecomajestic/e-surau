@@ -65,10 +65,18 @@ export function agregatKehadiran(rows: KehadiranRow[]): Agregat {
     const rec = hari.get(tarikh) ?? { tepat: false, lewat: false };
     if (lewat) rec.lewat = true; else rec.tepat = true;
     hari.set(tarikh, rec);
-    // OT — masa keluar melebihi tamat shift
+    // OT — jam bekerja DI LUAR tetingkap shift (masuk awal + balik lewat).
     if (r.keluar) {
+      const mulaMin = minitDari(mula);
+      const tamatMin = minitDari(tamat);
+      // (1) OT masuk awal: clock-in sebelum shift mula.
+      const awal = mulaMin - minit;
+      if (awal > 0) jamOT += awal / 60;
+      // (2) OT balik lewat: clock-out selepas shift tamat (kendali lintas tengah malam).
       const keluar = masaTempatan(r.keluar);
-      const lebih = keluar.minit - minitDari(tamat);
+      let keluarMin = keluar.minit;
+      if (keluarMin < minit) keluarMin += 24 * 60; // keluar hari berikutnya, cth 00:33
+      const lebih = keluarMin - tamatMin;
       if (lebih > 0) jamOT += lebih / 60;
     }
   }
