@@ -61,6 +61,7 @@ export default async function AdminGajiPage({ searchParams }: { searchParams: { 
           config={pra.config!}
           agg={pra.agg!}
           sedia={pra.sedia}
+          pinjaman={pra.pinjaman}
         />
       )}
 

@@ -8,7 +8,7 @@ import { kiraGaji, labelBulan, type GajiConfig, type Agregat } from "@/lib/gaji"
 import { janaGaji, sahkanGaji, bukaSemulaGaji, simpanConfig } from "@/app/admin/staf/gaji/actions";
 
 export default function GajiPanel({
-  bulan, staf, senarai, config, agg, sedia,
+  bulan, staf, senarai, config, agg, sedia, pinjaman,
 }: {
   bulan: string;
   staf: string;
@@ -16,14 +16,17 @@ export default function GajiPanel({
   config: GajiConfig;
   agg: Agregat;
   sedia: any | null;
+  pinjaman?: any | null;
 }) {
   const router = useRouter();
   const disah = sedia?.status === "sah";
 
   const [jamOt, setJamOt] = useState<number>(sedia?.jam_ot ?? agg.jam_ot);
   const [cutiTanpaIzin, setCutiTanpaIzin] = useState<number>(sedia?.hari_cuti_tanpa_izin ?? 0);
-  const [potonganLain, setPotonganLain] = useState<number>(sedia?.potongan_lain ?? 0);
-  const [potonganLainNota, setPotonganLainNota] = useState<string>(sedia?.potongan_lain_nota ?? "");
+  // Jika ada pinjaman perlu dipotong bulan ni & slip belum dijana, auto-isi.
+  const pinjAuto = pinjaman?.due && !sedia ? pinjaman : null;
+  const [potonganLain, setPotonganLain] = useState<number>(sedia?.potongan_lain ?? (pinjAuto ? Number(pinjAuto.amaun) : 0));
+  const [potonganLainNota, setPotonganLainNota] = useState<string>(sedia?.potongan_lain_nota ?? (pinjAuto ? String(pinjAuto.nota) : ""));
   const [nota, setNota] = useState<string>(sedia?.nota ?? "");
   const [perkhidmatanAktif, setPerkhidmatanAktif] = useState<boolean>(config.elaun_perkhidmatan_aktif);
   const [busy, setBusy] = useState(false);
@@ -90,6 +93,18 @@ export default function GajiPanel({
         </label>
         {disah && <span className="ml-auto rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">✓ Slip Disahkan</span>}
       </div>
+
+      {/* Peringatan pinjaman staf */}
+      {pinjaman?.due && (
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <b>Peringatan Pinjaman Staf:</b> Bulan ini ada potongan ansuran pinjaman{" "}
+          <b>{rm(Number(pinjaman.amaun))}</b> ({pinjaman.nota}). Baki selepas bulan ini:{" "}
+          <b>{rm(Number(pinjaman.baki_selepas))}</b>.
+          {sedia
+            ? " (Slip sudah dijana — semak kotak 'Potongan lain'.)"
+            : " Jumlah ini sudah diisi automatik dalam 'Potongan lain' di bawah — tekan Simpan untuk sahkan."}
+        </div>
+      )}
 
       {/* Ringkasan kehadiran (auto) */}
       <section className="rounded-xl bg-white p-5 shadow-sm">

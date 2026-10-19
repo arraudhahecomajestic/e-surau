@@ -6,6 +6,14 @@ import { getProfil, isPentadbir, isMaster, type Profil } from "@/lib/sesi";
 import { agregatKehadiran, kiraGaji, julatBulan, type GajiConfig, type KehadiranRow, type Agregat } from "@/lib/gaji";
 import { gredDari } from "@/lib/penilaian";
 
+// Pinjaman staf: helper kira ansuran bulan tertentu.
+const round2 = (n: number) => Math.round(n * 100) / 100;
+function diffBulan(a: string, b: string): number {
+  const [ay, am] = a.split("-").map(Number);
+  const [by, bm] = b.split("-").map(Number);
+  return (by - ay) * 12 + (bm - am);
+}
+
 function bolehGaji(p: Profil | null): boolean {
   // Gaji = hal sulit → SU/AJK (pentadbir) atau master sahaja. Bukan bendahari sahaja.
   return isMaster(p);
@@ -14,7 +22,7 @@ function bolehGaji(p: Profil | null): boolean {
 // Tarik config + ringkasan attendance untuk seorang staf pada satu bulan.
 export async function pratontonGaji(profilId: string, bulan: string): Promise<{
   ok: boolean; msg?: string;
-  config?: GajiConfig; agg?: Agregat; sedia?: any | null;
+  config?: GajiConfig; agg?: Agregat; sedia?: any | null; pinjaman?: any | null;
 }> {
   const p = await getProfil();
   if (!bolehGaji(p)) return { ok: false, msg: "Tiada akses." };
@@ -36,7 +44,35 @@ export async function pratontonGaji(profilId: string, bulan: string): Promise<{
   // Slip sedia ada (jika sudah dijana)?
   const { data: sedia } = await db.from("staf_gaji").select("*").eq("profil_id", profilId).eq("bulan", bulan).maybeSingle();
 
-  return { ok: true, config: cfg as GajiConfig, agg, sedia: sedia ?? null };
+  // Pinjaman staf aktif — cadang potongan ansuran untuk bulan ini (auto).
+  let pinjaman: any | null = null;
+  const { data: pinj } = await db
+    .from("staf_pinjaman")
+    .select("*")
+    .eq("profil_id", profilId)
+    .eq("aktif", true)
+    .order("dicipta", { ascending: false })
+    .maybeSingle();
+  if (pinj) {
+    const off = diffBulan(String((pinj as any).mula_bulan), bulan);
+    const n = Number((pinj as any).bil_ansuran);
+    const jumlah = Number((pinj as any).jumlah);
+    const ansuran = Number((pinj as any).ansuran);
+    if (off >= 0 && off < n) {
+      const idx = off + 1;
+      const amaun = idx === n ? round2(jumlah - ansuran * (n - 1)) : ansuran;
+      pinjaman = {
+        due: true,
+        bil: idx,
+        bil_ansuran: n,
+        amaun,
+        nota: `Pinjaman (Bil ${idx}/${n})`,
+        baki_selepas: round2(Math.max(0, jumlah - ansuran * (idx - 1) - amaun)),
+      };
+    }
+  }
+
+  return { ok: true, config: cfg as GajiConfig, agg, sedia: sedia ?? null, pinjaman };
 }
 
 // Jana / simpan slip (draf). Kira semula dari attendance + pengecualian SU.
