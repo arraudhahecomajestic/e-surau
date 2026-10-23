@@ -48,6 +48,7 @@ export default async function TenderDetailAwam({ params }: { params: { id: strin
           <div className="grid gap-1 border-y py-3 text-sm text-slate-600 sm:grid-cols-2">
             {t.tarikh_iklan && <div>Tarikh iklan: <b className="text-slate-800">{tarikhMs(t.tarikh_iklan)}</b></div>}
             {t.tarikh_tutup && <div>Tarikh tutup: <b className={tutup ? "text-slate-800" : "text-surau-dark"}>{tarikhMs(t.tarikh_tutup)}</b></div>}
+            {t.tarikh_taklimat && <div>Tarikh taklimat / lawatan tapak: <b className="text-surau-dark">{tarikhMs(t.tarikh_taklimat)}</b></div>}
             {t.anggaran_nilai ? <div>Anggaran nilai: <b className="text-slate-800">RM{Number(t.anggaran_nilai).toLocaleString()}</b></div> : null}
           </div>
 

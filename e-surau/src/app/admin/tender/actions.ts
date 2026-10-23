@@ -32,7 +32,7 @@ GARIS PANDUAN:
 
 type TenderInput = {
   no_ruj?: string; tajuk?: string; keterangan?: string; kategori?: string;
-  tarikh_iklan?: string; tarikh_tutup?: string; status?: string;
+  tarikh_iklan?: string; tarikh_tutup?: string; tarikh_taklimat?: string; status?: string;
   url_dokumen?: string; nama_dokumen?: string;
   pic_nama?: string; pic_telefon?: string; pic_emel?: string; alamat_hantar?: string;
   anggaran_nilai?: number | string;
@@ -47,6 +47,7 @@ function bersih(input: TenderInput) {
     kategori: s(input.kategori),
     tarikh_iklan: (input.tarikh_iklan ?? "").trim() || null,
     tarikh_tutup: (input.tarikh_tutup ?? "").trim() || null,
+    tarikh_taklimat: (input.tarikh_taklimat ?? "").trim() || null,
     status: (input.status ?? "aktif").trim() || "aktif",
     url_dokumen: s(input.url_dokumen),
     nama_dokumen: s(input.nama_dokumen),
