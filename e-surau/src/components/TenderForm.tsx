@@ -11,7 +11,7 @@ export default function TenderForm({ awal }: { awal?: any }) {
   const edit = !!awal?.id;
   const [f, setF] = useState<any>({
     no_ruj: awal?.no_ruj ?? "", tajuk: awal?.tajuk ?? "", keterangan: awal?.keterangan ?? "",
-    kategori: awal?.kategori ?? KATEGORI_TENDER[0], tarikh_iklan: awal?.tarikh_iklan ?? "", tarikh_tutup: awal?.tarikh_tutup ?? "", tarikh_taklimat: awal?.tarikh_taklimat ?? "",
+    kategori: awal?.kategori ?? KATEGORI_TENDER[0], tarikh_iklan: awal?.tarikh_iklan ?? "", tarikh_tutup: awal?.tarikh_tutup ?? "", tarikh_taklimat: awal?.tarikh_taklimat ?? "", masa_taklimat: awal?.masa_taklimat ?? "",
     status: awal?.status ?? "aktif", pic_nama: awal?.pic_nama ?? "", pic_telefon: awal?.pic_telefon ?? "",
     pic_emel: awal?.pic_emel ?? "", alamat_hantar: awal?.alamat_hantar ?? "", anggaran_nilai: awal?.anggaran_nilai ?? "",
   });
@@ -68,8 +68,9 @@ export default function TenderForm({ awal }: { awal?: any }) {
         <label className="text-sm text-slate-600">Tarikh iklan<input type="date" value={f.tarikh_iklan} onChange={(e) => set("tarikh_iklan", e.target.value)} className="inp" /></label>
         <label className="text-sm text-slate-600">Tarikh tutup<input type="date" value={f.tarikh_tutup} onChange={(e) => set("tarikh_tutup", e.target.value)} className="inp" /></label>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-slate-600">Tarikh taklimat / lawatan tapak<input type="date" value={f.tarikh_taklimat} onChange={(e) => set("tarikh_taklimat", e.target.value)} className="inp" /></label>
+        <label className="text-sm text-slate-600">Masa taklimat / lawatan tapak<input value={f.masa_taklimat} onChange={(e) => set("masa_taklimat", e.target.value)} className="inp" placeholder="cth: 10.00 pagi" /></label>
       </div>
       <div>
         <div className="mb-1 flex items-center justify-between gap-2">
