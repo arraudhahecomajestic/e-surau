@@ -30,6 +30,7 @@ const SETIAUSAHA: Item[] = [
   { href: "/admin/su/mesyuarat", label: "Minit Mesyuarat" },
   { href: "/admin/su/surat", label: "Surat Rasmi" },
   { href: "/admin/tender", label: "Tender & Iklan" },
+  { href: "/admin/kerjaya", label: "Jawatan Kosong" },
   { href: "/admin/pengumuman", label: "Pengumuman" },
   { href: "/admin/maklum-balas", label: "Maklum Balas" },
   { href: "/admin/kandungan", label: "Kandungan Surau" },
