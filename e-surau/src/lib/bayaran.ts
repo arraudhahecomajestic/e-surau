@@ -128,6 +128,19 @@ export async function laksanakanBayaran(chipId: string): Promise<{ dibayar: bool
       keterangan: `Sumbangan online${b.nama ? " — " + b.nama : ""} (CHIP)`,
       dicipta_nama: "CHIP",
     });
+  } else if (b.jenis === "ihya_ramadan") {
+    // Sumbangan Tabung Ihya Ramadan 2027 → rekod income (papar awam utk bar kemajuan).
+    const katId = await pastiKategori(db, "Dana Ihya Ramadan 2027", true);
+    if (katId) {
+      await db.from("kutipan").insert({
+        kategori_id: katId,
+        jumlah: Number(b.jumlah || 0),
+        kaedah: "online",
+        catatan: `Tabung Ihya Ramadan 2027${b.nama ? " — " + b.nama : ""} (CHIP)`,
+        tarikh: new Date().toISOString().slice(0, 10),
+        direkod_oleh: "CHIP",
+      });
+    }
   } else if (b.jenis === "gerobok") {
     // Sumbangan wang Gerobok Prihatin → rekod income "Dana Gerobok Prihatin".
     const katId = await pastiKategori(db, "Dana Gerobok Prihatin", false);

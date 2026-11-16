@@ -22,6 +22,7 @@ export default function NavUtama({ lang, paparKhairat, stafPreview, paparInfaq, 
   const infaqPratonton = !infaqOn && master;
 
   const perkhidmatan = [
+    { href: "/ihya-ramadan", label: t("Ihya Ramadan 2027", "Ihya Ramadan 2027") },
     paparKhairat && { href: "/khairat", label: `${t("Khairat", "Death Benefit")}${stafPreview ? " ·pratonton" : ""}` },
     { href: "/bantuan", label: t("Bantuan / Tabung Ihsan", "Aid / Ihsan Fund") },
     { href: "/gerobok-prihatin", label: t("Gerobok Prihatin", "Care Pantry") },
