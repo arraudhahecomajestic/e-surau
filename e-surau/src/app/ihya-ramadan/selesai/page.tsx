@@ -22,7 +22,6 @@ export default async function SelesaiIhyaRamadan({ searchParams }: { searchParam
     <div className="mx-auto max-w-lg px-4 py-16 text-center">
       {gagal || !dibayar ? (
         <>
-          <div className="text-5xl">😔</div>
           <h1 className="mt-3 text-xl font-bold text-slate-900">Sumbangan Belum Lengkap</h1>
           <p className="mt-2 text-sm text-slate-600">
             Pembayaran tidak selesai atau dibatalkan. Tiada caj dikenakan. Anda boleh cuba semula.
@@ -31,7 +30,6 @@ export default async function SelesaiIhyaRamadan({ searchParams }: { searchParam
         </>
       ) : (
         <>
-          <div className="text-5xl">🌙🤲</div>
           <h1 className="mt-3 text-xl font-bold text-slate-900">Jazakallahu Khairan!</h1>
           <p className="mt-2 text-sm text-slate-600">
             Sumbangan anda untuk Tabung Ihya Ramadan telah diterima. Resit dihantar ke e-mel anda.

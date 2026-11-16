@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { mulaDermaIhyaRamadan } from "@/app/ihya-ramadan/actions";
 
-const PRESET = [30, 50, 100, 200, 500, 1000];
+const PRESET = [10, 30, 50, 100, 200, 500, 1000];
 
 export default function IhyaRamadanDermaForm() {
   const [amt, setAmt] = useState<number>(100);
@@ -70,7 +70,7 @@ export default function IhyaRamadanDermaForm() {
 
       <label className="flex items-center gap-2 text-sm text-slate-700">
         <input type="checkbox" checked={hamba} onChange={(e) => setHamba(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-surau" />
-        Dermakan sebagai <b>Hamba Allah</b> (sembunyikan nama di dinding penderma)
+        Dermakan sebagai <b>Hamba Allah</b>
       </label>
 
       {ralat && <p className="text-sm text-red-600">{ralat}</p>}

@@ -35,7 +35,7 @@ export default async function IhyaRamadanPage() {
 
   const site = siteUrl();
   const waText = encodeURIComponent(
-    `Jom sama-sama hidupkan Ramadan ${IHYA_TAHUN} di ${NAMA_SURAU}! 🌙\n\nTabung Ihya Ramadan ${IHYA_TAHUN} kini dibuka — sasaran ${rm(IHYA_SASARAN)} untuk program sepanjang Ramadan. Derma mudah secara online di sini:\n${site}/ihya-ramadan\n\nSetiap sumbangan amat dihargai. Sebarkan! 🤲`
+    `Jom sama-sama hidupkan Ramadan ${IHYA_TAHUN} di ${NAMA_SURAU}!\n\nTabung Ihya Ramadan ${IHYA_TAHUN} kini dibuka — sasaran ${rm(IHYA_SASARAN)} untuk program sepanjang Ramadan. Derma mudah secara online di sini:\n${site}/ihya-ramadan\n\nSetiap sumbangan amat dihargai. Sebarkan!`
   );
   const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
 
@@ -44,7 +44,6 @@ export default async function IhyaRamadanPage() {
       {/* Hero */}
       <div className="overflow-hidden rounded-2xl border border-surau/20 bg-gradient-to-b from-surau/10 to-surau/5 text-center shadow-sm">
         <div className="p-7">
-          <div className="text-4xl">🌙</div>
           <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-surau">Tabung Ihya Ramadan {IHYA_TAHUN}</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">Hidupkan Ramadan {IHYA_TAHUN}</h1>
           <p className="mt-2 text-sm text-slate-600">{NAMA_SURAU}</p>
@@ -100,12 +99,12 @@ export default async function IhyaRamadanPage() {
       {/* Kongsi WhatsApp */}
       <a href={waUrl} target="_blank" rel="noreferrer"
         className="flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 font-semibold text-white shadow-sm hover:brightness-95">
-        <span>📢</span> Kongsi &amp; Sebarkan di WhatsApp
+        Kongsi &amp; Sebarkan di WhatsApp
       </a>
 
       {/* Dinding penderma */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-base font-bold text-slate-900">Dinding Penderma</h2>
+        <h2 className="mb-3 text-base font-bold text-slate-900">Senarai Penyumbang</h2>
         {penderma.length === 0 ? (
           <p className="text-sm text-slate-400">Belum ada sumbangan online direkod. Jadilah yang pertama menyumbang, insya-Allah.</p>
         ) : (
@@ -113,7 +112,6 @@ export default async function IhyaRamadanPage() {
             {penderma.map((d, i) => (
               <li key={i} className="flex items-center justify-between py-2.5 text-sm">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-surau">🤲</span>
                   <span className="truncate font-medium text-slate-800">{d.nama || "Hamba Allah"}</span>
                 </div>
                 <div className="text-right">
@@ -124,7 +122,7 @@ export default async function IhyaRamadanPage() {
             ))}
           </ul>
         )}
-        <p className="mt-3 text-center text-xs text-slate-400">Semoga Allah SWT menerima & memberkati setiap sumbangan. Aamiin. 🤲</p>
+        <p className="mt-3 text-center text-xs text-slate-400">Semoga Allah SWT menerima & memberkati setiap sumbangan. Aamiin.</p>
       </div>
 
       <div className="text-center"><Link href="/" className="text-sm text-surau hover:underline">← Laman utama</Link></div>
