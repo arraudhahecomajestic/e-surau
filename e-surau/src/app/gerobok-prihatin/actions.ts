@@ -10,6 +10,7 @@ export async function mulaDermaGerobok(input: {
   nama?: string;
   emel: string;
   telefon?: string;
+  kaedah?: "fpx" | "kad";
 }): Promise<{ ok: boolean; msg?: string; checkout_url?: string }> {
   if (!chipConfigured("umum"))
     return { ok: false, msg: "Gerbang pembayaran belum disediakan. Sila hubungi admin surau." };
@@ -35,6 +36,7 @@ export async function mulaDermaGerobok(input: {
       success_redirect: `${site}/gerobok-prihatin/selesai?ref=${encodeURIComponent(ref)}`,
       failure_redirect: `${site}/gerobok-prihatin/selesai?ref=${encodeURIComponent(ref)}&gagal=1`,
       success_callback: `${site}/api/chip/webhook`,
+      kaedah: input.kaedah,
     });
   } catch (err: any) {
     return { ok: false, msg: "Ralat gerbang pembayaran: " + (err?.message ?? String(err)) };

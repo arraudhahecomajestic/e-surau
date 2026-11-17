@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { mulaInfaq } from "@/app/infaq/actions";
 import { PAKEJ_INFAQ_SUBUH, INFAQ_JAMUAN_SELOT, INFAQ_JAMUAN_MAX_LOT } from "@/lib/tetapan";
+import PilihKaedahBayar, { type KaedahBayar } from "@/components/PilihKaedahBayar";
 
 export default function InfaqForm() {
   const [tab, setTab] = useState<"subuh" | "jamuan">("subuh");
@@ -11,6 +12,7 @@ export default function InfaqForm() {
   const [nama, setNama] = useState("");
   const [emel, setEmel] = useState("");
   const [sedang, setSedang] = useState(false);
+  const [kaedah, setKaedah] = useState<KaedahBayar>("fpx");
   const [ralat, setRalat] = useState("");
 
   const jamuanAmt = lot * INFAQ_JAMUAN_SELOT;
@@ -21,8 +23,8 @@ export default function InfaqForm() {
     setSedang(true);
     const res = await mulaInfaq(
       tab === "subuh"
-        ? { jenis: "subuh", amount: subuhAmt, nama, emel }
-        : { jenis: "jamuan", amount: jamuanAmt, lot, nama, emel },
+        ? { jenis: "subuh", amount: subuhAmt, nama, emel, kaedah }
+        : { jenis: "jamuan", amount: jamuanAmt, lot, nama, emel, kaedah },
     );
     if (!res.ok) { setSedang(false); setRalat(res.msg ?? "Ralat pembayaran."); return; }
     if (res.checkout_url) window.location.href = res.checkout_url;
@@ -77,12 +79,15 @@ export default function InfaqForm() {
         </label>
       </div>
 
+      <div className="rounded-xl bg-white p-5 shadow-sm">
+        <PilihKaedahBayar value={kaedah} onChange={setKaedah} amount={tab === "subuh" ? subuhAmt : jamuanAmt} />
+      </div>
+
       {ralat && <p className="text-sm text-red-600">{ralat}</p>}
 
       <button onClick={bayar} disabled={sedang} className="w-full rounded-lg bg-surau px-6 py-3.5 text-base font-semibold text-white hover:bg-surau-dark disabled:opacity-60">
-        {sedang ? "Menyambung ke gerbang bayaran…" : `Infaq ${tab === "subuh" ? `RM${subuhAmt}` : `RM${jamuanAmt}`} Sekarang (FPX / Kad / e-Wallet)`}
+        {sedang ? "Menyambung ke gerbang bayaran…" : `Infaq ${tab === "subuh" ? `RM${subuhAmt}` : `RM${jamuanAmt}`} Sekarang`}
       </button>
-      <p className="text-center text-xs text-slate-500">+ RM1 fi pemprosesan gerbang (jumlah dibayar RM{(tab === "subuh" ? subuhAmt : jamuanAmt) + 1}). Surau terima infaq anda penuh.</p>
       <p className="text-center text-xs text-slate-400">Semoga Allah membalas infaq anda dengan kebaikan yang berlipat ganda. </p>
     </div>
   );

@@ -8,7 +8,7 @@ import { bayaranOnlineDibuka, yuranKhairat } from "@/lib/tetapanSistem";
 const tahunSemasa = () => new Date().getFullYear();
 
 // Ahli bayar yuran khairat secara online (CHIP) — pakej 1/3/5/10 tahun.
-export async function mulaBayaranKhairat(tahunBil: number = 1): Promise<{ ok: boolean; msg?: string; checkout_url?: string }> {
+export async function mulaBayaranKhairat(tahunBil: number = 1, kaedah: "fpx" | "kad" = "fpx"): Promise<{ ok: boolean; msg?: string; checkout_url?: string }> {
   const p = await getProfil();
   if (!p?.ahli_id) return { ok: false, msg: "Sesi tamat atau akaun belum dipautkan. Sila log masuk semula." };
   if (!(await bayaranOnlineDibuka()))
@@ -66,6 +66,7 @@ export async function mulaBayaranKhairat(tahunBil: number = 1): Promise<{ ok: bo
       success_redirect: `${site}/ahli/khairat/selesai?ref=${encodeURIComponent(ref)}`,
       failure_redirect: `${site}/ahli/khairat/selesai?ref=${encodeURIComponent(ref)}&gagal=1`,
       success_callback: `${site}/api/chip/webhook`,
+      kaedah,
     });
   } catch (err: any) {
     return { ok: false, msg: "Ralat gerbang pembayaran: " + (err?.message ?? String(err)) };

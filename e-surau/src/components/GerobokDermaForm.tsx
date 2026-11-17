@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { mulaDermaGerobok } from "@/app/gerobok-prihatin/actions";
+import PilihKaedahBayar, { type KaedahBayar } from "@/components/PilihKaedahBayar";
 
 const PRESET = [10, 20, 30, 50, 100];
 
@@ -11,6 +12,7 @@ export default function GerobokDermaForm() {
   const [nama, setNama] = useState("");
   const [emel, setEmel] = useState("");
   const [sedang, setSedang] = useState(false);
+  const [kaedah, setKaedah] = useState<KaedahBayar>("fpx");
   const [ralat, setRalat] = useState("");
 
   const nilai = custom ? Number(custom.replace(/[^\d.]/g, "")) : amt;
@@ -20,7 +22,7 @@ export default function GerobokDermaForm() {
     if (!emel.includes("@")) { setRalat("Sila isi e-mel yang sah untuk resit."); return; }
     if (!nilai || nilai < 1) { setRalat("Sila pilih atau masukkan jumlah yang sah."); return; }
     setSedang(true);
-    const res = await mulaDermaGerobok({ amount: nilai, nama, emel });
+    const res = await mulaDermaGerobok({ amount: nilai, nama, emel, kaedah });
     if (!res.ok) { setSedang(false); setRalat(res.msg ?? "Ralat pembayaran."); return; }
     if (res.checkout_url) window.location.href = res.checkout_url;
   }
@@ -61,6 +63,8 @@ export default function GerobokDermaForm() {
         </label>
       </div>
 
+      <PilihKaedahBayar value={kaedah} onChange={setKaedah} amount={nilai} />
+
       {ralat && <p className="text-sm text-red-600">{ralat}</p>}
 
       <button
@@ -70,7 +74,7 @@ export default function GerobokDermaForm() {
       >
         {sedang ? "Menyambung ke pembayaran…" : `Sumbang RM${nilai || 0} Sekarang`}
       </button>
-      <p className="text-center text-xs text-slate-400">Bayaran diproses selamat melalui CHIP (FPX / kad / e-wallet). Resit dihantar ke e-mel anda.</p>
+      <p className="text-center text-xs text-slate-400">Bayaran diproses selamat melalui CHIP. Resit dihantar ke e-mel anda.</p>
     </div>
   );
 }

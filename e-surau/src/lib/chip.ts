@@ -10,6 +10,20 @@ const BASE = "https://gate.chip-in.asia/api/v1";
 
 export type Akaun = "umum" | "khairat";
 
+export type KaedahBayar = "fpx" | "kad";
+
+// Fi gerbang ikut kaedah bayar — supaya surau terima jumlah PENUH.
+// FPX: CHIP cas RM1 rata. Kad: CHIP cas sehingga 2% (kredit) → gross-up 2.04% (base*2/98, bundar naik ke sen).
+export function fiKaedah(baseRM: number, kaedah: KaedahBayar): number {
+  if (kaedah === "kad") return Math.ceil((baseRM * 2 / 98) * 100) / 100;
+  return FI_CHIP || 0; // fpx (rata)
+}
+
+const WHITELIST_KAEDAH: Record<KaedahBayar, string[]> = {
+  fpx: ["fpx"],
+  kad: ["visa", "mastercard", "maestro"],
+};
+
 function cfg(akaun: Akaun = "umum") {
   if (akaun === "khairat") {
     const brand = process.env.CHIP_KHAIRAT_BRAND_ID || process.env.CHIP_BRAND_ID;
@@ -39,11 +53,16 @@ export type PurchaseOpts = {
   success_redirect: string;
   failure_redirect: string;
   success_callback: string;
+  kaedah?: KaedahBayar;
 };
 
 export async function ciptaPurchase(opts: PurchaseOpts): Promise<any> {
   const { brand, key } = cfg(opts.akaun ?? "umum");
   if (!brand || !key) throw new Error("CHIP belum dikonfigurasi (Brand ID / Secret Key).");
+
+  const feeRM = opts.kaedah ? fiKaedah(opts.amountCents / 100, opts.kaedah) : (FI_CHIP || 0);
+  const feeCents = Math.round(feeRM * 100);
+  const whitelist = opts.kaedah ? WHITELIST_KAEDAH[opts.kaedah] : undefined;
 
   const res = await fetch(`${BASE}/purchases/`, {
     method: "POST",
@@ -59,13 +78,14 @@ export async function ciptaPurchase(opts: PurchaseOpts): Promise<any> {
         currency: "MYR",
         // Fi pemprosesan gerbang ditanggung pembayar (baris berasingan) — surau terima jumlah penuh.
         products:
-          Math.round((FI_CHIP || 0) * 100) > 0
+          feeCents > 0
             ? [
                 { name: opts.productName.slice(0, 256), price: opts.amountCents },
-                { name: "Fi pemprosesan (gerbang bayaran)", price: Math.round(FI_CHIP * 100) },
+                { name: "Fi pemprosesan (gerbang bayaran)", price: feeCents },
               ]
             : [{ name: opts.productName.slice(0, 256), price: opts.amountCents }],
       },
+      payment_method_whitelist: whitelist,
       reference: opts.reference,
       success_redirect: opts.success_redirect,
       failure_redirect: opts.failure_redirect,

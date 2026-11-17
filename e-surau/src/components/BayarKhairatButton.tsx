@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { mulaBayaranKhairat } from "@/app/ahli/khairat/actions";
 import { PAKEJ_KHAIRAT, YURAN_KHAIRAT_TAHUNAN } from "@/lib/tetapan";
+import PilihKaedahBayar, { type KaedahBayar } from "@/components/PilihKaedahBayar";
 
 export default function BayarKhairatButton({ bayaranDibuka = false, yuran = YURAN_KHAIRAT_TAHUNAN }: { bayaranDibuka?: boolean; yuran?: number }) {
   const [sedang, setSedang] = useState<number | null>(null);
+  const [kaedah, setKaedah] = useState<KaedahBayar>("fpx");
   const [ralat, setRalat] = useState("");
 
   if (!bayaranDibuka) {
@@ -20,13 +22,14 @@ export default function BayarKhairatButton({ bayaranDibuka = false, yuran = YURA
   async function bayar(tahun: number) {
     setRalat("");
     setSedang(tahun);
-    const res = await mulaBayaranKhairat(tahun);
+    const res = await mulaBayaranKhairat(tahun, kaedah);
     if (!res.ok) { setSedang(null); setRalat(res.msg ?? "Ralat pembayaran."); return; }
     if (res.checkout_url) window.location.href = res.checkout_url;
   }
 
   return (
     <div className="space-y-2">
+      <PilihKaedahBayar value={kaedah} onChange={setKaedah} />
       <div className="text-sm font-medium text-slate-700">Pilih pakej & bayar (online):</div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {PAKEJ_KHAIRAT.map((pk) => {
